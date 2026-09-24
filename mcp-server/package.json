@@ -1,0 +1,14 @@
+{
+  "name": "clawdblock-mcp",
+  "version": "1.0.0",
+  "description": "ClawdBlock MCP server: lets an AI build, see, walk and talk in a Minecraft server over RCON + Carpet",
+  "type": "module",
+  "main": "index.js",
+  "bin": { "clawdblock-mcp": "index.js" },
+  "scripts": { "start": "node index.js", "check": "node test/load.mjs" },
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

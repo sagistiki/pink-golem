@@ -1,0 +1,20 @@
+# Minecraft server (created by clawdblock.py setup) — keep only the README
+server/*
+!server/README.md
+backups/
+dist/
+# runtime data written by the tools
+data/*
+!data/README.md
+jobs/*
+!jobs/README.md
+# local config (contains the RCON password path, bot name…) and client configs
+clawdblock.json
+.mcp.json
+.claude/
+# tooling
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+*.log

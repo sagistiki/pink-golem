@@ -1,0 +1,82 @@
+# Lessons learned the hard way
+
+Each lesson here cost a real mistake in a real server. They are the reason behind many rules in the other pages.
+Read this once; come back when something feels familiar. New lessons you learn go into `minecraft_notes`
+(`section:lesson`); the ones that matter to everyone can be proposed for this page.
+
+## Building
+
+1. **A path laid one block high became a step in front of a villa's door.** Paths, patios and sidewalks replace
+   the ground block. The access check now flags "full-block step at a door".
+2. **A new street ran straight through an old lamp post.** Before laying a path or road, list the non-air blocks
+   one to five blocks above its whole footprint and clear or route around them.
+3. **A furniture fill along the wall line replaced a door.** Interior = footprint minus the wall ring. Write the
+   interior range down; after furnishing, inspect the door cells.
+4. **Round towers at the back corners of a big hall sat on the top landing of both main staircases.** The stairs ended
+   in a wall. When towers or walls overlap rooms, carve the room out of the tower, and walk up every staircase
+   (`minecraft_reach` from the entrance to the upper floor, or a real bot walk) before saying done.
+5. **A decorative base course ran over a tower's door and erased its lower half.** The access check found a door
+   floating one block up and 0 rooms reachable. Decoration passes must skip door cells.
+6. **A regenerated generator silently undid a separate "fix" job.** Put fixes inside the generator, never in a
+   separate patch file, and re-run the access check after every regeneration.
+7. **Recolouring a bed half by half popped it.** Placing the new head updated the old foot, which broke, which broke
+   the new head. Clear both halves, then place foot and head.
+8. **Flowers on quartz and planks popped off as items.** Plants need soil — pots indoors, a moss planter, or grass
+   under a flower bed (`parts.flower_bed` lays it for you).
+9. **A banner could not make a clean six-stripe flag** (banner patterns are fixed, uneven bands). Six thin
+   `block_display` slivers can (`parts.stripe_display`). Same trick for any striped sign.
+10. **Twelve thousand fill commands for one tall tower** — because a colour spiral changes every layer. The spiral
+    repeats every 24 blocks, so one period built by fills + `clone … masked` copies up the tower took 2000 commands
+    and 3 seconds. Scan the master period first: masked clone copies EVERY non-air block, including an entrance
+    frame you didn't mean to repeat.
+11. **Glass looked dark at night.** Emissive blocks (sea lantern, froglights, glowstone, shroomlight) right behind
+    tinted-glass windows render full-bright through the glass: random "office floors" of lamps make a tower glow
+    without changing its facade.
+
+## Working safely
+
+12. **An app reload deleted a player's race boat mid-race and dropped them on the track.** `script load <app>` re-runs
+    its start-up. Check the app's state (who is racing, who is in the zone) before reloading; make start-up clean up
+    politely (dismount riders and send them somewhere safe).
+13. **A player stayed stuck in adventure mode after a reload** — the app kept "who did I switch" only in memory.
+    Keep such state in a player tag or a file, never only in an app global.
+14. **Two pets suffocated right after being summoned** — into a furniture block that turned out to be solid. The
+    entity list right after the summon still showed them; five seconds later it didn't. Summon on top (y+1), make
+    pets invulnerable, and re-check after a few seconds.
+15. **A tamed pet froze in place whenever its owner was offline.** Vanilla pets sit when their owner is missing.
+    To let pets wander a building, make an invisible marker `armor_stand` their owner while the real owner is away.
+16. **Summons silently did nothing far from players.** Entities can only be summoned in loaded chunks — teleport
+    your bot there first.
+17. **Holding boats at a starting line by teleporting them every tick felt like crashing** ("moved wrongly"). Use
+    barrier gates. And a boat is 1.375 wide: a blocking block must start more than 0.69 from its centre, or the boat
+    already overlaps it and passes straight through.
+
+## Tools and scripting
+
+18. **Builders never actually animated** — Carpet's `/player X attack` does nothing in adventure mode when aimed at a
+    block. `helpers.sc` swings every fake player tagged `building` with `modify(p,'swing')`.
+19. **`data merge entity` and `rotate` accept one entity.** Use `execute as @e[…] run data merge entity @s {…}`.
+20. **`block()` read in the same scarpet call right after `run('setblock …')` still returned the old block** (same for
+    `weather()`). Verify in a separate call.
+21. **`read_file` returned nothing in plain `script run`** — it only works inside an app (`script in cu run …`).
+22. **The access check once called an open doorway a "closed room".** Confirm surprising results with a real bot
+    walk before rebuilding anything.
+23. **A button left `powered=true` by a test re-fired after every app reload.** When testing buttons with
+    `setblock … powered=true`, set `powered=false` in the very next call.
+24. **Python's `urllib` failed SSL on some machines** (a certificate chain problem). The installer falls back to
+    `curl` / PowerShell; do the same in your own scripts.
+25. **A crew member's name matched a real Minecraft account**, so Carpet gave it that account's skin and exact
+    lowercase spelling — and a case-sensitive name check lost it. Compare player names case-insensitively.
+26. **A two-block-deep pool stopped a 187-block free fall** with no damage. Levitation amplifier 29 lifts a player
+    about 1.5 blocks per tick — a fun elevator.
+
+## Working with people
+
+27. **The best-received format for "upgrade X":** a survey with numbers (what's there, what's empty), then ~10
+    numbered options with where and size, a recommendation, the player picks several — then plan properly and
+    build without more questions.
+28. **Players test builds live, often before you say done.** Treat every step as if someone is already inside.
+29. **Players love the helper builders and the site outline before building.** They make a command-line build feel
+    like watching a crew at work.
+
+See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`.

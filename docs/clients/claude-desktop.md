@@ -103,11 +103,10 @@ body, undo stack and protected builds.
 
 ## Tips
 
-- **What Desktop can and cannot do.** Claude Desktop has no access to your files unless you give it some. It can
-  run every ready blueprint (cottage, modern villa, tower, park, drop tower), build with commands and ASCII layers,
-  see with screenshots and vision, undo, and remember. What it can't do by default is write its **own**
-  generators into `jobs/`, the way Claude Code does for fully custom buildings. For that, use
-  [Claude Code](claude-code.md), or add a filesystem MCP server limited to the ClawdBlock folder.
+- **What Desktop can do without file access.** Everything: it runs the ready blueprints (cottage, modern villa,
+  tower, park, drop tower), builds with commands and ASCII layers, sees with screenshots and vision, undoes and
+  remembers — and it writes its **own** generators too, by passing the Python source to `minecraft_generate` in
+  `code` (saved as `jobs/<name>.py`, then run). No filesystem MCP server is needed.
 - **Screenshots come back into the chat.** Ask *"show me a picture of what you built"*. Copies are saved in
   `data/screenshots/`.
 - **Long builds.** Blueprints run as background jobs with a progress bar in game. Claude waits for them in steps

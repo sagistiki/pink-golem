@@ -77,7 +77,7 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Any command | `minecraft_run_command command / commands / commands_file(s)` | `background:true` for > 300 commands |
 | Quick shapes | `minecraft_build operations:[…]` | fill / setblock / clone, refuses to overwrite |
 | ASCII blueprint | `minecraft_build_layers` | rows = +z, columns = +x, layer 0 = floor |
-| Generators | `minecraft_generate script args build helpers entrance` | Python in the repo, writes `jobs/*.json` |
+| Generators | `minecraft_generate script args build helpers entrance` (+ `code` to save new Python first) | Python in the repo, writes `jobs/*.json` |
 | Background jobs | `minecraft_jobs action:wait / status / list / cancel` | boss bar in game |
 | Undo | `minecraft_undo steps / match / list` | every build is snapshotted first |
 | See as text | `minecraft_vision` target looking_at / near_player / pos / box; mode check | "look at my house" |

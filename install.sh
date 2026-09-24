@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ClawdBlock installer for macOS and Linux.
 #   ./install.sh            interactive
-#   ./install.sh --yes      recommended answers (still asks you to accept the Minecraft EULA unless --accept-eula)
+#   ./install.sh --yes --accept-eula    recommended answers, no questions (--accept-eula = you accept https://aka.ms/MinecraftEULA)
 set -e
 cd "$(dirname "$0")"
 say() { printf '\033[1;35m%s\033[0m\n' "$*"; }

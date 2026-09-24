@@ -143,9 +143,9 @@ behind it.
 
 ## Tips
 
-- **Local chat apps can't write files.** Without file access, the model can't write its own generators into
-  `jobs/`; it builds with blueprints, `minecraft_build` and `minecraft_build_layers`. That is the right range for
-  local models anyway.
+- **Stick to blueprints first.** A local model can write its own generators (`minecraft_generate` takes Python
+  source in `code`), but blueprints, `minecraft_build` and `minecraft_build_layers` are the range small models do
+  reliably.
 - **Start a new chat per build.** Short conversations keep small contexts healthy.
 - **Say coordinates when it struggles.** "Build a cottage at 100, -61, 40 facing south" removes the hardest step.
 - **Temperature low** (0.2-0.5) gives steadier tool arguments.

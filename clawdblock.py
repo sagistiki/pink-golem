@@ -339,7 +339,8 @@ def cmd_setup(a):
     eula = sd / "eula.txt"
     if "eula=true" not in (eula.read_text() if eula.exists() else ""):
         print("  Minecraft's EULA: https://aka.ms/MinecraftEULA")
-        if a.accept_eula or yes("Do you accept the Minecraft EULA?", False if not ASSUME_YES else True):
+        # never accepted silently: --yes alone still needs --accept-eula (or an interactive yes)
+        if a.accept_eula or (not ASSUME_YES and yes("Do you accept the Minecraft EULA?", False)):
             eula.write_text("eula=true\n")
             ok("EULA accepted")
         else:
@@ -429,6 +430,10 @@ def install_mods(sd, mc, keys, cfg):
             continue
         if not v:
             warn(f"{k}: no build for Minecraft {mc} on Modrinth yet — skipped")
+            if k in have:   # an old jar for another Minecraft version can stop the server from starting
+                (sd / "mods" / "disabled").mkdir(exist_ok=True)
+                shutil.move(str(sd / "mods" / have[k]), sd / "mods" / "disabled" / have[k])
+                warn(f"{k}: moved the old {have[k]} to server/mods/disabled/")
             continue
         if have.get(k) == v["filename"]:
             ok(f"{k} {v['version']} (already installed)")

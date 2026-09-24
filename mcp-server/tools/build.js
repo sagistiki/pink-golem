@@ -4,6 +4,9 @@
  * Every tool that changes blocks goes through the same rails: zone guard → undo snapshot → run → verify → auto-zone.
  */
 
+import fs from "node:fs";
+import path from "node:path";
+
 const vec = { type: "array", items: { type: "number" }, minItems: 3, maxItems: 3, description: "[x, y, z]" };
 
 export const tools = [
@@ -76,9 +79,10 @@ export const tools = [
   },
   {
     name: "minecraft_generate",
-    description: "Run a Python build generator inside the ClawdBlock folder (e.g. skill/clawdblock/blueprints/cottage.py, or your own in jobs/). Generators use skill/clawdblock/scripts/mclib.py and write command files into jobs/. Returns stdout and the files written. With build:true the files are queued as background jobs (undo, zone guard, verification, auto-zone), helpers join the first one, and entrance/check_access runs on the last one. Pass generator arguments in args (blueprints take --at x,y,z and --facing).",
+    description: "Run a Python build generator inside the ClawdBlock folder (e.g. skill/clawdblock/blueprints/cottage.py, or your own in jobs/). Generators use skill/clawdblock/scripts/mclib.py and write command files into jobs/. Returns stdout and the files written. With build:true the files are queued as background jobs (undo, zone guard, verification, auto-zone), helpers join the first one, and entrance/check_access runs on the last one. Pass generator arguments in args (blueprints take --at x,y,z and --facing). No file access in your client? Pass the Python source in `code` and a file name in `script` (saved under jobs/, then run).",
     inputSchema: { type: "object", properties: {
-      script: { type: "string", description: "path relative to the ClawdBlock folder" }, args: { type: "array", items: { type: "string" } },
+      script: { type: "string", description: "path relative to the ClawdBlock folder (with code: a file name like jobs/gen_bakery.py)" }, args: { type: "array", items: { type: "string" } },
+      code: { type: "string", description: "optional Python source to save as `script` (must be under jobs/) before running it" },
       build: { type: "boolean", description: "queue the generated files as build jobs (default false = generate only, then minecraft_preview them)" },
       files: { type: "array", items: { type: "string" }, description: "only build these of the generated files (names or globs like cottage-*)" },
       helpers: { type: "number" }, allow_protected: { type: "boolean" }, label: { type: "string" }, entrance: vec, check_access: { type: "boolean" } }, required: ["script"] },
@@ -247,6 +251,11 @@ export function handlers(K) {
     },
 
     async minecraft_generate(args) {
+      if (args.code) {   // clients without file access can still write their own generators
+        const f = K.safePath(args.script);
+        if (!f.startsWith(K.P.JOBS + path.sep) || !f.endsWith(".py")) throw new Error("with code, script must be a .py file under jobs/ (e.g. jobs/gen_bakery.py)");
+        fs.writeFileSync(f, String(args.code));
+      }
       const g = await K.runGenerator(args.script, args.args || []);
       if (!args.build || !g.ok) return K.text(g);
       let files = g.files;

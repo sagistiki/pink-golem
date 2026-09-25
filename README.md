@@ -31,13 +31,15 @@ reachable from the front door, no dark corners where mobs could spawn — and te
   previews of builds that don't exist yet) and memory (a world map, people, a shared learning journal).
 - 🛡️ **Safety rails** — automatic undo for every build, protected zones for other people's builds, an overwrite guard,
   verification after every job, and an access check that walks every room from the entrance.
-- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 24 reference pages
+- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 25 reference pages
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
 - 🏗️ **A building library and blueprints** — `mclib` + `parts` (furniture, roofs, stairs, windows, lamps, gardens,
   round towers, pools, flags) that work facing any direction, and eight ready blueprints to use and learn from.
 - 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, a rideable Ferris wheel, vendor
   stands, secret doors, welcome shows, fireworks.
+- 🗺️ **A live minimap with no client mods** — a round map in the top-left corner for everyone, turning with your
+  view, friends as dots; a resource pack + a scarpet app ([how it works](skill/clawdblock/reference/minimap.md)).
 
 ## Built by the included blueprints
 
@@ -123,7 +125,7 @@ flowchart LR
     MC --- APPS["scarpet apps<br/>cu · helpers · bubble<br/>launchpad · race · vendor …"]
     MCP -- "runs" --> GEN["Python generators<br/>mclib + parts + blueprints"]
     GEN -- "jobs/*.json" --> MCP
-    SKILL["Skill<br/>SKILL.md + 24 reference pages"] -. "how to build well" .-> AI
+    SKILL["Skill<br/>SKILL.md + 25 reference pages"] -. "how to build well" .-> AI
 ```
 
 No protocol bot, no client mods: the MCP drives the server through **RCON** (so it works on any Minecraft version the
@@ -140,11 +142,12 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 | [`install.sh`](install.sh) / [`install.cmd`](install.cmd) / [`install.ps1`](install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
 | [`skill/clawdblock/SKILL.md`](skill/clawdblock/SKILL.md) | the skill: golden rules, the recipe, tools at a glance, facts that break builds |
-| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 24 deep-dive pages |
+| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 25 deep-dive pages |
 | [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, `city.py` (roads, rail lines), and the helper scarpet apps |
 | [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, Ferris wheel, catalog |
 | [`skill/clawdblock/SYSTEM_PROMPT.md`](skill/clawdblock/SYSTEM_PROMPT.md) | a condensed prompt for small / local models |
-| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, vendor, secret_door, welcome, fireworks |
+| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks |
+| [`resourcepacks/minimap/`](resourcepacks/minimap) | the minimap's resource pack (font + text shader) and its builders |
 | [`docs/`](docs) | getting started, clients, friends, architecture, troubleshooting, contributing, writing blueprints |
 
 ## Mods

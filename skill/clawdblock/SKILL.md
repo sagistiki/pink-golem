@@ -219,6 +219,7 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Buttons that do things, games, races, doors | `reference/game-logic.md`, `scarpet.md`, `redstone.md` |
 | Minigames with rounds (TNT Run, arenas) | `reference/minigames.md` |
 | Trams, coasters, rail lines | `reference/rails.md` |
+| A HUD / minimap / anything drawn on the screen without mods | `reference/minimap.md` |
 | Is it right? | `reference/verification.md` |
 | Something failed | `reference/troubleshooting.md` |
 | Which mods do what | `reference/mods.md` |

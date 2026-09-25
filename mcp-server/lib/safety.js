@@ -123,7 +123,10 @@ export function install(K) {
     await K.updateJSON(K.P.ZONES, [], (zs) => {
       const inside = zs.find((z) => box[0].every((v, i) => v >= z.lo[i]) && box[1].every((v, i) => v <= z.hi[i]));
       if (inside) { result = { inside: inside.name }; return; }
-      const mine = zs.find((z) => z.auto && z.owner === K.BOT && z.lo.every((v, i) => v <= box[1][i] + 2) && z.hi.every((v, i) => v >= box[0][i] - 2));
+      // grow an own auto-zone only for a build CENTRED inside it (a later phase / an extension) — touching was enough before,
+    // and one district zone swallowed every new build next to it
+    const mid = box[0].map((v, i) => (v + box[1][i]) / 2);
+    const mine = zs.find((z) => z.auto && z.owner === K.BOT && mid.every((v, i) => v >= z.lo[i] - 2 && v <= z.hi[i] + 2));
       if (mine) {
         mine.lo = mine.lo.map((v, i) => Math.min(v, box[0][i])); mine.hi = mine.hi.map((v, i) => Math.max(v, box[1][i]));
         mine.updated = new Date().toISOString(); result = { grew: mine.name }; return;

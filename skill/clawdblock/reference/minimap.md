@@ -48,6 +48,14 @@ update is ~2–3 ms and ~8–11 KB; standing still costs ~0.2 ms.
 Until the pack is live, keep the default **off** — a player without the pack sees the raw glyphs as a strip of
 boxes at the top of the screen (`/minimap off` hides it for them).
 
+## Sharing the shader with the HUD toolkit
+
+Only one `core/text.vsh` can be active. The [HUD toolkit](hud.md) (`resourcepacks/hud/`) builds its `text.vsh` from
+this pack's builder: the minimap block byte for byte, plus a HUD block for colours with `B&3 == 0` or `2` (the
+minimap keeps `3` and `1`). The minimap works exactly as before with either shader (`check_hud.py` proves it). When
+you use both, merge `hud.zip` BEFORE `minimap.zip` so the HUD's shader is the one that survives. After changing
+`VSH`, `CELLS` or `LEFT` here, rebuild the HUD pack too.
+
 ## Changing it
 
 - Size: `CELLS` (cells across, 2 px each) in **both** builders, `global_S` (blocks per cell) in `build_app.py`.
@@ -71,4 +79,4 @@ boxes at the top of the screen (`/minimap off` hides it for them).
   a taller image.
 
 ## See also
-[displays.md](displays.md) · [scarpet.md](scarpet.md) · [game-logic.md](game-logic.md)
+[hud.md](hud.md) · [displays.md](displays.md) · [scarpet.md](scarpet.md) · [game-logic.md](game-logic.md)

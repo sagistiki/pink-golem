@@ -103,16 +103,23 @@ done, so a careless reload can break a game under them (a race reload once kille
 5. `reload()` functions (all bundled apps have one) re-read the JSON without a full `script load`.
 6. **Restore a player once.** "Give back the saved inventory" usually starts with `clear`; run it a second time on a
    player who is already home (restored on respawn, then again by the end-of-round reset) and it wipes what they have
-   now. Restore only when the save file or the game tag still exists.
+   now. Restore only when the save file or the game tag still exists. Without a save, fall back to adventure for
+   players below permission level 2 and creative for ops (`query(p, 'permission_level')`) — never hard-code creative.
+
+The [gamekit library](gamekit.md) implements all of this (and the next section) for round-based games.
 
 ## Don't trust events alone for who is still in a game
 
-An app does not hear its own events: when the app itself deals the fatal blow (`run('damage ...')` from `__on_tick`
-or a `schedule`), its `__on_player_dies` never runs. The player respawns, a respawn handler sends them home, and the
-round goes on with a "living" player who is not there: their follower mobs chase them through the lobby, the
-visitor rule teleports them to the stands, and the solo timer finally "wins" a round they lost.
+Carpet switches scarpet event handling off while it runs the scarpet tick (every app's `__on_tick` and scheduled
+calls): a death caused by your `run('damage ...')` there reaches NO app's `__on_player_dies` — yours included. (The
+same `run()` inside a `/script` command is deferred until the command ends, so its events do arrive; a console
+`/damage` too.) The player respawns, a respawn handler sends them home, and the round goes on with a "living" player
+who is not there: their follower mobs chase them through the lobby, the visitor rule teleports them to the stands,
+and the solo timer finally "wins" a round they lost.
 
-- Route all of the app's damage through one helper that checks `query(p, 'health') <= 0` right after and eliminates.
+- Route all of the app's damage through one helper that checks `query(p, 'health') <= 0` — and the
+  `statistic(p, 'custom', 'deaths')` counter, because a Carpet fake player is reset to 20 health as it dies — right
+  after and eliminates.
 - Once a second, eliminate every participant who is offline, dead (health 0) or no longer carries the game tag.
 - Make elimination idempotent (`if (!alive, return())`): the event, the helper and the sweep can all see one death.
 - Anything teleported onto a player each tick (a bait mob wolves chase, a nameplate carrier) shoves them: put it on
@@ -145,6 +152,8 @@ __on_tick() -> (
 ```
 
 - Only players who were in creative are switched, so a survival player never comes out in creative.
+- For any starting mode (saved per player in a file, fallback by permission level after a lost save), use the
+  `area` option of [gamekit](gamekit.md) instead.
 - An admin tag (`tag <name> add game_admin`) lets builders work inside the area.
 - Shape the area from one or two boxes (an L = two boxes) that cover nobody else's build.
 
@@ -242,6 +251,20 @@ within 90 blocks. `ferris.data/wheel.json`:
 `blueprints/ferris_wheel.py` with `minecraft_generate`; its last job runs `script in ferris run setup(x, gy, z)`.
 `script in ferris run remove()` takes the moving parts away. How it is made: displays.md, "Rotating assemblies".
 
+### ring — Shrinking Ring, the gamekit demo
+Stand on the pad north of the ring (particles mark it): 10 s countdown, everyone lands on the ring edge facing the
+centre, the ring of red particles shrinks, outside it you lose health, off the arena you are out and spectate (Sneak =
+next player, the last Sneak = home). Last one inside wins; alone = survival-time personal best. Nothing is built.
+Setup: `script in ring run setup(x, ground_y, z)`. It needs `gamekit.scl` next to it (`clawdblock.py apps add ring`
+copies it) — the library does joining, save/restore, elimination, spectating, end screen and records
+([gamekit.md](gamekit.md)); the file itself is only the rule.
+
+### cars — drivable cars
+Right-click a car to get in; W/S/A/D, Space = handbrake drift, Ctrl = boost, Shift = get out; chase camera or first
+person (`/cars view`). Needs the models pack (`resourcepacks/cars/`) and the Key Bridge server mod (`mods-src/keybridge/`, players' keys
+in the scoreboard `keys`). Put one down with `/cars here sports red`; a parking lot goes in `cars.data/lot.json`. The
+recipe (physics, camera, exit sequence, safe spawning) is in [vehicles.md](vehicles.md).
+
 ### welcome — a greeting for real players
 Title with the player's name, a colour shimmer on the action bar, a ring of particles, a chime. Bots and helpers get
 nothing. No config file: edit `global_title` and `global_colors` in `welcome.sc`, then `script load welcome`.
@@ -266,5 +289,5 @@ point clear of roofs and 6+ blocks from people.
 | Core game input is a button click | Prefer standing on a pad / crossing a line — a fake player can then test the whole round (`minigames.md`) |
 
 ## See also
-[scarpet.md](scarpet.md) · [minigames.md](minigames.md) · [rails.md](rails.md) · [redstone.md](redstone.md) · [entities.md](entities.md) ·
+[scarpet.md](scarpet.md) · [minigames.md](minigames.md) · [gamekit.md](gamekit.md) · [vehicles.md](vehicles.md) · [hud.md](hud.md) · [rails.md](rails.md) · [redstone.md](redstone.md) · [entities.md](entities.md) ·
 [displays.md](displays.md) · [verification.md](verification.md) · [troubleshooting.md](troubleshooting.md)

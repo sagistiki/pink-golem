@@ -1,0 +1,175 @@
+// hud.scl — the HUD toolkit's composer, a scarpet library: a speedometer, a compass, a timer, bars and text anywhere
+// on the screen, with no client mods. Needs the HUD resource pack (resourcepacks/hud — its text shader also keeps the
+// minimap working). Import it into your app, build elements, show them to a player:
+//
+//   import('hud', 'hud_show', 'hud_hide', 'hud_speedo', 'hud_compass', 'hud_timer', 'hud_text', 'hud_bar', 'hud_backdrop');
+//   hud_show('Alex', [hud_speedo(87, 160, 'KM/H', 'bottom_right'), hud_compass(query(p, 'yaw'), 'top_centre'),
+//                     hud_timer(125, 0xFFFFFF, 'top_right')]);
+//   hud_hide('Alex');                                   // on exit / disconnect
+//
+// An element = a list of text components whose total advance is 0 (it returns the cursor to where it started), so
+// any number of elements can share one title, which then totals exactly 0 — the shader relies on that. Anchors:
+// top_left (under the minimap), top_centre, top_right, bottom_centre (above the action bar), bottom_right,
+// bottom_left, middle_left, middle_right (or 0..7). Each element is 18 px tall per row; row 1 sits 18 px below row 0.
+// Text styles: 'sm' (small, top of the row), 'sl' (small, bottom of the row), 'big' (14 px), 'seg' (7-segment).
+// Characters: 0-9 A-Z : . / - + % ! ? (lower case is shown in upper case; anything else becomes a space).
+// The carrier is one invisible WHITE bossbar per player and app (hud:<app>.<player>): don't use white for other
+// bossbars. A title is only re-sent when it changed. Check any title offline with resourcepacks/hud/check_hud.py.
+
+// <generated> by resourcepacks/hud/build_pack.py — do not edit by hand, rebuild instead
+global_hud_font_id = 'clawdblock:hud';
+global_hud_anchor = {'top_left' -> 0, 'top_centre' -> 1, 'top_right' -> 2, 'bottom_centre' -> 3, 'bottom_right' -> 4, 'bottom_left' -> 5, 'middle_left' -> 6, 'middle_right' -> 7};
+global_hud_neg = ['', '', '', '', '', '', '', '', '', ''];
+global_hud_pos = ['', '', '', '', '', '', '', '', '', ''];
+global_hud_font = {'sm' -> {'0' -> '', '1' -> '', '2' -> '', '3' -> '', '4' -> '', '5' -> '', '6' -> '', '7' -> '', '8' -> '', '9' -> '', 'A' -> '', 'B' -> '', 'C' -> '', 'D' -> '', 'E' -> '', 'F' -> '', 'G' -> '', 'H' -> '', 'I' -> '', 'J' -> '', 'K' -> '', 'L' -> '', 'M' -> '', 'N' -> '', 'O' -> '', 'P' -> '', 'Q' -> '', 'R' -> '', 'S' -> '', 'T' -> '', 'U' -> '', 'V' -> '', 'W' -> '', 'X' -> '', 'Y' -> '', 'Z' -> '', ':' -> '', '.' -> '', '/' -> '', '-' -> '', '+' -> '', '%' -> '', '!' -> '', '?' -> ''}, 'sl' -> {'0' -> '', '1' -> '', '2' -> '', '3' -> '', '4' -> '', '5' -> '', '6' -> '', '7' -> '', '8' -> '', '9' -> '', 'A' -> '', 'B' -> '', 'C' -> '', 'D' -> '', 'E' -> '', 'F' -> '', 'G' -> '', 'H' -> '', 'I' -> '', 'J' -> '', 'K' -> '', 'L' -> '', 'M' -> '', 'N' -> '', 'O' -> '', 'P' -> '', 'Q' -> '', 'R' -> '', 'S' -> '', 'T' -> '', 'U' -> '', 'V' -> '', 'W' -> '', 'X' -> '', 'Y' -> '', 'Z' -> '', ':' -> '', '.' -> '', '/' -> '', '-' -> '', '+' -> '', '%' -> '', '!' -> '', '?' -> ''}, 'big' -> {'0' -> '', '1' -> '', '2' -> '', '3' -> '', '4' -> '', '5' -> '', '6' -> '', '7' -> '', '8' -> '', '9' -> '', 'A' -> '', 'B' -> '', 'C' -> '', 'D' -> '', 'E' -> '', 'F' -> '', 'G' -> '', 'H' -> '', 'I' -> '', 'J' -> '', 'K' -> '', 'L' -> '', 'M' -> '', 'N' -> '', 'O' -> '', 'P' -> '', 'Q' -> '', 'R' -> '', 'S' -> '', 'T' -> '', 'U' -> '', 'V' -> '', 'W' -> '', 'X' -> '', 'Y' -> '', 'Z' -> '', ':' -> '', '.' -> '', '/' -> '', '-' -> '', '+' -> '', '%' -> '', '!' -> '', '?' -> ''}, 'seg' -> {'0' -> '', '1' -> '', '2' -> '', '3' -> '', '4' -> '', '5' -> '', '6' -> '', '7' -> '', '8' -> '', '9' -> '', ':' -> '', '-' -> '', ' ' -> ''}};
+global_hud_blank = {'sm' -> 4, 'sl' -> 4, 'big' -> 9, 'seg' -> 9};
+global_hud_gauge = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
+global_hud_gauge2 = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
+global_hud_gauge_adv = 65;
+global_hud_bar = ''; global_hud_bar_adv = 4;
+global_hud_tick = ['', '']; global_hud_tick_adv = 2;
+global_hud_pointer = ''; global_hud_pointer_adv = 6;
+global_hud_back = ['', '', '', '', '', '', '', ''];
+global_hud_adv = {' ' -> 4, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 4, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 3, '' -> 3, '' -> 6, '' -> 5, '' -> 6, '' -> 6, '' -> 2, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 4, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 6, '' -> 3, '' -> 3, '' -> 6, '' -> 5, '' -> 6, '' -> 6, '' -> 2, '' -> 6, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 7, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 11, '' -> 5, '' -> 5, '' -> 11, '' -> 9, '' -> 11, '' -> 11, '' -> 3, '' -> 11, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 9, '' -> 3, '' -> 9, '' -> 9, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 65, '' -> 4, '' -> 2, '' -> 2, '' -> 6, '' -> 2, '' -> 3, '' -> 5, '' -> 9, '' -> 17, '' -> 33, '' -> 65, '' -> 129, '' -> -1, '' -> -2, '' -> -4, '' -> -8, '' -> -16, '' -> -32, '' -> -64, '' -> -128, '' -> -256, '' -> -512, '' -> 1, '' -> 2, '' -> 4, '' -> 8, '' -> 16, '' -> 32, '' -> 64, '' -> 128, '' -> 256, '' -> 512};
+// </generated>
+
+global_hud_last = {};        // bossbar id -> the last title sent (the library's own global: one copy per importing app)
+
+_hud_a(a) -> if (type(a) == 'string', global_hud_anchor:a, a);
+_hud_align(a) -> if (a == 1 || a == 3, 'center', a == 2 || a == 4 || a == 7, 'right', 'left');
+_hud_scale(rgb, f) -> floor(floor(rgb / 65536) % 256 * f) * 65536 + floor(floor(rgb / 256) % 256 * f) * 256 + floor(rgb % 256 * f);
+
+// the colour of a HUD glyph: the wanted RGB with the marker in the low bits (R&3 = 1, G&3 = 2, B&3 = 0 or 2 for row 1)
+// and the anchor in bit 2 of R, G, B. At most 7/255 off the wanted colour.
+hud_col(rgb, anchor, row) -> (
+  a = _hud_a(anchor);
+  r = floor(rgb / 65536) % 256; g = floor(rgb / 256) % 256; b = rgb % 256;
+  r = bitwise_or(bitwise_and(r, 248), 1 + 4 * bitwise_and(a, 1));
+  g = bitwise_or(bitwise_and(g, 248), 2 + 4 * bitwise_and(floor(a / 2), 1));
+  b = bitwise_or(bitwise_and(b, 248), if (row == 1, 2, 0) + 4 * bitwise_and(floor(a / 4), 1));
+  str('#%02X%02X%02X', r, g, b)
+);
+
+// a horizontal move of px pixels (power-of-two space glyphs; any size)
+hud_sp(px) -> (
+  k = round(px); l = if (k < 0, global_hud_neg, global_hud_pos); k = abs(k); s = '';
+  while (k >= 1024, 64, s += l:9 + l:9; k += -1024);
+  for (range(10), if (bitwise_and(k, bitwise_shift_left(1, _)) != 0, s += l:_));
+  s
+);
+
+// [glyphs, advance] of a text in a style
+_hud_run(style, text) -> (
+  f = global_hud_font:style; s = ''; w = 0;
+  for (split('', upper(str(text))), g = f:_;
+    if (g == null, bl = global_hud_blank:style; s += hud_sp(bl); w += bl, s += g; w += global_hud_adv:g));
+  [s, w]
+);
+
+// a dark panel w px wide (power-of-two strips; each advances its width + 1, so a -1 px space joins them)
+_hud_back(w) -> (
+  s = ''; k = round(w);
+  for (range(7, -1, -1), i = _; p = bitwise_shift_left(1, i); while (k >= p, 8, s += global_hud_back:i + global_hud_neg:0; k += -p));
+  s
+);
+
+// wrap components that advance w into an element: start at 0 (left), -w/2 (center) or -w (right), end back at 0
+_hud_place(comps, w, align) -> (
+  st = if (align == 'right', -w, align == 'center', -floor(w / 2), 0);
+  out = [{'text' -> hud_sp(st)}];
+  for (comps, out += _);
+  out += {'text' -> hud_sp(-(st + w))};
+  out
+);
+
+// ───────────── elements ─────────────
+hud_text(text, style, rgb, anchor, row, align) -> (
+  a = _hud_a(anchor); r = _hud_run(style, text);
+  _hud_place([{'text' -> r:0, 'color' -> hud_col(rgb, a, row)}], r:1, if (align, align, _hud_align(a)))
+);
+
+hud_backdrop(w, rows, anchor, align) -> (
+  a = _hud_a(anchor);
+  c = [{'text' -> _hud_back(w) + hud_sp(-w), 'color' -> hud_col(0, a, 0)}];
+  c += if (rows > 1, {'text' -> _hud_back(w), 'color' -> hud_col(0, a, 1)}, {'text' -> hud_sp(w)});
+  _hud_place(c, w, if (align, align, _hud_align(a)))
+);
+
+// a bar of n segments (4 px each), the first frac * n lit
+hud_bar(frac, n, rgb, anchor, row, align) -> (
+  a = _hud_a(anchor); lit = max(0, min(n, round(n * frac))); on = ''; off = '';
+  for (range(n), if (_ < lit, on += global_hud_bar, off += global_hud_bar));
+  _hud_place([{'text' -> on, 'color' -> hud_col(rgb, a, row)}, {'text' -> off, 'color' -> hud_col(_hud_scale(rgb, 0.22), a, row)}],
+    n * global_hud_bar_adv, if (align, align, _hud_align(a)))
+);
+
+// "M:SS" (or "H:MM:SS") in 7-segment digits over dim 8s, on a dark panel (row 0)
+hud_timer(secs, rgb, anchor) -> (
+  a = _hud_a(anchor); s = max(0, floor(secs));
+  t = if (s >= 3600, str('%d:%02d:%02d', floor(s / 3600), floor(s / 60) % 60, s % 60), str('%d:%02d', floor(s / 60), s % 60));
+  r = _hud_run('seg', t); g = _hud_run('seg', replace(t, '[0-9]', '8'));
+  w = r:1; ew = w + 5;
+  _hud_place([{'text' -> _hud_back(ew) + hud_sp(3 - ew), 'color' -> hud_col(0, a, 0)},
+    {'text' -> g:0 + hud_sp(-w), 'color' -> hud_col(_hud_scale(rgb, 0.16), a, 0)},
+    {'text' -> r:0 + hud_sp(ew - 3 - w), 'color' -> hud_col(rgb, a, 0)}], ew, _hud_align(a))
+);
+
+// a speedometer: a 20-segment dial (green → red, two rows) with the number inside and the unit on its right
+hud_speedo(value, max_value, unit, anchor) -> (
+  a = _hud_a(anchor); n = length(global_hud_gauge); ga = global_hud_gauge_adv; gw = ga - 1;
+  v = max(0, value); lit = min(n, round(n * v / max(1, max_value)));
+  on0 = ''; on1 = ''; off0 = ''; off1 = '';
+  for (range(n), t = global_hud_gauge:_ + hud_sp(-ga); b = global_hud_gauge2:_ + hud_sp(-ga);
+    if (_ < lit, on0 += t; on1 += b, off0 += t; off1 += b));
+  num = _hud_run('big', str('%d', round(v))); dx = floor(gw / 2) - floor((num:1 - 1) / 2);
+  u = _hud_run('sl', unit); ew = gw + 3 + u:1;
+  _hud_place([{'text' -> _hud_back(ew) + hud_sp(-ew), 'color' -> hud_col(0, a, 0)},
+    {'text' -> _hud_back(ew) + hud_sp(-ew), 'color' -> hud_col(0, a, 1)},
+    {'text' -> on0, 'color' -> hud_col(16777215, a, 0)}, {'text' -> on1, 'color' -> hud_col(16777215, a, 1)},
+    {'text' -> off0, 'color' -> hud_col(3815994, a, 0)}, {'text' -> off1, 'color' -> hud_col(3815994, a, 1)},
+    {'text' -> hud_sp(dx) + num:0 + hud_sp(-(dx + num:1)), 'color' -> hud_col(16777215, a, 1)},
+    {'text' -> hud_sp(gw + 2) + u:0 + hud_sp(ew - gw - 2 - u:1), 'color' -> hud_col(11842740, a, 1)}], ew, _hud_align(a))
+);
+
+// a compass tape, ±90° around where the player looks (yaw: 0 = south, 90 = west), N in red, a gold pointer
+hud_compass(yaw, anchor) -> (
+  a = _hud_a(anchor); w = 121; cx = 60;
+  br = ((yaw + 180) % 360 + 360) % 360;                        // bearing: 0 = north, 90 = east
+  c = [{'text' -> _hud_back(w) + hud_sp(-w), 'color' -> hud_col(0, a, 0)}];
+  ticks = ''; cur = 0;
+  for (range(24), m = _ * 15; d = ((m - br) % 360 + 540) % 360 - 180;
+    if (abs(d) <= 90, x = cx + round(d * cx / 90);
+      if (x >= 0 && x <= w - 1, ticks += hud_sp(x - cur) + global_hud_tick:(if (m % 45 == 0, 1, 0)); cur = x + global_hud_tick_adv)));
+  c += {'text' -> ticks + hud_sp(-cur), 'color' -> hud_col(16777215, a, 0)};
+  names = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  for (range(8), i = _; m = i * 45; d = ((m - br) % 360 + 540) % 360 - 180;
+    if (abs(d) <= 90,
+      r = _hud_run('sm', names:i); x = cx + round(d * cx / 90); lx = x - floor((r:1 - 2) / 2);
+      if (lx >= 1 && lx + r:1 <= w, c += {'text' -> hud_sp(lx) + r:0 + hud_sp(-(lx + r:1)), 'color' -> hud_col(if (m == 0, 16733525, 16777215), a, 0)})));
+  c += {'text' -> hud_sp(cx - 2) + global_hud_pointer + hud_sp(-(cx - 2 + global_hud_pointer_adv)) + hud_sp(w), 'color' -> hud_col(16765514, a, 0)};
+  _hud_place(c, w, _hud_align(a))
+);
+
+// ───────────── titles and the carrier ─────────────
+_hud_flat(els) -> (out = []; for (els, e = _; for (e, out += _)); out);
+hud_title(els) -> encode_json({'text' -> '', 'font' -> global_hud_font_id, 'shadow_color' -> 0, 'extra' -> _hud_flat(els)});
+// the title's total advance (must be 0); null = a character the HUD font does not have
+hud_advance(els) -> (
+  w = 0;
+  for (_hud_flat(els), t = _:'text'; if (t != '' && t != null, for (split('', t), v = global_hud_adv:_; if (v == null, return(null)); w += v)));
+  w
+);
+hud_id(n) -> str('hud:%s.%s', lower(system_info('app_name')), lower(n));
+hud_show(n, els) -> (
+  if (!player(n), return(false));
+  w = hud_advance(els);
+  if (w != 0, logger('warn', str('[hud] title advance %s instead of 0: not sent', w)); return(false));
+  id = hud_id(n);
+  if (!has(global_hud_last, id),
+    run(str('bossbar add %s ""', id)); run(str('bossbar set %s color white', id)); run(str('bossbar set %s max 1', id));
+    run(str('bossbar set %s value 0', id)); run(str('bossbar set %s players %s', id, n)); global_hud_last:id = '');
+  t = hud_title(els);
+  if (global_hud_last:id != t, global_hud_last:id = t; run(str('bossbar set %s name %s', id, t)));
+  true
+);
+hud_hide(n) -> (id = hud_id(n); delete(global_hud_last, id); run(str('bossbar remove %s', id)));

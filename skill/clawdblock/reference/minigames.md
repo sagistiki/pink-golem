@@ -13,6 +13,11 @@ it stands on the pad, gets teleported, stands still, falls, is eliminated. Butto
 
 ## A round, step by step
 
+The library [`gamekit.scl`](gamekit.md) does steps 1-3 and 5-6 for you (join zone, countdown, save/restore, elimination,
+spectating, end screen, records, reload safety); [`scarpet-apps/ring.sc`](../../../scarpet-apps/ring.sc) is a whole game
+built on it. Show a round timer or status with the [HUD toolkit](hud.md).
+
+
 1. **Lobby** — a pad (gold block border), a canopy, the rules on a text display, a records board.
 2. **Countdown** — starts when the first player steps on the pad (10 s), more can join, it cancels if the pad empties.
    A boss bar for everyone near + big numbers for the last 3 seconds.
@@ -47,4 +52,4 @@ over TNT, glass wall, water pit, lobby with a join pad to the north, a viewing g
 = double jump (3 per round); faster after 60 s, crumbling after 90 s; last one standing wins, solo = time record.
 
 ## See also
-[game-logic.md](game-logic.md) · [scarpet.md](scarpet.md) · [rails.md](rails.md) · [entities.md](entities.md) · [displays.md](displays.md)
+[gamekit.md](gamekit.md) · [hud.md](hud.md) · [game-logic.md](game-logic.md) · [scarpet.md](scarpet.md) · [rails.md](rails.md) · [entities.md](entities.md) · [displays.md](displays.md)

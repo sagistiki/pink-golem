@@ -96,6 +96,10 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Your journal | `minecraft_notes read / add` | read at start, add after every build |
 | Scarpet | `minecraft_scarpet expression app:'cu'` | read the world; cu helpers |
 | Debug over time | `minecraft_monitor` | redstone, rides, NPCs |
+| Scarpet apps | `minecraft_app` lint / status / reload / patch / errors | lint before every load; `patch` changes a function live, state kept; never `/reload` (it resets every app) (`reference/testing-apps.md`) |
+| Test an app | `minecraft_playtest` players + steps + asserts | fake players act, code runs (also inside the app's tick), PASS/FAIL timeline; cleanup always runs |
+| Resource pack | `minecraft_pack` build / deploy / status | merge + validate the packs, deploy under a new url, push live with Key Bridge's `/packpush` |
+| Lag, disk, backups | `minecraft_watchdog` status / heavy / incidents / disk / backup | "why is it laggy?" → `heavy` names the culprit (`reference/watchdog.md`) |
 | Clutter | `minecraft_cleanup` | items, arrows, fireworks |
 | Big edits | `minecraft_worldedit` (only with WorldEdit) | verify afterwards |
 
@@ -217,11 +221,14 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Signs, holograms, flags, displays | `reference/displays.md` |
 | NPCs, villagers, animals, pets | `reference/entities.md` |
 | Buttons that do things, games, races, doors | `reference/game-logic.md`, `scarpet.md`, `redstone.md` |
-| Minigames with rounds (TNT Run, arenas) | `reference/minigames.md` |
+| Minigames with rounds (TNT Run, arenas) | `reference/minigames.md`, the round library `reference/gamekit.md` |
+| Changing, reloading or testing an app on a live server; shipping a resource pack | `reference/testing-apps.md` |
 | Trams, coasters, rail lines | `reference/rails.md` |
-| A HUD / minimap / anything drawn on the screen without mods | `reference/minimap.md` |
+| Drivable cars, boats, planes (physics, chase camera, getting in/out) | `reference/vehicles.md` |
+| A HUD / minimap / anything drawn on the screen without mods | `reference/hud.md` (speedometer, compass, timer, text), `reference/minimap.md` |
 | Is it right? | `reference/verification.md` |
 | Something failed | `reference/troubleshooting.md` |
+| The server lags, the disk is filling up, backups | `reference/watchdog.md` |
 | Which mods do what | `reference/mods.md` |
 | Talking, moving, working with people | `reference/behaving-naturally.md` |
 | Hard-won lessons with their stories | `reference/lessons.md` |

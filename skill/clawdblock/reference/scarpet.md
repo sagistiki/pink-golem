@@ -115,7 +115,11 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 |---|---|---|
 | `put(m:k, null, v)` on an accessor | replaces the entry with null | `l = m:k; l += v; m:k = l` |
 | `put(m:k, 'field', v)` to set a nested field | replaces the whole entry m:k with the STRING 'field' — the record is silently gone | `m:k:'field' = v` |
-| expecting your app's own events from its own actions | a player killed by `run('damage ...')` inside the app's `__on_tick` / `schedule` never reaches that app's `__on_player_dies` (Carpet drops it; from a command it is only deferred) | check `query(p, 'health') <= 0` right after your own damage, and sweep the state once a second (see game-logic.md) |
+| expecting events from your own tick code | Carpet turns event handling off during the scarpet tick: a player killed by `run('damage ...')` in `__on_tick` / `schedule` reaches NO app's `__on_player_dies` (inside a `/script` command the `run` is deferred, so that one does arrive) | check health and the `deaths` statistic right after your own damage, and sweep the state once a second (game-logic.md, gamekit.md) |
+| `run('clear ...')` (or `kill`, `team join` …) inside a function called by a command (`script load` → `__on_start`, `script in … run`) | deferred until the command ends: a `clear` then wipes the items you gave back right after it | `for (range(41), inventory_set(p, _, 0))`, `modify(e, 'remove')` — immediate |
+| a library (`.scl`) sharing the app's globals | its `global_*` are its own; it cannot call the app's functions by name; `read_file` uses the app's data folder | keep state in a map owned by the app, pass lambdas for callbacks (gamekit.md, "How a scarpet library behaves") |
+| an app importing a module with its own name | "Cannot import …, too deep or too loopy" | name the library differently from every app |
+| Carpet fake players in tests | dying resets health to 20 and disconnects; `/kill` only disconnects (no death); in spectator they fall out of the world unless flying; the name may come back in another case (`Kit_A` → `Kit_a`) | `statistic(p, 'custom', 'deaths')`, `/damage`, `modify(p, 'flying', true)`, always `p ~ 'name'` |
 | `slice()` of an empty list | throws "/ by zero" | `if (l, slice(l, 0, min(5, length(l))), [])` |
 | `list + list` | adds element by element (fails on uneven sizes) | `for (b, a += _)` |
 | `...` spread | does not exist | pass the list, index it |
@@ -137,5 +141,5 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 | Carpet `player X use` to test a lever | the fake player's look ray often misses small blocks | call the handler: `script in <app> run __on_player_interacts_with_block(player('X'), 'mainhand', block(x,y,z), 'south', null)` — then still ask a real player to try it |
 
 ## See also
-[game-logic.md](game-logic.md) · [verification.md](verification.md) · [redstone.md](redstone.md) ·
+[game-logic.md](game-logic.md) · [gamekit.md](gamekit.md) · [verification.md](verification.md) · [redstone.md](redstone.md) ·
 [troubleshooting.md](troubleshooting.md) · [coordinates.md](coordinates.md)

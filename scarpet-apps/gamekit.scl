@@ -1,0 +1,389 @@
+// gamekit.scl — the shared lifecycle of a minigame round, as a scarpet library (import it into your game app).
+// Join by standing in a zone (countdown; walking out of the zone leaves the queue) → save inventory + game mode +
+// position → play → idempotent elimination (event, the app's own damage, and a once-a-second sweep) → spectate while
+// others still play (Sneak cycles, the last Sneak goes home) → end screen with personal best + records → restore
+// everyone exactly once. Reload-safe (tags + save files) and late-join safe.
+//
+// How a library behaves (tested on Carpet 26.2): its global_* variables are its OWN (one copy per importing app, not
+// the app's); it can NOT call the app's functions by name; lambdas the app passes in run in the app's scope; maps
+// passed in are the same objects; schedule() finds the library's functions; read_file/write_file use the APP's data
+// folder. So ALL state lives in one map K that the app keeps in its own global (see the demo, scarpet-apps/ring.sc),
+// and the app's reactions are lambdas in cfg:'on'.
+//
+//   global_K = gk_new({'id' -> 'ring', 'zone' -> [x1,y1,z1,x2,y2,z2], 'home' -> [x,y,z,yaw], 'lobby' -> 10,
+//                      'view' -> [x,y,z], 'focus' -> [x,y,z], 'on' -> {'start' -> _(K, names) -> _place(names)}});
+//   __on_start() -> gk_boot(global_K);                 __on_tick() -> gk_tick(global_K);
+//   __on_player_connects(p) -> gk_on_connect(global_K, p);   __on_player_disconnects(p, r) -> gk_on_disconnect(global_K, p);
+//   __on_player_dies(p) -> gk_on_death(global_K, p);         __on_player_respawns(p) -> gk_on_respawn(global_K, p);
+//
+// Callbacks (all optional): 'start' _(K, names), 'out' _(K, name, why), 'end' _(K, result), 'home' _(K, names).
+// why = 'died' | 'quit' (offline) | 'left' (lost the game tag) | 'out' (your own rule) | anything you pass.
+// Tags: <id>_in (playing), <id>_spec (spectating), <id>_q (in the queue). Files (app data folder):
+// gk_<id>_<uuid>.json (a player's save, deleted by the one restore), gk_<id>_records.json.
+
+// ───────────── creating a kit ─────────────
+gk_new(cfg) -> (
+  zone = _gk_box(cfg:'zone'); area = _gk_box(cfg:'area');
+  t = _gk_texts();
+  if (cfg:'text', for (pairs(cfg:'text'), t:(_:0) = _:1));
+  {
+    'id' -> cfg:'id', 'zone' -> zone, 'lobby' -> _gk_or(cfg:'lobby', 10), 'min' -> _gk_or(cfg:'min', 1),
+    'max' -> _gk_or(cfg:'max', 16), 'home' -> cfg:'home', 'view' -> cfg:'view', 'focus' -> cfg:'focus',
+    'mode' -> _gk_or(cfg:'mode', 'adventure'), 'keep_inv' -> _gk_or(cfg:'keep_inv', false),
+    'allow_fake' -> _gk_or(cfg:'allow_fake', false), 'last_standing' -> _gk_or(cfg:'last_standing', true),
+    'better' -> _gk_or(cfg:'better', 'high'), 'fmt' -> _gk_or(cfg:'fmt', 'time'), 'end_ticks' -> _gk_or(cfg:'end_ticks', 100),
+    'area' -> area, 'admin_tag' -> _gk_or(cfg:'admin_tag', cfg:'id' + '_admin'),
+    'on' -> _gk_or(cfg:'on', {}), 'text' -> t,
+    'state' -> 'idle', 'queue' -> [], 't0' -> 0, 'shown' -> -1, 'solo' -> false, 'winner' -> null,
+    'pl' -> {}, 'order' -> [], 'spec' -> {}, 'sneak' -> {}, 'last' -> null, 'log' -> []
+  }
+);
+
+// English defaults; override any of them with cfg:'text'
+_gk_texts() -> {
+  'joined' -> '%s joined (%d)', 'left_queue' -> 'You left the queue', 'wait' -> 'Waiting for players (%d/%d)',
+  'count' -> 'Starting in %d s · %d player(s)', 'cancel' -> 'The zone is empty. Countdown cancelled.',
+  'busy' -> 'A round is running. Wait for the next one.', 'full' -> 'The round is full.', 'go' -> 'Go!',
+  'out' -> '%s is out (%s). %d left.', 'why_died' -> 'died', 'why_quit' -> 'left the server', 'why_left' -> 'left the game',
+  'why_out' -> 'out', 'spec' -> 'You are out', 'spec_sub' -> 'Spectating · Sneak = next player',
+  'watch' -> 'Watching %s · Sneak = next', 'spec_exit' -> 'Sneak again to go home', 'win' -> '%s wins!',
+  'you_win' -> 'You win!', 'over' -> 'Game over', 'result' -> 'Your result: %s', 'pb_new' -> 'New personal best: %s',
+  'pb' -> 'Personal best: %s', 'prefix' -> '[Game] '
+};
+
+_gk_or(v, d) -> if (v == null, d, v);
+_gk_box(z) -> if (z, [min(z:0, z:3), min(z:1, z:4), min(z:2, z:5), max(z:0, z:3), max(z:1, z:4), max(z:2, z:5)], null);
+_gk_ok(K, p) -> p && (K:'allow_fake' || (p ~ 'player_type') != 'fake');
+_gk_in(b, q) -> b && q:0 >= b:0 && q:0 < b:3 + 1 && q:1 >= b:1 && q:1 < b:4 + 1 && q:2 >= b:2 && q:2 < b:5 + 1;
+// immediate: run('clear') is DEFERRED inside a command-invoked function (script load -> __on_start, script in ..
+// run) and would wipe the items restored right after it
+_gk_clear(p) -> for (range(41), inventory_set(p, _, 0));
+_gk_file(K, p) -> 'gk_' + K:'id' + '_' + query(p, 'uuid');
+_gk_log(K, s) -> (l = K:'log'; l += str('%d %s', tick_time(), s); if (length(l) > 40, l = slice(l, length(l) - 40)); K:'log' = l);
+_gk_act(n, t, c) -> run(str('title %s actionbar %s', n, encode_json({'text' -> t, 'color' -> c})));
+_gk_title(n, t, sub, c) -> (
+  run(str('title %s times 5 60 15', n));
+  run(str('title %s subtitle %s', n, encode_json({'text' -> sub, 'color' -> 'white'})));
+  run(str('title %s title %s', n, encode_json({'text' -> t, 'color' -> c, 'bold' -> true})))
+);
+_gk_say(K, t, c) -> (
+  msg = encode_json([{'text' -> K:'text':'prefix', 'color' -> 'gold', 'bold' -> true}, {'text' -> t, 'color' -> c}]);
+  seen = {};
+  for (keys(K:'pl'), seen:_ = true);
+  for (K:'queue', seen:_ = true);
+  for (keys(seen), if (player(_), run(str('tellraw %s %s', _, msg))))
+);
+_gk_fire(K, ev, a, b) -> (f = K:'on':ev; if (f, call(f, K, a, b)));
+_gk_fire1(K, ev, a) -> (f = K:'on':ev; if (f, call(f, K, a)));
+gk_fmt(K, v) -> if (v == null, '-', K:'fmt' == 'time', str('%d:%02d', floor(v / 60), floor(v % 60)),
+  K:'fmt' == 'dec', str('%.1f', v * 1.0), str('%d', v));
+
+// ───────────── geometry ─────────────
+// yaw that looks from a to b: 0 = south (+z), 90 = west, 180 = north, -90 = east. Never hard-code 180.
+gk_yaw_to(a, b) -> atan2(-(b:0 - a:0), b:2 - a:2);
+gk_pitch_to(a, b) -> (dx = b:0 - a:0; dz = b:2 - a:2; -atan2(b:1 - a:1, sqrt(dx * dx + dz * dz)));
+
+// ───────────── save / restore ─────────────
+// fallback when there is no save: ops (permission level 2+) get creative, everyone else adventure
+gk_fallback_mode(p) -> if (query(p, 'permission_level') >= 2, 'creative', 'adventure');
+
+gk_save(K, p) -> (
+  f = _gk_file(K, p);
+  if (read_file(f, 'json') != null, modify(p, 'tag', K:'id' + '_in'); return(false));   // never overwrite an unrestored save
+  inv = {};
+  if (!K:'keep_inv', for (range(41), s = inventory_get(p, _); if (s, inv:str(_) = [s:0, s:1, if (s:2 == null, null, str(s:2))])));
+  q = pos(p);
+  write_file(f, 'json', {'name' -> p ~ 'name', 'mode' -> p ~ 'gamemode', 'dim' -> p ~ 'dimension',
+    'pos' -> [q:0, q:1, q:2, p ~ 'yaw', p ~ 'pitch'], 'inv' -> inv, 'keep' -> K:'keep_inv'});
+  modify(p, 'tag', K:'id' + '_in');
+  true
+);
+
+// Put a player back exactly once: only while a save file or a game tag exists. A second restore of someone already
+// home would clear what they have now. Returns what happened.
+gk_restore(K, p) -> (
+  if (!p, return('offline'));
+  n = p ~ 'name'; id = K:'id'; f = _gk_file(K, p);
+  d = read_file(f, 'json');
+  if (!d && !query(p, 'has_tag', id + '_in') && !query(p, 'has_tag', id + '_spec'), return('nothing'));
+  if (query(p, 'health') <= 0, return('dead'));                  // gk_on_respawn does it
+  if (query(p, 'mount'), run(str('ride %s dismount', n)));
+  if ((p ~ 'gamemode') == 'spectator', run(str('execute as %s run spectate', n)));
+  mode = if (d && d:'mode', d:'mode', gk_fallback_mode(p));
+  if (d && !d:'keep',
+    _gk_clear(p);
+    for (pairs(d:'inv'), sl = number(_:0); v = _:1;
+      if (v:2 != null, inventory_set(p, sl, v:1, v:0, v:2), inventory_set(p, sl, v:1, v:0))));
+  run(str('effect clear %s', n));
+  run(str('gamemode %s %s', mode, n));
+  modify(p, 'flying', false);
+  modify(p, 'health', 20); modify(p, 'hunger', 20); modify(p, 'saturation', 5);
+  modify(p, 'clear_tag', id + '_in'); modify(p, 'clear_tag', id + '_spec'); modify(p, 'clear_tag', id + '_q');
+  delete(K:'spec', n);
+  if (d, delete_file(f, 'json'));
+  to = if (K:'home', K:'home', d, d:'pos', null);
+  dim = if (K:'home' || !d, p ~ 'dimension', d:'dim');
+  if (to, schedule(2, '_gk_put', n, to, dim));                    // 2 ticks: after the game mode has switched
+  _gk_log(K, str('restore %s -> %s%s', n, mode, if (d, '', ' (no save: fallback)')));
+  'restored'
+);
+_gk_put(n, q, dim) -> (
+  p = player(n); if (!p, return());
+  modify(p, 'flying', false);
+  run(str('execute in %s run tp %s %.2f %.2f %.2f %.1f %.1f', dim, n, q:0, q:1, q:2, _gk_or(q:3, p ~ 'yaw'), _gk_or(q:4, 0)))
+);
+
+// ───────────── the round ─────────────
+gk_alive(K) -> filter(keys(K:'pl'), K:'pl':_:'alive');
+gk_playing(K, n) -> K:'state' == 'play' && K:'pl':n != null && K:'pl':n:'alive';
+gk_secs(K) -> (tick_time() - K:'t0') / 20;
+gk_score(K, n, v) -> if (K:'pl':n, K:'pl':n:'score' = v);           // optional: default score = seconds survived
+
+// call every tick from __on_tick
+gk_tick(K) -> (
+  t = tick_time();
+  if (t % 2 == 0 && K:'spec', _gk_spec_tick(K));
+  if (t % 10 == 0, if (K:'state' == 'idle' || K:'state' == 'count', _gk_lobby(K, t), _gk_busy(K, t)));
+  if (t % 20 == 0 && K:'state' == 'play', _gk_sweep(K));
+  if (t % 10 == 5 && K:'area', _gk_area(K))
+);
+
+_gk_lobby(K, t) -> (
+  if (!K:'zone', return());
+  inz = [];
+  for (player('all'), p = _; if (_gk_ok(K, p) && _gk_in(K:'zone', pos(p)) && (p ~ 'gamemode') != 'spectator', inz += p ~ 'name'));
+  q = [];
+  for (K:'queue', n = _;
+    if ((inz ~ n) != null, q += n,
+      p = player(n); if (p, modify(p, 'clear_tag', K:'id' + '_q'); _gk_act(n, K:'text':'left_queue', 'gray'));
+      _gk_log(K, 'queue-leave ' + n)));
+  for (inz, n = _;
+    if ((q ~ n) == null,
+      if (length(q) >= K:'max', _gk_act(n, K:'text':'full', 'red'); continue());
+      q += n; modify(player(n), 'tag', K:'id' + '_q'); _gk_log(K, 'queue-join ' + n);
+      run(str('playsound minecraft:block.note_block.pling master %s ~ ~ ~ 1 1.5', n));
+      K:'queue' = q; _gk_say(K, str(K:'text':'joined', n, length(q)), 'white')));
+  K:'queue' = q;
+  bar = 'gk:' + K:'id';
+  if (length(q) < K:'min',
+    if (K:'state' == 'count', K:'state' = 'idle'; run(str('bossbar set %s visible false', bar)); _gk_log(K, 'countdown cancelled'));
+    for (q, _gk_act(_, str(K:'text':'wait', length(q), K:'min'), 'yellow'));
+    if (!q, for (player('all'), if (query(_, 'has_tag', K:'id' + '_q'), modify(_, 'clear_tag', K:'id' + '_q'))));
+    return());
+  if (K:'state' == 'idle', K:'state' = 'count'; K:'t0' = t; K:'shown' = -1; _gk_log(K, 'countdown ' + join(',', q)));
+  left = K:'lobby' - floor((t - K:'t0') / 20);
+  if (left != K:'shown',
+    K:'shown' = left;
+    run(str('bossbar set %s name %s', bar, encode_json({'text' -> str(K:'text':'count', max(0, left), length(q)), 'color' -> 'yellow'})));
+    run(str('bossbar set %s max %d', bar, K:'lobby')); run(str('bossbar set %s value %d', bar, max(0, left)));
+    run(str('bossbar set %s players @a[tag=%s_q]', bar, K:'id')); run(str('bossbar set %s visible true', bar));
+    if (left <= 3 && left > 0, for (q, _gk_title(_, str('%d', left), '', 'yellow');
+      run(str('playsound minecraft:block.note_block.hat master %s ~ ~ ~ 1 1.2', _)))));
+  if (left <= 0, gk_start(K, q))
+);
+
+// someone stands in the zone while a round runs
+_gk_busy(K, t) -> if (t % 40 == 0 && K:'zone',
+  for (player('all'), if (_gk_ok(K, _) && _gk_in(K:'zone', pos(_)) && !query(_, 'has_tag', K:'id' + '_in'), _gk_act(_ ~ 'name', K:'text':'busy', 'gray'))));
+
+gk_start(K, names) -> (
+  run(str('bossbar set gk:%s visible false', K:'id'));
+  K:'state' = 'play'; K:'t0' = tick_time(); K:'pl' = {}; K:'order' = []; K:'spec' = {}; K:'sneak' = {};
+  K:'queue' = []; K:'winner' = null; K:'last' = null;
+  for (names, n = _; p = player(n);
+    if (!p, continue());
+    modify(p, 'clear_tag', K:'id' + '_q');
+    gk_save(K, p);
+    if (!K:'keep_inv', _gk_clear(p));
+    run(str('effect clear %s', n)); run(str('gamemode %s %s', K:'mode', n));
+    modify(p, 'health', 20); modify(p, 'hunger', 20); modify(p, 'saturation', 5);
+    K:'pl':n = {'alive' -> true, 'score' -> null, 'why' -> null, 't_out' -> null});
+  K:'solo' = length(K:'pl') == 1;
+  _gk_log(K, str('start %s%s', join(',', keys(K:'pl')), if (K:'solo', ' (solo)', '')));
+  for (keys(K:'pl'), _gk_title(_, K:'text':'go', '', 'green'));
+  _gk_fire1(K, 'start', keys(K:'pl'))
+);
+
+// Idempotent: the death event, gk_damage, the sweep and your own rules may all report one player.
+gk_eliminate(K, n, why) -> (
+  s = K:'pl':n;
+  if (K:'state' != 'play' || !s || !s:'alive', return(false));
+  s:'alive' = false; s:'why' = why; s:'t_out' = gk_secs(K);
+  o = K:'order'; o += n; K:'order' = o;
+  left = length(gk_alive(K));
+  _gk_log(K, str('out %s (%s) left=%d', n, why, left));
+  w = K:'text':('why_' + why);
+  _gk_say(K, str(K:'text':'out', n, if (w, w, why), left), 'red');
+  _gk_fire(K, 'out', n, why);
+  if (K:'solo' || left == 0 || (K:'last_standing' && left <= 1), gk_finish(K, if (!K:'solo' && left == 1, gk_alive(K):0, null)); return(true));
+  p = player(n);
+  if (p && query(p, 'health') > 0 && why != 'quit' && why != 'left', gk_spectate(K, n),
+      p && why == 'left', gk_restore(K, p));
+  true
+);
+
+// all of the app's damage goes through here: Carpet does not deliver an app's own events while it runs, so a death
+// caused inside the app never reaches its __on_player_dies. Health alone is not enough either (a Carpet fake
+// player is reset to 20 health as it dies), so the deaths statistic is compared too.
+gk_damage(K, n, amount, type) -> (
+  p = player(n); if (!p, return(false));
+  d0 = _gk_or(statistic(p, 'custom', 'deaths'), 0);
+  run(str('damage %s %s %s', n, amount, _gk_or(type, 'minecraft:generic')));
+  p = player(n);
+  died = !p || query(p, 'health') <= 0 || _gk_or(statistic(p, 'custom', 'deaths'), 0) > d0;
+  if (died && gk_playing(K, n), _gk_log(K, 'damage-kill ' + n); gk_eliminate(K, n, 'died'));
+  died
+);
+
+// once a second: anyone offline, dead or without the game tag is out
+_gk_sweep(K) -> for (gk_alive(K), n = _; p = player(n);
+  if (!p, _gk_log(K, 'sweep ' + n); gk_eliminate(K, n, 'quit'),
+      query(p, 'health') <= 0, _gk_log(K, 'sweep ' + n); gk_eliminate(K, n, 'died'),
+      !query(p, 'has_tag', K:'id' + '_in'), _gk_log(K, 'sweep ' + n); gk_eliminate(K, n, 'left')));
+
+// ───────────── spectating (only while others still play) ─────────────
+gk_spectate(K, n) -> (
+  p = player(n);
+  if (!p || K:'state' != 'play' || !gk_alive(K), return(false));
+  modify(p, 'tag', K:'id' + '_spec');
+  run(str('gamemode spectator %s', n));
+  modify(p, 'flying', true);                                  // a Carpet fake player would fall out of the world
+  v = K:'view';
+  if (v, f = K:'focus'; run(str('tp %s %.2f %.2f %.2f %.1f %.1f', n, v:0, v:1, v:2,
+    if (f, gk_yaw_to(v, f), 0), if (f, gk_pitch_to(v, f), 20))));
+  K:'spec':n = -1; K:'sneak':n = false;
+  _gk_title(n, K:'text':'spec', K:'text':'spec_sub', 'red');
+  _gk_log(K, 'spectate ' + n);
+  true
+);
+// Sneak switches on RELEASE: while Shift is held, vanilla keeps resetting a spectator's camera to itself.
+_gk_spec_tick(K) -> for (keys(K:'spec'), n = _; p = player(n);
+  if (!p, delete(K:'spec', n); continue());
+  s = p ~ 'sneaking';
+  if (!s && K:'sneak':n, gk_spec_next(K, n));
+  K:'sneak':n = s);
+// cycle: every player still in → the free seat → home
+gk_spec_next(K, n) -> (
+  p = player(n); if (!p, return(null));
+  al = gk_alive(K); i = K:'spec':n + 1;
+  if (i < length(al),
+    K:'spec':n = i; run(str('spectate %s %s', al:i, n)); _gk_act(n, str(K:'text':'watch', al:i), 'aqua');
+    _gk_log(K, str('watch %s -> %s', n, al:i)); return(al:i));
+  if (i == length(al),
+    K:'spec':n = i; run(str('execute as %s run spectate', n));
+    v = K:'view'; if (v, run(str('tp %s %.2f %.2f %.2f', n, v:0, v:1, v:2)));
+    _gk_act(n, K:'text':'spec_exit', 'yellow'); return('seat'));
+  _gk_log(K, 'spectator-exit ' + n);
+  gk_restore(K, p); 'home'
+);
+
+// ───────────── the end ─────────────
+gk_finish(K, winner) -> (
+  if (K:'state' != 'play', return(null));
+  K:'state' = 'end';
+  run(str('bossbar set gk:%s visible false', K:'id'));
+  now = gk_secs(K);
+  if (winner == null && K:'winner', winner = K:'winner');
+  recs = read_file('gk_' + K:'id' + '_records', 'json');
+  if (!recs, recs = {'best' -> {}, 'wins' -> {}, 'rounds' -> 0});
+  res = {'winner' -> winner, 'solo' -> K:'solo', 'secs' -> now, 'scores' -> {}, 'pb' -> {}, 'order' -> K:'order'};
+  for (keys(K:'pl'), n = _; s = K:'pl':n;
+    if (s:'alive', s:'t_out' = now);
+    v = if (s:'score' != null, s:'score', floor(s:'t_out'));
+    b = recs:'best':n;
+    pb = b == null || if (K:'better' == 'low', v < b, v > b);
+    if (pb, recs:'best':n = v);
+    res:'scores':n = v; res:'pb':n = pb;
+    if (player(n),
+      t = if (n == winner, K:'text':'you_win', winner != null, str(K:'text':'win', winner), K:'text':'over');
+      sub = str('%s  ·  %s', str(K:'text':'result', gk_fmt(K, v)), if (pb, str(K:'text':'pb_new', gk_fmt(K, v)), str(K:'text':'pb', gk_fmt(K, b))));
+      _gk_title(n, t, sub, if (n == winner, 'gold', 'red'));
+      run(str('playsound %s master %s ~ ~ ~ 1 1', if (n == winner || pb, 'minecraft:ui.toast.challenge_complete', 'minecraft:block.beacon.deactivate'), n))));
+  if (winner != null, recs:'wins':winner = _gk_or(recs:'wins':winner, 0) + 1; _gk_say(K, str(K:'text':'win', winner), 'gold'));
+  recs:'rounds' = recs:'rounds' + 1;
+  write_file('gk_' + K:'id' + '_records', 'json', recs);
+  K:'last' = res;
+  _gk_log(K, str('finish winner=%s scores=%s', winner, res:'scores'));
+  _gk_fire1(K, 'end', res);
+  // solo: straight home (no spectating); a round with others: a moment for the winner first
+  schedule(if (K:'solo', 10, K:'end_ticks'), '_gk_home', K)
+);
+
+_gk_home(K) -> (
+  names = keys(K:'pl'); for (keys(K:'spec'), if ((names ~ _) == null, names += _));
+  for (names, p = player(_); if (p, gk_restore(K, p)));          // the dead: on respawn · offline: on reconnect
+  K:'state' = 'idle'; K:'pl' = {}; K:'spec' = {}; K:'sneak' = {};
+  _gk_log(K, 'home ' + join(',', names));
+  _gk_fire1(K, 'home', names)
+);
+
+gk_stop(K) -> (if (K:'state' == 'play', gk_finish(K, null), K:'state' == 'count', K:'state' = 'idle'); K:'state');
+
+// ───────────── records ─────────────
+gk_records(K) -> _gk_or(read_file('gk_' + K:'id' + '_records', 'json'), {'best' -> {}, 'wins' -> {}, 'rounds' -> 0});
+gk_top(K, what, k) -> (
+  m = gk_records(K):what; if (!m, return([]));
+  l = sort_key(pairs(m), if (what == 'best' && K:'better' == 'low', _:1, -(_:1)));
+  if (length(l) > k, slice(l, 0, k), l)
+);
+
+// ───────────── followers ─────────────
+// mobs / displays teleported onto a player every tick shove them around unless they are on a no-collision team
+gk_nocollide(K, e) -> (
+  t = K:'id' + '_nc';
+  run(str('team add %s', t)); run(str('team modify %s collisionRule never', t));
+  run(str('team join %s %s', t, query(e, 'uuid')))
+);
+
+// ───────────── an area that switches game mode (parkour, race track) ─────────────
+// cfg 'area' = [x1,y1,z1,x2,y2,z2]: inside → cfg 'mode' (adventure), outside → the saved mode back.
+_gk_area(K) -> (
+  b = K:'area'; tag = K:'id' + '_area';
+  for (player('all'), p = _; n = p ~ 'name';
+    if (!_gk_ok(K, p) || query(p, 'has_tag', K:'admin_tag') || (p ~ 'gamemode') == 'spectator' || query(p, 'has_tag', K:'id' + '_in'), continue());
+    inside = _gk_in(b, pos(p)); m = query(p, 'has_tag', tag);
+    if (inside && !m && (p ~ 'gamemode') != K:'mode',
+      write_file('gk_' + K:'id' + '_area_' + query(p, 'uuid'), 'json', {'mode' -> p ~ 'gamemode'});
+      modify(p, 'tag', tag); run(str('gamemode %s %s', K:'mode', n)),
+    !inside && m,
+      f = 'gk_' + K:'id' + '_area_' + query(p, 'uuid'); d = read_file(f, 'json');
+      run(str('gamemode %s %s', if (d && d:'mode', d:'mode', gk_fallback_mode(p)), n));
+      modify(p, 'clear_tag', tag); delete_file(f, 'json')))
+);
+
+// ───────────── reload / join / leave ─────────────
+// __on_start: whoever still carries a tag or a save file from before the reload goes home with their things
+gk_boot(K) -> (
+  id = K:'id';
+  run(str('bossbar add gk:%s ""', id)); run(str('bossbar set gk:%s color yellow', id)); run(str('bossbar set gk:%s visible false', id));
+  run(str('team add %s_nc', id)); run(str('team modify %s_nc collisionRule never', id));
+  back = [];
+  for (player('all'), p = _; modify(p, 'clear_tag', id + '_q');
+    if (query(p, 'has_tag', id + '_in') || query(p, 'has_tag', id + '_spec') || read_file(_gk_file(K, p), 'json') != null,
+      r = gk_restore(K, p); back += str('%s:%s', p ~ 'name', r)));
+  _gk_log(K, 'boot ' + join(',', back));
+  back
+);
+gk_on_connect(K, p) -> schedule(20, '_gk_late', K, p ~ 'name');
+_gk_late(K, n) -> (
+  p = player(n); if (!p || gk_playing(K, n), return());
+  if (query(p, 'has_tag', K:'id' + '_in') || query(p, 'has_tag', K:'id' + '_spec') || read_file(_gk_file(K, p), 'json') != null,
+    _gk_log(K, 'late-join ' + n); gk_restore(K, p))
+);
+gk_on_disconnect(K, p) -> (
+  n = p ~ 'name';
+  delete(K:'spec', n);
+  if (gk_playing(K, n), _gk_log(K, 'disconnect ' + n); gk_eliminate(K, n, 'quit'))
+);
+gk_on_death(K, p) -> (n = p ~ 'name'; if (gk_playing(K, n), _gk_log(K, 'event-death ' + n); gk_eliminate(K, n, 'died')));
+gk_on_respawn(K, p) -> (
+  n = p ~ 'name';
+  if (!query(p, 'has_tag', K:'id' + '_in') && !query(p, 'has_tag', K:'id' + '_spec'), return());
+  if (K:'state' == 'play' && K:'pl':n && !K:'pl':n:'alive' && !K:'solo' && gk_alive(K), schedule(2, '_gk_spec_later', K, n),
+    schedule(2, '_gk_restore_later', K, n))
+);
+_gk_spec_later(K, n) -> if (player(n), gk_spectate(K, n));
+_gk_restore_later(K, n) -> if (player(n), gk_restore(K, player(n)));
+
+gk_status(K) -> {'state' -> K:'state', 'queue' -> K:'queue', 'alive' -> gk_alive(K), 'order' -> K:'order',
+  'spec' -> K:'spec', 'secs' -> if (K:'state' == 'play', floor(gk_secs(K)), 0), 'last' -> K:'last'};

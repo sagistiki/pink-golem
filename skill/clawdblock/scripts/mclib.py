@@ -1,6 +1,7 @@
 """mclib — build generators for Minecraft, no dependencies.
 
 Describe a build as voxels, let mclib compress it into /fill commands, save job files, run them with the MCP.
+City pieces (roads, junctions, footpaths, rail lines) live in city.py next to this file.
 
     import sys, os; sys.path.insert(0, os.path.join(os.environ.get("CLAWDBLOCK_ROOT", "."), "skill/clawdblock/scripts"))
     from mclib import *
@@ -23,6 +24,7 @@ import json
 import math
 import os
 import random
+import sys
 
 GROUND = -61          # ground level of the default superflat world (grass); players stand at -60
 DIRS = {"north": (0, -1), "south": (0, 1), "east": (1, 0), "west": (-1, 0)}
@@ -146,6 +148,86 @@ class Build:
                     self.set((x, y, z), st if steep else under)
                 self.set((x, ty, z), st if steep else top)
         return tops
+
+    # ── more shapes ─────────────────────────────────────────────────
+    def hcyl(self, a, axis, r, length, blk, hollow=False, thick=1, upper=False):
+        """Horizontal cylinder (a barrel lying down, a tunnel, a pipe) along axis 'x' or 'z', starting at a = the axis
+        centre of the first slice, `length` slices long. hollow → a shell `thick` blocks thick; upper → only the top half
+        (y ≥ axis y: a barrel roof on walls). blk may be a function (x, y, z, angle_deg) → block, e.g. staves in bands.
+        Returns the (u, v) offsets of the cross-section (u across, v up) so ends/rings can reuse them."""
+        R = int(math.ceil(r)) + 1
+        cells = []
+        for u in range(-R, R + 1):
+            for v in range(0 if upper else -R, R + 1):
+                d = math.hypot(u, v)
+                if d <= r + .5 and (not hollow or d > r + .5 - thick):
+                    cells.append((u, v))
+        for t in range(length):
+            for u, v in cells:
+                p = (a[0] + t, a[1] + v, a[2] + u) if axis == "x" else (a[0] + u, a[1] + v, a[2] + t)
+                self.set(p, blk(*p, math.degrees(math.atan2(v, u))) if callable(blk) else blk)
+        return cells
+
+    def arch(self, a, b, rise, blk, thick=1, depth=1):
+        """Elliptic arch standing on two feet a and b (same y, in a line along x or z): half-width = half the distance,
+        height `rise` above the feet, band `thick` blocks, extruded `depth` blocks sideways (+x or +z)."""
+        axis = 0 if a[2] == b[2] else 2
+        lo, hi = min(a[axis], b[axis]), max(a[axis], b[axis])
+        c, w = (lo + hi) / 2, (hi - lo) / 2 + .5
+        for s in range(lo, hi + 1):
+            for v in range(0, rise + 1):
+                u = s - c
+                e_out = (u / w) ** 2 + (v / (rise + .5)) ** 2
+                e_in = (u / max(.5, w - thick)) ** 2 + (v / max(.5, rise + .5 - thick)) ** 2
+                if e_out <= 1 and e_in > 1:
+                    for d in range(depth):
+                        p = [a[0], a[1] + v, a[2]]
+                        p[axis] = s
+                        p[2 - axis] += d
+                        self.set(tuple(p), blk)
+
+    def lattice(self, cells, frame, glass, step=3, diagonal=True):
+        """Window with a grid over a flat set of cells (all same x, same z or same y): diagonal → a diamond lattice
+        (leaded-glass look), else a square grid every `step`."""
+        cells = list(cells)
+        xs, ys, zs = {c[0] for c in cells}, {c[1] for c in cells}, {c[2] for c in cells}
+        for (x, y, z) in cells:
+            u, v = (z, y) if len(xs) == 1 else (x, y) if len(zs) == 1 else (x, z)
+            on = ((u + v) % step == 0 or (u - v) % step == 0) if diagonal else (u % step == 0 or v % step == 0)
+            self.set((x, y, z), frame if on else glass)
+
+    def bunting(self, a, b, colors=("red_concrete", "yellow_concrete", "blue_concrete", "white_concrete"), tag="bunting", spacing=1.6, size=(0.45, 0.7)):
+        """A string of little flags between a and b (same y, along x or z): a chain line + thin block_display flags
+        hanging under it. Re-running replaces the flags (kill by tag first)."""
+        axis = 0 if a[2] == b[2] else 2
+        lo, hi = min(a[axis], b[axis]), max(a[axis], b[axis])
+        for s in range(lo, hi + 1):
+            p = list(a); p[axis] = s
+            self.set(tuple(p), f"iron_chain[axis={'x' if axis == 0 else 'z'}]")
+        self.before(f"kill @e[type=block_display,tag={tag}]")
+        n = int((hi - lo) / spacing)
+        for i in range(n):
+            s = lo + 0.4 + i * spacing
+            c = colors[i % len(colors)]
+            w, h = size
+            sx, sz = (w, 0.04) if axis == 0 else (0.04, w)
+            p = [a[0] + 0.5, a[1] + 0.35 - h, a[2] + 0.5]; p[axis] = s
+            self.cmd(f'summon block_display {p[0]:.2f} {p[1]:.2f} {p[2]:.2f} {{Tags:["{tag}"],block_state:{{Name:"minecraft:{c}"}},'
+                     f'transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[{sx}f,{h}f,{sz}f]}}}}')
+
+    def sign(self, p, text_json, facing="south", tag="sign", scale=1.0, bg=0, line_width=200):
+        """Flat text on a wall (text_display, billboard fixed), readable from the `facing` side. p = the point just in
+        front of the wall face. text_json: a JSON text component (see text_json / rainbow)."""
+        yaw = {"south": 0, "west": 90, "north": 180, "east": -90}[facing]
+        self.cmd(f'summon text_display {p[0]} {p[1]} {p[2]} {{billboard:"fixed",Rotation:[{yaw}f,0f],Tags:["{tag}"],background:{bg},line_width:{line_width},'
+                 f'brightness:{{sky:15,block:15}},transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],'
+                 f'scale:[{scale}f,{scale}f,{scale}f]}},text:{text_json}}}')
+
+    def lamp_post(self, p, height=2, post="dark_oak_fence", top="lantern"):
+        """A street lamp: `height` fence posts on p (the block above the ground) + a lantern on top."""
+        for i in range(height):
+            self.set((p[0], p[1] + i, p[2]), post)
+        self.set((p[0], p[1] + height, p[2]), top)
 
     # ── raw commands ────────────────────────────────────────────────
     def cmd(self, c):
@@ -365,7 +447,13 @@ def parse_args(defaults=None):
     ap.add_argument("--name", default=(defaults or {}).get("name"))
     ap.add_argument("--style", default=(defaults or {}).get("style", "default"))
     ap.add_argument("--seed", type=int, default=1)
-    a = ap.parse_args()
+    # argparse reads "--at -116,-61,280" as two options (the value starts with "-") — join them first
+    argv, i = list(sys.argv[1:]), 0
+    while i < len(argv) - 1:
+        if argv[i] == "--at" and argv[i + 1].startswith("-"):
+            argv[i:i + 2] = ["--at=" + argv[i + 1]]
+        i += 1
+    a = ap.parse_args(argv)
     a.x, a.y, a.z = (int(float(v)) for v in a.at.split(","))
     return a
 

@@ -127,6 +127,12 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 | `sin(a)`, `cos(a)` | take DEGREES | no radians conversion |
 | `read_file` in `minecraft_scarpet` without `app` | returns nothing (no app, no data folder) | `app:"cu"` or `script in <app> run` |
 | `execute as @e run tp @s ~ ~ ~` without `at @s` | `~` resolves at the world origin | `execute as @e[...] at @s run ...` |
+| `player()` (no arguments) in a command run from the console / RCON | returns the NEAREST player, not null — a console `/money` once treated a random player as the sender | `system_info('source_entity')` (null for the console) |
+| `a ~ b != null` | `~` and `!=` bind unexpectedly | `(a ~ b) != null` |
+| a variable starting with `_` (`[x, _y, z] = pos(p)`) | "0 is not a variable" — `_`, `_i`, `_a` … are reserved | name it `yy`, or `q = pos(p); x = q:0` |
+| `sort_key` / `slice` on an EMPTY map or list | throws ("math is wrong, null") | `if (!m, return([]))` first |
+| emoji outside the Basic Multilingual Plane (💰 🏆 🎰) in texts | render as boxes | ★ ✦ ♠ ♥ $ ⏱ ▶ |
+| Carpet `player X use` to test a lever | the fake player's look ray often misses small blocks | call the handler: `script in <app> run __on_player_interacts_with_block(player('X'), 'mainhand', block(x,y,z), 'south', null)` — then still ask a real player to try it |
 
 ## See also
 [game-logic.md](game-logic.md) · [verification.md](verification.md) · [redstone.md](redstone.md) ·

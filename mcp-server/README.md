@@ -13,7 +13,8 @@ lib/crew.js       helper builders and speech bubbles
 lib/bot.js        walking, A* pathfinding through doors, follow, reachability
 lib/jobs.js       background jobs, after-build checks, Python generators
 lib/sight.js      screenshots, previews, BlueMap photos, access check, free-space search
-tools/*.js        tool groups: connection, chat, build, look, body, memory (schema + handler per tool)
+lib/context.js    chat context (where a line was written), big-box reads, preflight (server-side syntax check)
+tools/*.js        tool groups: connection, chat, build, look, survey, rails, body, memory (schema + handler per tool)
 render.js pathfind.js sim.js analyze.js worldmap.js   pure helpers (renderer, A*, command simulator, access analysis, map index)
 test/load.mjs     loads every tool against a fake server — `npm run check`
 test/run.mjs      drives the real MCP from a script: node test/run.mjs '[["minecraft_status",{}]]'

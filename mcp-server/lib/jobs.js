@@ -132,6 +132,10 @@ export function install(K, ctx) {
     const files = fs.readdirSync(K.P.JOBS).filter((f) => f.endsWith(".json"))
       .map((f) => ({ f, t: fs.statSync(path.join(K.P.JOBS, f)).mtimeMs })).filter((q) => q.t >= t0)
       .sort((a, b) => a.f.localeCompare(b.f, undefined, { numeric: true })).map((q) => "jobs/" + q.f);
+    // build in the order the generator PRINTED its files (site before interior …), not alphabetically
+    const said = r.stdout || "";
+    const seenAt = (f) => { const i = said.indexOf(f.replace(/^jobs\//, "")); return i < 0 ? Infinity : i; };
+    files.sort((a, b) => seenAt(a) - seenAt(b));
     return { ok: !r.err, exit: r.err ? r.err.code ?? r.err.message : 0, stdout: r.stdout.slice(-1500), stderr: r.stderr.slice(-1500), files };
   };
 }

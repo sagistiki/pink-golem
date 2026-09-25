@@ -51,9 +51,9 @@ Follow these steps in order. Each step names the exact tool.
 | 1 | **Acknowledge** at once, in game | `minecraft_chat message:"On it — give me a moment"` (short, the player's language) |
 | 2 | **Understand** what, for whom, how big, which style | If the request is vague, offer 3-10 numbered options (what + where + size) and let them pick. See `reference/behaving-naturally.md` |
 | 3 | **Find the site** | Near the player: `minecraft_get_players` (use `standingOn`). "Over there": `minecraft_map action:pov player:<name>`. Free land: `minecraft_map action:find_space size:[w,d] near:<build>` |
-| 4 | **Check the site** | `minecraft_vision mode:check from to` (+2 margin). Normal terrain: `script in cu run surface(x1,z1,x2,z2)` → level it with `level(...)` if min ≠ max |
+| 4 | **Check the site** | `minecraft_survey pos:[…] radius:N` = everything in one call (builds, zones, ground, rails, containers, nearest road/rail); `minecraft_vision mode:check from to` (+2 margin). Normal terrain: `script in cu run surface(x1,z1,x2,z2)` → level it with `level(...)` if min ≠ max |
 | 5 | **Choose the method** | ≤ 30 blocks: `minecraft_build`. A standard build: a blueprint (Part 4). Anything custom: write a generator (Part 4, `reference/large-builds.md`) |
-| 6 | **Preview big builds** | `minecraft_generate script:<file> args:[…]` (build:false) → `minecraft_preview commands_files:[…] mode:all` → look, fix, repeat |
+| 6 | **Preview big builds** | `minecraft_generate script:<file> args:[…] dry_run:true` (the server checks every command's syntax, zones, overwrites, players) → `minecraft_preview commands_files:[…] mode:all` → look, fix, repeat |
 | 7 | **Show the site + plan** | `script in cu run show(...)`, one chat line: "Building a cottage here: walls, roof, furniture, garden — 3 phases" |
 | 8 | **Walk there** | `minecraft_bot action:walk_to pos:[…]` (tp first if > 60 blocks away) |
 | 9 | **Build** | `minecraft_generate … build:true helpers:3 entrance:[…]` then `minecraft_jobs action:wait` until every job is done; a chat line per phase |
@@ -70,17 +70,21 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Need | Tool | Notes |
 |---|---|---|
 | Health, world type, mods | `minecraft_status` | call first |
-| Chat / listen | `minecraft_chat`, `minecraft_wait_for_chat mention_only:true`, `minecraft_get_chat` | loop wait → reply to hold a conversation |
+| Chat / listen | `minecraft_chat`, `minecraft_wait_for_chat mention_only:true`, `minecraft_get_chat` | loop wait → reply to hold a conversation; every line shows where the player stood / looked when writing it |
+| Wait / ask | `minecraft_wait reply_from ask` / `until` (scarpet) / `job` / `seconds` | ask a player and get the answer with their position; instead of sleep + polling |
 | Players | `minecraft_get_players` | position, `standingOn`, facing, game mode |
 | Your body | `minecraft_bot` spawn / walk_to (A*, doors, stairs) / tp / look_at / follow / swing | stays in adventure mode — never creative |
 | Helper builders | `minecraft_helpers`, or `helpers:N` on jobs | up to 4, they stay between jobs |
-| Any command | `minecraft_run_command command / commands / commands_file(s)` | `background:true` for > 300 commands |
+| Any command | `minecraft_run_command command / commands / commands_file(s)` | `background:true` for > 300 commands; `dry_run:true` = preflight (server-side syntax check, zones, overwrites) — background jobs are syntax-checked automatically |
 | Quick shapes | `minecraft_build operations:[…]` | fill / setblock / clone, refuses to overwrite |
 | ASCII blueprint | `minecraft_build_layers` | rows = +z, columns = +x, layer 0 = floor |
 | Generators | `minecraft_generate script args build helpers entrance` (+ `code` to save new Python first) | Python in the repo, writes `jobs/*.json` |
 | Background jobs | `minecraft_jobs action:wait / status / list / cancel` | boss bar in game |
 | Undo | `minecraft_undo steps / match / list` | every build is snapshotted first |
 | See as text | `minecraft_vision` target looking_at / near_player / pos / box; mode check | "look at my house" |
+| Know an area | `minecraft_survey` pos/player + radius, from/to, build | builds, zones, ground, blocks, rails, containers, entities, nearest road + rail |
+| Slice / top map | `minecraft_section axis:x\|y\|z at:N` or `top:true heights:true` | cheap text check of arches, floors, stairs, curved roofs |
+| Rail lines | `minecraft_rails action:path / trace / ride` | shapes + boosters written for you; trace finds breaks; ride tests a real cart (`reference/rails.md`) |
 | See as picture | `minecraft_screenshot mode iso/top/fpv/pov/real`, `cut_y` | flat colours; stairs drawn as cubes |
 | Plan as picture | `minecraft_preview commands_files mode:all entrance` | nothing is placed |
 | Exact blocks | `minecraft_inspect pos` or `from/to mode:list/counts` | door cells, stair facings |
@@ -111,6 +115,7 @@ The `cu` helper app (always loaded): `occupied`, `count`, `surface`, `level`, `s
 | `tower.py --style stone\|sandstone\|brick` | round lookout tower, spiral stairs, walkable roof | centre | r4, 30 high |
 | `park.py` | walls + entrances, paths, fountain, pond, trees, benches, lamps | front-left corner | 41×31 |
 | `drop_tower.py --style pride\|ocean\|sunset --height 60` | launch pad up, free fall down a colour spiral into a pool, lit windows | centre | r8 |
+| `tnt_run.py` | TNT Run arena: 4 vanishing floors over TNT, glass wall, lobby with JOIN pad, viewing gallery; loads `tntrun.sc` (lobby always north) | arena centre | r17 + lobby 36 north, 40 high |
 | `catalog.py` | one of every component on labelled tiles — a visual reference | first tile corner | 19 tiles |
 
 Run: `minecraft_generate script:"skill/clawdblock/blueprints/cottage.py" args:["--at","100,-61,40","--facing","south"] build:true helpers:3 entrance:[<printed entrance>]`.
@@ -211,6 +216,8 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Signs, holograms, flags, displays | `reference/displays.md` |
 | NPCs, villagers, animals, pets | `reference/entities.md` |
 | Buttons that do things, games, races, doors | `reference/game-logic.md`, `scarpet.md`, `redstone.md` |
+| Minigames with rounds (TNT Run, arenas) | `reference/minigames.md` |
+| Trams, coasters, rail lines | `reference/rails.md` |
 | Is it right? | `reference/verification.md` |
 | Something failed | `reference/troubleshooting.md` |
 | Which mods do what | `reference/mods.md` |

@@ -79,4 +79,23 @@ Read this once; come back when something feels familiar. New lessons you learn g
 29. **Players love the helper builders and the site outline before building.** They make a command-line build feel
     like watching a crew at work.
 
+## From running a busy server
+
+30. **A "keep one cart on the track" app piled up 190 minecarts.** It summoned a new cart whenever `entity_selector`
+    found none — but carts in unloaded chunks are invisible to it. The pile lagged everyone near it. Never respawn
+    without a loaded/near check and a dedupe (`rails.md`).
+31. **An interactive build was announced after testing only the code path, not a real click — and players said it
+    didn't work.** Test with a real player before announcing (`minecraft_wait reply_from:<player> ask:"…"`), and prefer
+    games that join by STANDING somewhere: a fake player can then test the whole round end to end (`minigames.md`).
+32. **A generator's files were built alphabetically** (interior before the site — the site then paved over the
+    floors). `minecraft_generate` now builds in the order the script prints its files: print them in build order.
+33. **Let the server check your commands.** `execute if block <unloaded> run <cmd>` parses `<cmd>` completely and never
+    runs it; `dry_run:true` does that for every distinct command in a job and catches bad block states, missing
+    effect amplifiers (`effect give @a glowing 30 true` → the amplifier is required before hideParticles) and
+    pre-1.20.5 item NBT (`sword{Damage:3}` → components `sword[damage=3]`) before anything is placed.
+34. **A fake player with a never-seen name froze the server ~5 s** when it joined (a Mojang profile lookup on the main
+    thread). Reuse one test name.
+35. **"Here", "this chest", "the floating thing"** — players point with words. Every chat line now carries where the
+    player stood and looked when they wrote it: read that before asking where they mean.
+
 See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`.

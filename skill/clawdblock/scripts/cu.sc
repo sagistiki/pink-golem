@@ -12,6 +12,7 @@
 //   show(x1,y1,z1,x2,y2,z2, 'label', seconds) -> glowing outline + label for everyone (preview a build site)
 //   mark(x,y,z,'text', seconds)         -> floating label at a spot
 //   ytop(x,z)                           -> y of the highest non-air block at x,z (stand at ytop+1)
+//   rtrace('id', x,y,z, max)            -> walk the rail line through x y z → cu.data/rails_<id>.json (minecraft_rails trace)
 //   bstr(block)                         -> 'oak_stairs[facing=east,half=bottom,...]'
 // Notes: set() takes a state string: set(x,y,z,'oak_stairs[facing=east]'). Container / sign contents are not snapshotted.
 
@@ -201,4 +202,35 @@ _mon_tick(id, i) -> (
     schedule(spec:'every', '_mon_tick', id, i + 1),
     write_file('mon_' + id + '_out', 'json', {'samples' -> m:'out'}); delete(global_mon, id); delete_file('mon_' + id, 'json')
   )
+);
+
+// ───── rail networks (minecraft_rails action:trace) ─────
+// rtrace('id', x, y, z, max): walk every rail connected to the rail at x y z (breadth first, following the shapes)
+// and write cu.data/rails_<id>.json {rails: [[x,y,z,shape,block,powered,[neighbour or null, neighbour or null]]...], truncated}
+global_rconn = {
+  'north_south' -> [[0,0,-1],[0,0,1]], 'east_west' -> [[1,0,0],[-1,0,0]],
+  'ascending_east' -> [[1,1,0],[-1,0,0]], 'ascending_west' -> [[-1,1,0],[1,0,0]],
+  'ascending_north' -> [[0,1,-1],[0,0,1]], 'ascending_south' -> [[0,1,1],[0,0,-1]],
+  'south_east' -> [[0,0,1],[1,0,0]], 'south_west' -> [[0,0,1],[-1,0,0]],
+  'north_west' -> [[0,0,-1],[-1,0,0]], 'north_east' -> [[0,0,-1],[1,0,0]]
+};
+_rail(p) -> str(block(p)) ~ 'rail$';
+rtrace(id, x, y, z, mx) -> (
+  s = if (_rail([x, y, z]), [x, y, z], _rail([x, y - 1, z]), [x, y - 1, z], _rail([x, y + 1, z]), [x, y + 1, z], null);
+  if (!s, return('no rail at ' + x + ' ' + y + ' ' + z));
+  seen = {str(s) -> true}; q = [s]; out = []; i = 0;
+  while (i < length(q) && length(out) < mx, 100000,
+    p = q:i; i += 1;
+    b = block(p); sh = str(block_state(b, 'shape')); pw = block_state(b, 'powered');
+    ns = [];
+    for (global_rconn:sh,
+      t = [p:0 + _:0, p:1 + _:1, p:2 + _:2];
+      n = if (_rail(t), t, _:1 == 0 && _rail([t:0, t:1 - 1, t:2]), [t:0, t:1 - 1, t:2], null);
+      ns += n;
+      if (n && !has(seen, str(n)), seen:str(n) = true; q += n)
+    );
+    out += [p:0, p:1, p:2, sh, str(b), pw, ns]
+  );
+  write_file('rails_' + id, 'json', {'rails' -> out, 'truncated' -> i < length(q)});
+  length(out)
 );

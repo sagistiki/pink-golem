@@ -1,7 +1,7 @@
 # Gemini CLI
 
 This page connects Google's **Gemini CLI** to your ClawdBlock server. Gemini CLI works in a terminal like Claude
-Code: it can read the skill's reference pages, write its own build generators into `jobs/`, and use all 29 tools.
+Code: it can read the skill's reference pages, write its own build generators into `jobs/`, and use all 33 tools.
 Its body in the game is called **Gemini**, so it can build alongside Claude.
 
 | | |

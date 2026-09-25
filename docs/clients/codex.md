@@ -1,7 +1,7 @@
 # Codex
 
 This page connects OpenAI's **Codex CLI** to your ClawdBlock server. Codex is a terminal agent: it reads the skill,
-writes build generators into `jobs/`, and uses all 29 tools. Its body in the game is called **Codex**, so it can
+writes build generators into `jobs/`, and uses all 33 tools. Its body in the game is called **Codex**, so it can
 build next to other AIs.
 
 | | |

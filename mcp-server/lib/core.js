@@ -135,10 +135,11 @@ export function install(K, ctx) {
 
   // ── players
   K.onlinePlayers = async () => {
-    const out = await K.cmd("list");
-    // "There are 2 of a max of 10 players online: a, b"
+    // "list uuids" prints plain account names — plain "list" shows display names, which chat mods, nicknames,
+    // team prefixes and [AFK] tags decorate ("✦ Steve") → "There are 2 of a max of 10 players online: a (uuid), b (uuid)"
+    const out = await K.cmd("list uuids");
     const m = /online:\s*(.*)$/s.exec(out);
-    const names = m && m[1].trim() ? m[1].split(",").map((s) => s.trim().replace(/^\[[^\]]*\]\s*/, "").replace(/\s.*$/, "")).filter(Boolean) : [];
+    const names = m && m[1].trim() ? [...m[1].matchAll(/([A-Za-z0-9_]{1,16}) \([0-9a-f-]{36}\)/g)].map((x) => x[1]) : [];
     return { raw: out, names };
   };
   /** The first real (non-bot, non-crew) player online, for tools that default to "the player". */

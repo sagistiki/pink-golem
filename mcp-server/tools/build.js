@@ -33,6 +33,8 @@ export const tools = [
         undo: { type: "boolean", description: "Default true: undo snapshot of the area first (minecraft_undo reverts it)" },
         verify: { type: "boolean", description: "Compare the world with what the commands should have placed afterwards (default: on for >25 commands)" },
         allow_protected: { type: "boolean", description: "Allow changes inside protected zones (only when the zone's owner asked)" },
+        dry_run: { type: "boolean", description: "PREFLIGHT, nothing runs: the server parses every distinct command form (bad block names/states, wrong arguments, old item NBT…), plus protected zones, which existing blocks would be overwritten, players in the way, fill/RCON limits and a time estimate" },
+        skip_check: { type: "boolean", description: "Background jobs are syntax-checked first and refused on errors; true skips that" },
         call_tool: { type: "string", description: "Instead of commands: run another minecraft_* tool by name, with its arguments in tool_args. Use when a newer tool isn't in your tool list yet." },
         tool_args: { type: "object", description: "Arguments for call_tool" },
       },
@@ -85,7 +87,8 @@ export const tools = [
       code: { type: "string", description: "optional Python source to save as `script` (must be under jobs/) before running it" },
       build: { type: "boolean", description: "queue the generated files as build jobs (default false = generate only, then minecraft_preview them)" },
       files: { type: "array", items: { type: "string" }, description: "only build these of the generated files (names or globs like cottage-*)" },
-      helpers: { type: "number" }, allow_protected: { type: "boolean" }, label: { type: "string" }, entrance: vec, check_access: { type: "boolean" } }, required: ["script"] },
+      helpers: { type: "number" }, allow_protected: { type: "boolean" }, label: { type: "string" }, entrance: vec, check_access: { type: "boolean" },
+      dry_run: { type: "boolean", description: "generate, then PREFLIGHT all written files (syntax parsed by the server, zones, overwrites, players) — nothing is built" } }, required: ["script"] },
   },
   {
     name: "minecraft_worldedit",
@@ -128,6 +131,12 @@ export function handlers(K) {
       }
       const list = K.readCommandArgs(args);
       if (!list.length) throw new Error("Give command, commands, commands_file or commands_files.");
+      if (args.dry_run) return K.text(await K.preflight(list, args));
+      if (args.background && !args.skip_check) {
+        const sx = await K.syntaxCheck(list);
+        if (sx.errors.length || sx.too_long.length)
+          return K.fail(JSON.stringify({ refused: "syntax errors — nothing was built (the server parsed every command form without running it). Fix them, or pass skip_check:true.", ...sx }, null, 2));
+      }
       const targets = K.targetsFromCommands(list);
       const zblock = K.zoneGuard(targets, args.allow_protected);
       if (zblock) return K.fail(zblock);
@@ -257,6 +266,11 @@ export function handlers(K) {
         fs.writeFileSync(f, String(args.code));
       }
       const g = await K.runGenerator(args.script, args.args || []);
+      if (args.dry_run && g.ok) {
+        let all = [];
+        for (const f of g.files) { const raw = fs.readFileSync(K.safePath(f), "utf8"); all = all.concat(raw.trim().startsWith("[") ? JSON.parse(raw) : raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))); }
+        return K.text({ ...g, preflight: await K.preflight(all, args) });
+      }
       if (!args.build || !g.ok) return K.text(g);
       let files = g.files;
       if (args.files?.length) {

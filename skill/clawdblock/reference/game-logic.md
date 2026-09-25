@@ -197,6 +197,21 @@ centre and radius of the roof opening, `pool` = centre, radius and the y of the 
 deep stop any fall. Easiest setup: run `drop_tower.py` with `minecraft_generate`; it builds the tower, writes the pad
 and loads the app.
 
+### tntrun — TNT Run: the floor vanishes under your feet
+Stand on the gold JOIN pad in the lobby: a 10 s countdown starts (more players can step on), then everyone on the pad
+lands on the top of four floors. Every block you stand on turns red and vanishes (0.4 s, 0.2 s after a minute; after
+90 s the floors crumble by themselves). Shift in the air = double jump, 3 per game. Below the last floor you are out and
+watch from the gallery. 2+ players: the last one standing wins; alone: a survival-time record. Adventure mode +
+resistance during a game, the old game mode comes back after (also on reconnect). Records and a top-5 board live in
+`tntrun.data/records.json`; the floors are rebuilt 5 s after every game. `tntrun.data/arena.json`:
+```
+{"cx": 0, "gy": -61, "cz": 0}
+```
+= the arena centre on the ground block. Everything else (floors at gy+30/23/16/9, the pad at cz-30, the gallery) is
+derived from it, so the app fits the layout of `blueprints/tnt_run.py` only. Easiest setup: run `tnt_run.py` with
+`minecraft_generate`; its last job runs `script in tntrun run setup(cx, gy, cz)`, which writes the file. Test with two
+fake players on the pad and `global_allow_fake = true` (the header of `tntrun.sc` shows how).
+
 ### welcome — a greeting for real players
 Title with the player's name, a colour shimmer on the action bar, a ring of particles, a chime. Bots and helpers get
 nothing. No config file: edit `global_title` and `global_colors` in `welcome.sc`, then `script load welcome`.
@@ -216,7 +231,9 @@ point clear of roofs and 6+ blocks from people.
 | Button stays powered after a test | `setblock ... powered=false` in the next call |
 | Editing JSON but not reloading | `script in <app> run reload()` |
 | Entity-spawning loop in `__on_tick` | Spawn once, tag it, move it with `modify`; unbounded spawning lags or crashes the server |
+| "Respawn it if `entity_selector` finds none" | The entity may just be in an unloaded chunk — hundreds pile up. Respawn only with a real player near and the spot loaded, and remove extras (`rails.md`) |
+| Core game input is a button click | Prefer standing on a pad / crossing a line — a fake player can then test the whole round (`minigames.md`) |
 
 ## See also
-[scarpet.md](scarpet.md) · [redstone.md](redstone.md) · [entities.md](entities.md) · [displays.md](displays.md) ·
-[verification.md](verification.md) · [troubleshooting.md](troubleshooting.md)
+[scarpet.md](scarpet.md) · [minigames.md](minigames.md) · [rails.md](rails.md) · [redstone.md](redstone.md) · [entities.md](entities.md) ·
+[displays.md](displays.md) · [verification.md](verification.md) · [troubleshooting.md](troubleshooting.md)

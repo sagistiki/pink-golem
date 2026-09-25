@@ -17,7 +17,8 @@ RULES
    If it is not free, pick another spot. Never build over someone's build.
 3. Prefer a ready blueprint over typing blocks yourself:
    `minecraft_generate` with `{"script":"skill/clawdblock/blueprints/<name>.py","args":["--at","X,Y,Z","--facing","south"],"build":true,"helpers":3}`
-   Blueprints: cottage.py (house + garden), modern_villa.py, tower.py (--at = centre), park.py, drop_tower.py (--at = centre).
+   Blueprints: cottage.py (house + garden), modern_villa.py, tower.py (--at = centre), park.py, drop_tower.py (--at = centre),
+   tnt_run.py (TNT Run arena + game; --at = arena centre, lobby on the north side).
    X,Y,Z = the front-left corner at ground level (Y = the ground block, -61 on a flat world).
 4. Then call `minecraft_jobs` with `{"action":"wait"}` until the status is "done". Check: "errors" is 0 and
    "mismatches" is 0. If not, tell the user what failed.

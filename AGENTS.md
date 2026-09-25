@@ -12,8 +12,8 @@ If your context is small, `skill/clawdblock/SYSTEM_PROMPT.md` is the condensed v
 Repository layout:
 - `clawdblock.py` — setup / start / stop / status / doctor / mods / apps / connect (Python, stdlib only)
 - `mcp-server/` — the MCP server (Node): `index.js` core, `lib/` shared helpers, `tools/` tool groups
-- `skill/clawdblock/` — SKILL.md, `reference/`, `scripts/` (mclib.py, parts.py, scarpet helper apps), `blueprints/`
-- `scarpet-apps/` — example game-logic apps (launch pads, races, vendor stands, secret doors…)
+- `skill/clawdblock/` — SKILL.md, `reference/`, `scripts/` (mclib.py, parts.py, city.py, scarpet helper apps), `blueprints/`
+- `scarpet-apps/` — example game-logic apps (launch pads, races, TNT Run, vendor stands, secret doors…)
 - `jobs/` — generated build files (yours go here too); `data/` — the world map, zones, undo, notes, screenshots
 
 Never start, stop or reset the Minecraft server unless the user asks.

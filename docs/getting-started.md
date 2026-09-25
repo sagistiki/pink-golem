@@ -5,7 +5,7 @@ top to bottom the first time. It takes about 15 minutes, and most of that is dow
 to program: you copy a few commands into a terminal and answer a few questions.
 
 **What you end up with:** a Minecraft Java 26.2 server on your computer (Fabric, with the Carpet mod), an MCP
-server that gives an AI 29 `minecraft_*` tools, and a building skill that teaches the AI how to use them well.
+server that gives an AI 33 `minecraft_*` tools, and a building skill that teaches the AI how to use them well.
 
 ---
 
@@ -227,7 +227,7 @@ offers a few numbered options to choose from.
 | `dist/` | the skill as a zip, for Claude Desktop | no |
 | `mcp-server/` | the MCP server (Node) | yes |
 | `skill/clawdblock/` | the building skill: `SKILL.md`, `SYSTEM_PROMPT.md`, `reference/`, `scripts/`, `blueprints/` | yes |
-| `scarpet-apps/` | optional game-logic apps: fireworks, launch pads, races, secret doors, vendor stands, welcome | yes |
+| `scarpet-apps/` | optional game-logic apps: fireworks, launch pads, races, secret doors, TNT Run, vendor stands, welcome | yes |
 
 Everything the tools write stays inside this folder. Don't hand-edit files in `data/` while an AI session is running.
 

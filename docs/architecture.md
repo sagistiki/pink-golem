@@ -18,7 +18,7 @@ curious, or if you're debugging something the [troubleshooting](troubleshooting.
  ┌────────────▼─────────────┐
  │ ClawdBlock MCP server    │  index.js  : RCON client, log watcher, tool loader (hot reload)
  │ (Node, one per client)   │  lib/*.js  : shared helpers (safety, world reads, bot, crew, jobs, sight)
- │                          │  tools/*.js: 29 minecraft_* tools in 6 groups
+ │                          │  tools/*.js: 33 minecraft_* tools in 8 groups
  └──┬──────────────┬────────┘
     │ RCON (TCP,   │ reads server/logs/latest.log every 0.4 s (chat, joins, leaves)
     │ 127.0.0.1)   │ reads server/mods/ (which mods → which tools)
@@ -73,9 +73,11 @@ network protocol.
 | `index.js` | Reads the config, runs the RCON client (with the 1400-byte guard), watches `latest.log` for chat, loads the tools and answers MCP requests. Logs go to stderr; stdout is reserved for MCP |
 | `tools/index.js` | Builds the shared helper object `K` from `lib/*.js`, collects the tool groups from `tools/*.js`, hides tools whose mod is missing, converts string arguments (`"3"`, `"true"`, `"[1,2,3]"`) for clients that send everything as text |
 | `tools/connection.js` | `minecraft_status`, `minecraft_server_log` |
-| `tools/chat.js` | `minecraft_chat`, `minecraft_get_chat`, `minecraft_wait_for_chat`, `minecraft_get_players` |
+| `tools/chat.js` | `minecraft_chat`, `minecraft_get_chat`, `minecraft_wait_for_chat`, `minecraft_wait`, `minecraft_get_players` |
 | `tools/build.js` | `minecraft_run_command`, `minecraft_build`, `minecraft_build_layers`, `minecraft_generate`, `minecraft_worldedit`, `minecraft_jobs`, `minecraft_undo`, `minecraft_verify` |
 | `tools/look.js` | `minecraft_inspect`, `minecraft_vision`, `minecraft_scarpet`, `minecraft_screenshot`, `minecraft_preview`, `minecraft_check_access`, `minecraft_reach`, `minecraft_monitor` |
+| `tools/survey.js` | `minecraft_survey`, `minecraft_section` |
+| `tools/rails.js` | `minecraft_rails` (trace / path / ride) |
 | `tools/body.js` | `minecraft_bot`, `minecraft_helpers` |
 | `tools/memory.js` | `minecraft_map`, `minecraft_zones`, `minecraft_people`, `minecraft_notes`, `minecraft_cleanup` |
 | `lib/core.js` | paths, the locked RCON call, JSON files, chat, players, geometry, scarpet calls |
@@ -86,6 +88,7 @@ network protocol.
 | `lib/crew.js` | the helper builders (hard hats, hi-vis vests) and speech bubbles |
 | `lib/jobs.js` | background jobs, boss bar, after-build checks, running Python generators |
 | `lib/sight.js` | screenshots, previews, BlueMap photos, the access check, free-space search |
+| `lib/context.js` | where each chat line was written from, big-box reads, area arguments, the preflight (server-side syntax check without running anything) |
 | `render.js`, `pathfind.js`, `sim.js`, `analyze.js`, `worldmap.js` | pure modules: PNG renderer, A* pathfinder, command simulator (previews), accessibility analysis, world-map index |
 
 ### Hot reload
@@ -157,7 +160,7 @@ of them (setup installs them from `skill/clawdblock/scripts/`):
 | `helpers` | makes helper builders really swing their arms while they work, and finds standing spots near the work |
 | `bubble` | speech bubbles (text displays) that float above the AI's head and the builders' |
 
-The optional apps in `scarpet-apps/` (fireworks, launch pads, races, secret doors, vendor stands, welcome) are
+The optional apps in `scarpet-apps/` (fireworks, launch pads, races, secret doors, TNT Run, vendor stands, welcome) are
 game logic for players: `python3 clawdblock.py apps add race`. Each reads its settings from
 `server/world/scripts/<app>.data/*.json` and has a `reload()` function.
 
@@ -204,7 +207,8 @@ RCON port and password come from `server.properties` unless overridden. `clawdbl
 | Undo snapshot | up to 4M blocks per build, in 250k slabs | bigger builds get no snapshot (the result says so) |
 | Undo stack | 30 builds | the oldest snapshot is deleted |
 | Job file | 1200 commands | `Build.save()` splits into numbered files |
-| Waiting tools | `minecraft_jobs wait` / `minecraft_monitor` 50 s, `minecraft_wait_for_chat` 110 s | call again to keep waiting |
+| Waiting tools | `minecraft_jobs wait` / `minecraft_monitor` 50 s, `minecraft_wait_for_chat` 110 s, `minecraft_wait` 300 s | call again to keep waiting |
+| Survey / section | 480k blocks (footprint ≤ 118k columns) / 160 wide | smaller box |
 
 ## See also
 

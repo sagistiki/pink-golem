@@ -103,7 +103,7 @@ Other settings the MCP server reads (all optional, in `env` or in `clawdblock.js
 
 ## Which model? An honest guide
 
-ClawdBlock gives the model **29 tools**. Their descriptions and argument schemas take about **7,000 tokens**
+ClawdBlock gives the model **33 tools**. Their descriptions and argument schemas take about **9,000 tokens**
 before you say a word, and tool results (a structure read as text, a job report) can be a few thousand tokens more.
 
 **Requirements**
@@ -128,7 +128,7 @@ hidden. Small models succeed through two things instead:
 
 - **`SYSTEM_PROMPT.md`** turns building into a fixed script: status → spawn → check the site → run a blueprint
   → wait → report. The model doesn't have to discover the workflow; it only fills in coordinates.
-- **Blueprints** do the hard part. `cottage.py`, `modern_villa.py`, `tower.py`, `park.py` and `drop_tower.py`
+- **Blueprints** do the hard part. `cottage.py`, `modern_villa.py`, `tower.py`, `park.py`, `drop_tower.py` and `tnt_run.py`
   already solve the geometry, block states, doors, stairs, light and furniture. The model only picks a blueprint,
   a position (`--at X,Y,Z`) and a direction (`--facing`). A furnished house is **one tool call**:
 

@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Give your AI a body, hands and eyes in a Minecraft world — and the know-how to build like a pro.</b><br>
-  One installer · an MCP server with 29 tools · a deep building skill · works with Claude, Gemini, Codex and local models
+  One installer · an MCP server with 33 tools · a deep building skill · works with Claude, Gemini, Codex and local models
 </p>
 
 <p align="center">
@@ -26,18 +26,18 @@ reachable from the front door, no dark corners where mobs could spawn — and te
 
 - 🧰 **A cross-platform installer** — one command sets up a Minecraft 26.2 Fabric server with Carpet, recommended mods,
   RCON and the game-logic apps, and connects your AI client.
-- 🤖 **An MCP server with 29 tools** — the AI's body (walks with pathfinding, opens doors, swings), hands (commands,
+- 🤖 **An MCP server with 33 tools** — the AI's body (walks with pathfinding, opens doors, swings), hands (commands,
   generators, background jobs, helper builders), eyes (text vision, isometric / top-down / first-person renders,
   previews of builds that don't exist yet) and memory (a world map, people, a shared learning journal).
 - 🛡️ **Safety rails** — automatic undo for every build, protected zones for other people's builds, an overwrite guard,
   verification after every job, and an access check that walks every room from the entrance.
-- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 22 reference pages
+- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 24 reference pages
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
 - 🏗️ **A building library and blueprints** — `mclib` + `parts` (furniture, roofs, stairs, windows, lamps, gardens,
-  round towers, pools, flags) that work facing any direction, and six ready blueprints to use and learn from.
-- 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, vendor stands, secret doors,
-  welcome shows, fireworks.
+  round towers, pools, flags) that work facing any direction, and seven ready blueprints to use and learn from.
+- 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, vendor
+  stands, secret doors, welcome shows, fireworks.
 
 ## Built by the included blueprints
 
@@ -116,14 +116,14 @@ Join `localhost` in Minecraft 26.2, make yourself op in the server console (`op 
 
 ```mermaid
 flowchart LR
-    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>29 minecraft_* tools" --> MCP["ClawdBlock MCP server<br/>(Node, hot-reloading tools)"]
+    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>33 minecraft_* tools" --> MCP["ClawdBlock MCP server<br/>(Node, hot-reloading tools)"]
     MCP -- "RCON: any command as console" --> MC["Minecraft 26.2 server<br/>Fabric + Carpet"]
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC
     MC --- APPS["scarpet apps<br/>cu · helpers · bubble<br/>launchpad · race · vendor …"]
     MCP -- "runs" --> GEN["Python generators<br/>mclib + parts + blueprints"]
     GEN -- "jobs/*.json" --> MCP
-    SKILL["Skill<br/>SKILL.md + 22 reference pages"] -. "how to build well" .-> AI
+    SKILL["Skill<br/>SKILL.md + 24 reference pages"] -. "how to build well" .-> AI
 ```
 
 No protocol bot, no client mods: the MCP drives the server through **RCON** (so it works on any Minecraft version the
@@ -140,11 +140,11 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 | [`install.sh`](install.sh) / [`install.cmd`](install.cmd) / [`install.ps1`](install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
 | [`skill/clawdblock/SKILL.md`](skill/clawdblock/SKILL.md) | the skill: golden rules, the recipe, tools at a glance, facts that break builds |
-| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 22 deep-dive pages |
-| [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, and the helper scarpet apps |
-| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, catalog |
+| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 24 deep-dive pages |
+| [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, `city.py` (roads, rail lines), and the helper scarpet apps |
+| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, catalog |
 | [`skill/clawdblock/SYSTEM_PROMPT.md`](skill/clawdblock/SYSTEM_PROMPT.md) | a condensed prompt for small / local models |
-| [`scarpet-apps/`](scarpet-apps) | launchpad, race, vendor, secret_door, welcome, fireworks |
+| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, vendor, secret_door, welcome, fireworks |
 | [`docs/`](docs) | getting started, clients, friends, architecture, troubleshooting, contributing, writing blueprints |
 
 ## Mods

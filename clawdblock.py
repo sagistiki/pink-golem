@@ -8,7 +8,8 @@
     python3 clawdblock.py mods [list|add|remove|update] [names...]
     python3 clawdblock.py apps [list|add|remove] [names...]    scarpet game-logic apps in the world
     python3 clawdblock.py connect [claude-code|claude-desktop|gemini|codex|lmstudio|all|print]
-    python3 clawdblock.py new-world | backup
+    python3 clawdblock.py new-world
+    python3 clawdblock.py backup [--keep 3] [--dry-run] [--include-ledger] [--dest DIR]
 
 Only the Python standard library is used. Works on macOS, Linux and Windows.
 """
@@ -451,6 +452,11 @@ def app_sources():
             src[f.stem] = f
     return src
 
+def app_libraries(app_file):
+    """the .scl files in scarpet-apps/ that an app imports with import('<name>', ...)"""
+    names = set(re.findall(r"import\(\s*'([a-z0-9_]+)'", app_file.read_text(encoding="utf-8", errors="replace")))
+    return [ROOT / "scarpet-apps" / f"{n}.scl" for n in sorted(names) if (ROOT / "scarpet-apps" / f"{n}.scl").exists()]
+
 def install_apps(sd, names):
     dst = level_dir(sd) / "scripts"
     dst.mkdir(parents=True, exist_ok=True)
@@ -461,6 +467,9 @@ def install_apps(sd, names):
             continue
         shutil.copy2(src[n], dst / f"{n}.sc")
         ok(f"{n}.sc → {dst.relative_to(ROOT) if dst.is_relative_to(ROOT) else dst}")
+        for lib in app_libraries(src[n]):                     # scarpet libraries it imports (gamekit.scl, hud.scl)
+            shutil.copy2(lib, dst / lib.name)
+            ok(f"  + library {lib.name}")
     if server_up(sd):
         r = rcon(sd)
         for n in names:
@@ -801,24 +810,156 @@ def cmd_new_world(a):
     ok("The next start creates a fresh world.")
     return 0
 
+LEDGER_FILES = ("ledger.sqlite", "ledger.sqlite-wal", "ledger.sqlite-shm", "ledger.sqlite-journal")
+STORED_EXT = (".mca", ".zip", ".png", ".jpg", ".gz")   # already compressed: deflating them again only burns CPU
+
+def _tree_size(p, skip=()):
+    total = 0
+    for dp, _, files in os.walk(p):
+        for f in files:
+            if f not in skip:
+                try:
+                    total += os.lstat(os.path.join(dp, f)).st_size
+                except OSError:
+                    pass
+    return total
+
+def _free(p):
+    p = Path(p)
+    while not p.exists():
+        p = p.parent
+    return shutil.disk_usage(p).free
+
+def _mb(n):
+    return f"{n / 1048576:.2f} MB" if n < 10 * 1048576 else f"{n / 1048576:.0f} MB" if n < 10 * 1073741824 else f"{n / 1073741824:.1f} GB"
+
+def _world_in_use(lv):
+    """True when a running server holds <world>/session.lock; None when we can't tell (Windows)."""
+    f = lv / "session.lock"
+    if not f.exists():
+        return False
+    try:
+        import fcntl
+    except ImportError:
+        return None
+    try:
+        with open(f, "r+b") as fh:
+            fcntl.lockf(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.lockf(fh, fcntl.LOCK_UN)
+        return False
+    except OSError:
+        return True
+
 def cmd_backup(a):
+    """save-off -> save-all flush -> copy -> save-on (always) -> zip -> verify -> rotate. Refuses without room."""
+    import signal
+    import sqlite3
+    def _interrupt(*_):
+        raise KeyboardInterrupt   # so the finally blocks run (save-on!) when a terminal or the MCP stops us
+    for sig in ("SIGTERM", "SIGHUP"):
+        if hasattr(signal, sig):
+            signal.signal(getattr(signal, sig), _interrupt)
     sd = server_dir()
     lv = level_dir(sd)
+    dest = Path(a.dest).resolve() if a.dest else ROOT / "backups"
+    res = {"ok": False, "dry_run": a.dry_run, "world": str(lv), "dest": str(dest), "keep": a.keep, "include_ledger": a.include_ledger}
+
+    def done(code, **kw):
+        res.update(kw)
+        if a.json:
+            print(json.dumps(res, indent=1))
+        elif res.get("ok"):
+            ok(res.get("would") or f"backup: {res.get('zip')} ({res.get('zip_size')})" + (f", removed old: {', '.join(res['rotated'])}" if res.get("rotated") else ""))
+            if a.dry_run and res.get("would_rotate"):
+                info("rotation would remove: " + ", ".join(res["would_rotate"]))
+        else:
+            err(res.get("reason") or res.get("error") or "backup failed")
+        return code
+
     if not lv.exists():
-        err("no world yet")
-        return 1
-    if server_up(sd):
-        r = rcon(sd); r.cmd("save-off"); r.cmd("save-all flush"); time.sleep(2)
-    out = ROOT / "backups" / f"{lv.name}-{time.strftime('%Y%m%d-%H%M%S')}.zip"
-    out.parent.mkdir(exist_ok=True)
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in lv.rglob("*"):
-            if f.is_file() and f.name != "session.lock":
-                z.write(f, f.relative_to(lv.parent))
-    if server_up(sd):
-        r.cmd("save-on"); r.close()
-    ok(f"backup: {out.relative_to(ROOT)} ({out.stat().st_size // 1048576} MB)")
-    return 0
+        return done(1, error="no world yet")
+    if a.keep < 1:
+        return done(1, error="--keep must be at least 1")
+    skip = ("session.lock",) + (() if a.include_ledger else LEDGER_FILES)
+    world_bytes = _tree_size(lv)
+    free = int(a.simulate_free_mb * 1048576) if a.simulate_free_mb is not None else _free(dest)
+    need = int(world_bytes * 3)
+    name_re = re.compile(rf"^{re.escape(lv.name)}-\d{{8}}-\d{{6}}\.zip$")
+    old = sorted(p for p in dest.glob(f"{lv.name}-*.zip") if name_re.match(p.name)) if dest.is_dir() else []
+    space = f"free {_mb(free)}, need 3 x world {_mb(world_bytes)} = {_mb(need)}"
+    res.update(world_bytes=world_bytes, copy_bytes=_tree_size(lv, skip), excluded=[s for s in skip if (lv / s).exists()],
+               free_bytes=free, need_bytes=need, space=space, simulated_free=a.simulate_free_mb is not None, existing_backups=[p.name for p in old])
+    if free < need:   # the live server must always have room to save
+        return done(2, refused=True, reason=f"not enough free space ({space}). Nothing was written. Free some space or use --dest <another disk>.")
+    doomed = old[:max(0, len(old) - (a.keep - 1))]
+    if a.dry_run:
+        return done(0, ok=True, would=f"copy {_mb(res['copy_bytes'])} while saving is paused, zip it into {dest}, keep {a.keep}", would_rotate=[p.name for p in doomed])
+
+    dest.mkdir(parents=True, exist_ok=True)
+    lock = dest / ".backup.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        if time.time() - lock.stat().st_mtime < 7200:
+            return done(2, refused=True, reason=f"another backup is running ({lock})")
+        lock.unlink(missing_ok=True)
+        return done(1, error="removed a stale backup lock; run again")
+    try:
+        if hasattr(os, "nice"):
+            os.nice(10)   # the server comes first
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        stage, final, part = dest / f".staging-{stamp}", dest / f"{lv.name}-{stamp}.zip", dest / f".{lv.name}-{stamp}.zip.part"
+        r = None
+        try:
+            r = rcon(sd)
+        except Exception as e:  # noqa: BLE001
+            if _world_in_use(lv) is not False:
+                return done(1, error=f"the server has the world open but RCON does not answer ({e}); cannot flush saves safely")
+        t0 = time.time()
+        try:
+            if r:
+                r.cmd("save-off")
+                res["flush"] = r.cmd("save-all flush").strip()[:120]
+            shutil.copytree(lv, stage, ignore=lambda d, names: [n for n in names if n in skip])
+            if a.include_ledger and (lv / "ledger.sqlite").exists():   # a consistent snapshot while Ledger writes
+                src, dst = sqlite3.connect(f"file:{lv / 'ledger.sqlite'}?mode=ro", uri=True), sqlite3.connect(stage / "ledger.sqlite")
+                with dst:
+                    src.backup(dst)
+                src.close(); dst.close()
+        finally:
+            if r:
+                try:
+                    r.cmd("save-on")
+                finally:
+                    r.close()
+        res["save_off_seconds"] = round(time.time() - t0, 1) if r else 0
+        try:
+            if _free(dest) < _tree_size(stage) + 512 * 1048576:
+                return done(1, error="free space ran low after the copy; nothing zipped, the copy was removed")
+            with zipfile.ZipFile(part, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+                for dp, _, files in os.walk(stage):
+                    for f in files:
+                        p = Path(dp) / f
+                        z.write(p, Path(lv.name) / p.relative_to(stage), zipfile.ZIP_STORED if f.endswith(STORED_EXT) else zipfile.ZIP_DEFLATED)
+            with zipfile.ZipFile(part) as z:
+                bad = z.testzip()
+            if bad:
+                return done(1, error=f"the new zip failed its check at {bad}; nothing rotated")
+            part.rename(final)
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
+            part.unlink(missing_ok=True)
+        rotated = []
+        for p in doomed:
+            p.unlink(missing_ok=True)
+            rotated.append(p.name)
+        return done(0, ok=True, zip=str(final), zip_bytes=final.stat().st_size, zip_size=_mb(final.stat().st_size),
+                    seconds=round(time.time() - t0, 1), rotated=rotated)
+    except KeyboardInterrupt:
+        return done(1, error="interrupted (saving was switched back on)")
+    finally:
+        lock.unlink(missing_ok=True)
 
 def main():
     ap = argparse.ArgumentParser(prog="clawdblock", description="Set up and run a Minecraft server an AI can build in.")
@@ -850,7 +991,13 @@ def main():
     s.add_argument("clients", nargs="*", help="claude-code claude-desktop gemini codex lmstudio all print")
     s.add_argument("--yes", "-y", action="store_true")
     sub.add_parser("new-world", help="archive the world; the next start makes a fresh one")
-    sub.add_parser("backup", help="zip the world into backups/")
+    s = sub.add_parser("backup", help="zip the world into backups/ (keeps the newest 3; refuses without 3x the world free)")
+    s.add_argument("--keep", type=int, default=3, help="how many backups to keep (default 3)")
+    s.add_argument("--include-ledger", action="store_true", help="also back up the Ledger database (big; left out by default)")
+    s.add_argument("--dest", help="another folder or disk for the zips (default: backups/)")
+    s.add_argument("--dry-run", action="store_true", help="only report sizes, free space and what rotation would remove")
+    s.add_argument("--simulate-free-mb", type=float, help=argparse.SUPPRESS)   # tests: pretend this much is free
+    s.add_argument("--json", action="store_true", help="print one JSON object (used by minecraft_watchdog)")
     a = ap.parse_args()
     fn = {"setup": cmd_setup, "start": cmd_start, "stop": cmd_stop, "status": cmd_status, "doctor": cmd_doctor, "mods": cmd_mods,
           "apps": cmd_apps, "connect": cmd_connect, "new-world": cmd_new_world, "backup": cmd_backup}.get(a.cmd)

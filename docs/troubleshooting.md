@@ -177,7 +177,9 @@ works.
 
 ## Lag
 
-1. **Measure it.** `python3 clawdblock.py status` shows recent tick times in ms (below 50 is healthy). With spark:
+1. **Measure it.** `python3 clawdblock.py status` shows recent tick times in ms (below 50 is healthy). Ask the AI
+   *"why is the server laggy?"*: `minecraft_watchdog action:heavy` names the culprit (entity piles, leaks, hot
+   chunks, busy threads) — see [the watchdog guide](../skill/clawdblock/reference/watchdog.md). With spark:
    `/spark tps` in game, and `/spark profiler` to find the cause.
 2. **Big builds** are the usual cause. They run as background jobs; the AI can slow a job down with `pace_ms`.
    Clutter slows things too: ask the AI to clean up dropped items and stray entities (`minecraft_cleanup`).
@@ -210,10 +212,15 @@ errors"* (`minecraft_server_log`).
 **Back up** (works while the server runs; the world is flushed to disk first):
 
 ```bash
-python3 clawdblock.py backup        # → backups/world-YYYYMMDD-HHMMSS.zip
+python3 clawdblock.py backup             # → backups/world-YYYYMMDD-HHMMSS.zip, keeps the newest 3
+python3 clawdblock.py backup --dry-run   # sizes, free space, what rotation would remove
+python3 clawdblock.py backup --keep 7 --dest /Volumes/USB/mc-backups
 ```
 
-Also copy `data/` if you want the AI's map, zones and journal to match that backup.
+Saving is paused only while the world is copied and always switched back on. The backup refuses to run when the
+destination has less than 3× the world's size free, so the running server can always save. The Ledger database is
+left out unless you add `--include-ledger`. Also copy `data/` if you want the AI's map, zones and journal to match
+that backup.
 
 **Restore** a backup: `python3 clawdblock.py stop`, move `server/world` away, unzip the backup inside `server/` (the
 zip contains the `world/` folder), start again.

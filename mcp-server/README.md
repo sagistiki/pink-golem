@@ -1,6 +1,6 @@
 # ClawdBlock MCP server
 
-The Node MCP server behind ClawdBlock: 29 `minecraft_*` tools over stdio. It talks to the Minecraft server through
+The Node MCP server behind ClawdBlock: 37 `minecraft_*` tools over stdio. It talks to the Minecraft server through
 RCON (commands), `logs/latest.log` (chat) and Carpet's scarpet (fast world reads).
 
 ```
@@ -14,7 +14,8 @@ lib/bot.js        walking, A* pathfinding through doors, follow, reachability
 lib/jobs.js       background jobs, after-build checks, Python generators
 lib/sight.js      screenshots, previews, BlueMap photos, access check, free-space search
 lib/context.js    chat context (where a line was written), big-box reads, preflight (server-side syntax check)
-tools/*.js        tool groups: connection, chat, build, look, survey, rails, body, memory (schema + handler per tool)
+lib/devkit.js     pure helpers of the dev tools: scarpet lint, zip read/write, pack merge + validation, test records
+tools/*.js        tool groups: connection, chat, build, look, survey, rails, body, memory, health, dev, pack (schema + handler per tool)
 render.js pathfind.js sim.js analyze.js worldmap.js   pure helpers (renderer, A*, command simulator, access analysis, map index)
 test/load.mjs     loads every tool against a fake server — `npm run check`
 test/run.mjs      drives the real MCP from a script: node test/run.mjs '[["minecraft_status",{}]]'

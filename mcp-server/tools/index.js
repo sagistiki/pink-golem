@@ -9,8 +9,8 @@
 const v = new URL(import.meta.url).search;
 const load = (p) => import(new URL(p + v, import.meta.url).href);
 
-const LIBS = ["../lib/core.js", "../lib/features.js", "../lib/world.js", "../lib/safety.js", "../lib/crew.js", "../lib/bot.js", "../lib/jobs.js", "../lib/sight.js", "../lib/context.js"];
-const GROUPS = ["./connection.js", "./chat.js", "./build.js", "./look.js", "./survey.js", "./rails.js", "./body.js", "./memory.js"];
+const LIBS = ["../lib/core.js", "../lib/features.js", "../lib/world.js", "../lib/safety.js", "../lib/crew.js", "../lib/bot.js", "../lib/jobs.js", "../lib/sight.js", "../lib/context.js", "../lib/devkit.js"];
+const GROUPS = ["./connection.js", "./chat.js", "./build.js", "./look.js", "./survey.js", "./rails.js", "./body.js", "./memory.js", "./health.js", "./dev.js", "./pack.js"];
 
 // JSON-ish arguments some clients send as strings
 const BOOLS = ["background", "keep_helpers", "undo", "allow_protected", "allow_overwrite", "pathfind", "bubble", "list", "stop_on_error", "all_matching", "force", "raw", "overlay", "entities", "dark", "simulate", "check_access", "build", "dry_run", "changes_only", "any_owner", "mention_only", "update", "verify", "skip_check", "top", "heights", "closed", "rider", "keep"];

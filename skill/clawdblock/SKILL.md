@@ -116,6 +116,7 @@ The `cu` helper app (always loaded): `occupied`, `count`, `surface`, `level`, `s
 | `park.py` | walls + entrances, paths, fountain, pond, trees, benches, lamps | front-left corner | 41×31 |
 | `drop_tower.py --style pride\|ocean\|sunset --height 60` | launch pad up, free fall down a colour spiral into a pool, lit windows | centre | r8 |
 | `tnt_run.py` | TNT Run arena: 4 vanishing floors over TNT, glass wall, lobby with JOIN pad, viewing gallery; loads `tntrun.sc` (lobby always north) | arena centre | r17 + lobby 36 north, 40 high |
+| `ferris_wheel.py` | classic colourful Ferris wheel that turns and that players ride (display entities, no mods), fairground plaza, BOARD/EXIT pads; loads `ferris.sc` (wheel face-on from north/south) | ground under the axle | 30×20, 30 high |
 | `catalog.py` | one of every component on labelled tiles — a visual reference | first tile corner | 19 tiles |
 
 Run: `minecraft_generate script:"skill/clawdblock/blueprints/cottage.py" args:["--at","100,-61,40","--facing","south"] build:true helpers:3 entrance:[<printed entrance>]`.

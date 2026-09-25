@@ -212,6 +212,18 @@ derived from it, so the app fits the layout of `blueprints/tnt_run.py` only. Eas
 `minecraft_generate`; its last job runs `script in tntrun run setup(cx, gy, cz)`, which writes the file. Test with two
 fake players on the pad and `global_allow_fake = true` (the header of `tntrun.sc` shows how).
 
+### ferris — a Ferris wheel you ride
+A wheel of block displays that turns smoothly (one cabin in 5 s, then a 4 s stop), 8 level cabins, chasing lights.
+Stand on the gold BOARD pad: at the next stop you are seated in the bottom cabin; after a full turn you are let off on
+the exit spot; Shift gets you off at once (put down on the exit spot, never dropped). Runs only while a real player is
+within 90 blocks. `ferris.data/wheel.json`:
+```
+{"x": 0, "gy": -61, "z": 0}
+```
+= the ground block under the axle (axle at gy+14, radius 11, pad at x-3..x-2). Easiest setup: run
+`blueprints/ferris_wheel.py` with `minecraft_generate`; its last job runs `script in ferris run setup(x, gy, z)`.
+`script in ferris run remove()` takes the moving parts away. How it is made: displays.md, "Rotating assemblies".
+
 ### welcome — a greeting for real players
 Title with the player's name, a colour shimmer on the action bar, a ring of particles, a chime. Bots and helpers get
 nothing. No config file: edit `global_title` and `global_colors` in `welcome.sc`, then `script load welcome`.

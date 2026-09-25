@@ -35,7 +35,7 @@ reachable from the front door, no dark corners where mobs could spawn — and te
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
 - 🏗️ **A building library and blueprints** — `mclib` + `parts` (furniture, roofs, stairs, windows, lamps, gardens,
-  round towers, pools, flags) that work facing any direction, and seven ready blueprints to use and learn from.
+  round towers, pools, flags) that work facing any direction, and eight ready blueprints to use and learn from.
 - 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, vendor
   stands, secret doors, welcome shows, fireworks.
 
@@ -144,7 +144,7 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 | [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, `city.py` (roads, rail lines), and the helper scarpet apps |
 | [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, catalog |
 | [`skill/clawdblock/SYSTEM_PROMPT.md`](skill/clawdblock/SYSTEM_PROMPT.md) | a condensed prompt for small / local models |
-| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, vendor, secret_door, welcome, fireworks |
+| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, vendor, secret_door, welcome, fireworks |
 | [`docs/`](docs) | getting started, clients, friends, architecture, troubleshooting, contributing, writing blueprints |
 
 ## Mods

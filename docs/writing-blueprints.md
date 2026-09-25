@@ -286,7 +286,7 @@ four facings, a real-server test with screenshots, and a row in the blueprint ta
 ## See also
 
 - The ready blueprints, to read and copy: `skill/clawdblock/blueprints/cottage.py` (a small house),
-  `modern_villa.py` (two storeys), `tower.py` (round), `park.py` (landscaping), `drop_tower.py` (tall + game logic), `tnt_run.py` (an arena + a full game)
+  `modern_villa.py` (two storeys), `tower.py` (round), `park.py` (landscaping), `drop_tower.py` (tall + game logic), `tnt_run.py` (an arena + a full game), `ferris_wheel.py` (a moving ride made of display entities)
 - [Contributing](contributing.md) · [Architecture](architecture.md#generators-and-jobs)
 - For the AI's side: [the skill](../skill/clawdblock/SKILL.md), Part 4, and the reference pages on
   [coordinates](../skill/clawdblock/reference/coordinates.md) and [block states](../skill/clawdblock/reference/block-states.md)

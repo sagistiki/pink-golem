@@ -83,6 +83,28 @@ summon block_display 100 -57 40.03 {Tags:["flag"],Rotation:[0f,0f],block_state:{
   by merging a new `transformation` together with `interpolation_duration:<ticks>` and `start_interpolation:0`. Test on
   one entity before summoning twenty.
 
+## Rotating assemblies — wheels, fans, windmills, carousels
+
+Blocks cannot move, but block displays can, smoothly and without mods (`scarpet-apps/ferris.sc` is the full example):
+
+- **Spawn every piece at the pivot** (the axle) and place it with its `transformation` only. A display is drawn from
+  its entity position toward +x +y +z, so for a piece whose centre sits at (u, v) on the wheel with its own angle φ
+  and size (sx, sy, sz), at wheel angle θ around z:
+  `left_rotation = [0, 0, sin(ψ/2), cos(ψ/2)]` with ψ = θ + φ, and
+  `translation = R(θ)·(u, v) − R(ψ)·(sx/2, sy/2)` (plus `−sz/2` in z), so it turns about its own centre.
+- **Animate on the client:** every N ticks merge the NEXT angle with `start_interpolation:0,interpolation_duration:N`.
+  Players see a smooth turn; the server sends only 1/N of the updates. N = 10 works for ~100 pieces. Ease the angle
+  (`f*f*(3-2f)`) for gentle starts and stops.
+- **Things that must stay level** (cabins, seats) do not rotate: use an invisible `NoGravity` armor stand moved with
+  `modify(e, 'pos', …)` every tick, and let the cabin's displays ride it (`ride <display> mount <stand>`); they
+  follow it automatically. A riding display sits at stand + 1.975, a riding player's feet at stand + 1.375 — put the
+  cabin floor just under the feet.
+- **Players ride** with `ride <player> mount <stand uuid>` and stay mounted while the stand moves. Shift dismounts in
+  vanilla: watch `query(p, 'mount')` every tick and teleport a rider who got off to a safe spot, or they fall.
+- Board by standing on a pad (position polling), not by clicking — a fake player can then test the whole ride. The
+  server cannot render display transformations, so ask a real player to look before you announce it.
+- Keep it cheap: run only while a real player is near, tag every entity and `kill @e[tag=…]` before respawning.
+
 ## item_display — showpieces and display cases
 
 ```

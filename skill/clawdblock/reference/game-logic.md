@@ -101,6 +101,24 @@ done, so a careless reload can break a game under them (a race reload once kille
 4. **A button left `powered=true` fires again after every reload** (the app sees a new rising edge). Reset test
    buttons to `powered=false`.
 5. `reload()` functions (all bundled apps have one) re-read the JSON without a full `script load`.
+6. **Restore a player once.** "Give back the saved inventory" usually starts with `clear`; run it a second time on a
+   player who is already home (restored on respawn, then again by the end-of-round reset) and it wipes what they have
+   now. Restore only when the save file or the game tag still exists.
+
+## Don't trust events alone for who is still in a game
+
+An app does not hear its own events: when the app itself deals the fatal blow (`run('damage ...')` from `__on_tick`
+or a `schedule`), its `__on_player_dies` never runs. The player respawns, a respawn handler sends them home, and the
+round goes on with a "living" player who is not there: their follower mobs chase them through the lobby, the
+visitor rule teleports them to the stands, and the solo timer finally "wins" a round they lost.
+
+- Route all of the app's damage through one helper that checks `query(p, 'health') <= 0` right after and eliminates.
+- Once a second, eliminate every participant who is offline, dead (health 0) or no longer carries the game tag.
+- Make elimination idempotent (`if (!alive, return())`): the event, the helper and the sweep can all see one death.
+- Anything teleported onto a player each tick (a bait mob wolves chase, a nameplate carrier) shoves them: put it on
+  a team with `collisionRule never`.
+- Solo rounds end with an end screen (time, personal best) and send the player home. Spectating is for rounds where
+  others are still playing.
 
 ## Game areas that switch game mode
 
@@ -244,6 +262,7 @@ point clear of roofs and 6+ blocks from people.
 | Editing JSON but not reloading | `script in <app> run reload()` |
 | Entity-spawning loop in `__on_tick` | Spawn once, tag it, move it with `modify`; unbounded spawning lags or crashes the server |
 | "Respawn it if `entity_selector` finds none" | The entity may just be in an unloaded chunk — hundreds pile up. Respawn only with a real player near and the spot loaded, and remove extras (`rails.md`) |
+| A seat / spectator spot facing the wrong way | Yaw toward a point = `atan2(-dx, dz)` (yaw 0 = south, 180 = north); compute it, don't hardcode 180 |
 | Core game input is a button click | Prefer standing on a pad / crossing a line — a fake player can then test the whole round (`minigames.md`) |
 
 ## See also

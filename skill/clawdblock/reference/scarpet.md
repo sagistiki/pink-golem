@@ -114,6 +114,8 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 | Trap | What happens | Do instead |
 |---|---|---|
 | `put(m:k, null, v)` on an accessor | replaces the entry with null | `l = m:k; l += v; m:k = l` |
+| `put(m:k, 'field', v)` to set a nested field | replaces the whole entry m:k with the STRING 'field' — the record is silently gone | `m:k:'field' = v` |
+| expecting your app's own events from its own actions | a player killed by `run('damage ...')` inside the app's `__on_tick` / `schedule` never reaches that app's `__on_player_dies` (Carpet drops it; from a command it is only deferred) | check `query(p, 'health') <= 0` right after your own damage, and sweep the state once a second (see game-logic.md) |
 | `slice()` of an empty list | throws "/ by zero" | `if (l, slice(l, 0, min(5, length(l))), [])` |
 | `list + list` | adds element by element (fails on uneven sizes) | `for (b, a += _)` |
 | `...` spread | does not exist | pass the list, index it |

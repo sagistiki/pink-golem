@@ -36,7 +36,7 @@ reachable from the front door, no dark corners where mobs could spawn — and te
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
 - 🏗️ **A building library and blueprints** — `mclib` + `parts` (furniture, roofs, stairs, windows, lamps, gardens,
   round towers, pools, flags) that work facing any direction, and eight ready blueprints to use and learn from.
-- 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, vendor
+- 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, a rideable Ferris wheel, vendor
   stands, secret doors, welcome shows, fireworks.
 
 ## Built by the included blueprints
@@ -142,7 +142,7 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 | [`skill/clawdblock/SKILL.md`](skill/clawdblock/SKILL.md) | the skill: golden rules, the recipe, tools at a glance, facts that break builds |
 | [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 24 deep-dive pages |
 | [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, `city.py` (roads, rail lines), and the helper scarpet apps |
-| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, catalog |
+| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, Ferris wheel, catalog |
 | [`skill/clawdblock/SYSTEM_PROMPT.md`](skill/clawdblock/SYSTEM_PROMPT.md) | a condensed prompt for small / local models |
 | [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, vendor, secret_door, welcome, fireworks |
 | [`docs/`](docs) | getting started, clients, friends, architecture, troubleshooting, contributing, writing blueprints |

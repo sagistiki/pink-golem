@@ -18,7 +18,7 @@ curious, or if you're debugging something the [troubleshooting](troubleshooting.
  ┌────────────▼─────────────┐
  │ ClawdBlock MCP server    │  index.js  : RCON client, log watcher, tool loader (hot reload)
  │ (Node, one per client)   │  lib/*.js  : shared helpers (safety, world reads, bot, crew, jobs, sight)
- │                          │  tools/*.js: 33 minecraft_* tools in 8 groups
+ │                          │  tools/*.js: 37 minecraft_* tools in 11 groups
  └──┬──────────────┬────────┘
     │ RCON (TCP,   │ reads server/logs/latest.log every 0.4 s (chat, joins, leaves)
     │ 127.0.0.1)   │ reads server/mods/ (which mods → which tools)
@@ -80,6 +80,8 @@ network protocol.
 | `tools/rails.js` | `minecraft_rails` (trace / path / ride) |
 | `tools/body.js` | `minecraft_bot`, `minecraft_helpers` |
 | `tools/memory.js` | `minecraft_map`, `minecraft_zones`, `minecraft_people`, `minecraft_notes`, `minecraft_cleanup` |
+| `tools/dev.js` | `minecraft_app` (lint / status / reload / patch / errors), `minecraft_playtest` (scripted tests with fake players) |
+| `tools/pack.js` | `minecraft_pack` (build / deploy / status of the server resource pack) |
 | `lib/core.js` | paths, the locked RCON call, JSON files, chat, players, geometry, scarpet calls |
 | `lib/features.js` | which mods are installed (see *Feature detection*) |
 | `lib/world.js` | reads the world as a voxel grid; tells natural terrain from builds |
@@ -89,6 +91,7 @@ network protocol.
 | `lib/jobs.js` | background jobs, boss bar, after-build checks, running Python generators |
 | `lib/sight.js` | screenshots, previews, BlueMap photos, the access check, free-space search |
 | `lib/context.js` | where each chat line was written from, big-box reads, area arguments, the preflight (server-side syntax check without running anything) |
+| `lib/devkit.js` | pure helpers of the dev tools: the scarpet linter, zip read/write, resource-pack merge and validation, finding what a test left in app records |
 | `render.js`, `pathfind.js`, `sim.js`, `analyze.js`, `worldmap.js` | pure modules: PNG renderer, A* pathfinder, command simulator (previews), accessibility analysis, world-map index |
 
 ### Hot reload

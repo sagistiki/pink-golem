@@ -103,7 +103,14 @@ Blocks cannot move, but block displays can, smoothly and without mods (`scarpet-
   vanilla: watch `query(p, 'mount')` every tick and teleport a rider who got off to a safe spot, or they fall.
 - Board by standing on a pad (position polling), not by clicking — a fake player can then test the whole ride. The
   server cannot render display transformations, so ask a real player to look before you announce it.
-- Keep it cheap: run only while a real player is near, tag every entity and `kill @e[tag=…]` before respawning.
+- Keep it cheap: run only while a real player is near, tag every entity and remove the old ones before respawning.
+- **Rebuild only when a player is near, and tag each build with a generation id.** Removing old parts only reaches
+  loaded chunks: a wheel rebuilt at server start (nobody around) leaves its old copy in the saved chunk, and that
+  frozen copy reappears next to the live one when the chunk loads. Build lazily in the tick (player within range), and
+  in an `entity_load_handler` remove any loaded part whose tags lack the current generation tag.
+- Remove with `for (entity_selector('@e[tag=…]'), modify(_, 'remove'))`, not `run('kill …')`: a command run from inside
+  another command (`script in app run setup()`) is deferred until that command ends, so the kill also hits what was
+  just spawned.
 
 ## item_display — showpieces and display cases
 

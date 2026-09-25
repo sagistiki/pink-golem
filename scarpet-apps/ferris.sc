@@ -68,7 +68,7 @@ reload() -> (
 remove() -> (
   _put_down_all();
   global_ready = false;
-  run('kill @e[tag=fw]');
+  _kill_all();
   delete_file('wheel', 'json');
   'removed (the static blocks stay: undo the blueprint jobs to remove them)'
 );
@@ -81,12 +81,21 @@ _derive(w) -> (
   global_snd_y = gy + 3
 );
 
+// The wheel is (re)built lazily, when a real player is near, so its chunks are loaded and the old copy is removed
+// first. Every build carries its own generation tag; a part of an older build that loads later (a chunk that was
+// unloaded during the rebuild, e.g. after a restart) is removed on load — otherwise a frozen copy stands next to the
+// live wheel.
+global_gen = str('fw_g%d', floor(rand(1000000000)));
 __on_start() -> (
   global_ready = false;
-  if (read_file('wheel', 'json'), schedule(20, '_boot'),
-    logger('warn', '[ferris] no wheel yet — run: script in ferris run setup(x, y, z)'))
+  for (['block_display', 'armor_stand'], entity_load_handler(_, _(e, new) -> if (!new, schedule(0, '_stale', query(e, 'uuid')))));
+  w = read_file('wheel', 'json');
+  if (w, _derive(w), logger('warn', '[ferris] no wheel yet — run: script in ferris run setup(x, y, z)'))
 );
-_boot() -> (_derive(read_file('wheel', 'json')); _spawn());
+_stale(u) -> (e = entity_id(u); if (e && global_ready, t = parse_nbt(query(e, 'nbt', 'Tags')); if (t && (t ~ 'fw') != null && (t ~ global_gen) == null, modify(e, 'remove'))));
+// remove at once — a `kill` run from inside a command (script in ferris run setup/reload) is deferred until after it
+// and would also remove the wheel that was just built
+_kill_all() -> for (entity_selector('@e[tag=fw]'), modify(_, 'remove'));
 
 _real(p) -> global_allow_fake || (p ~ 'player_type') != 'fake';
 _ease(f) -> f * f * (3 - 2 * f);
@@ -94,7 +103,7 @@ _msg(n, t, c) -> run(str('title %s actionbar %s', n, encode_json({'text' -> t, '
 _snd(s, v, pt) -> run(str('playsound %s master @a %.1f %.1f %.1f %.1f %.2f', s, global_C:0, global_snd_y, global_C:2, v, pt));
 
 // ───────────── the moving parts ─────────────
-_disp(blk) -> spawn('block_display', global_C, str('{Tags:["fw","fw_rot"],block_state:{Name:"minecraft:%s"},teleport_duration:0,brightness:{sky:15,block:15}}', blk));
+_disp(blk) -> spawn('block_display', global_C, str('{Tags:["fw","fw_rot","%s"],block_state:{Name:"minecraft:%s"},teleport_duration:0,brightness:{sky:15,block:15}}', global_gen, blk));
 
 // a piece of the wheel: centre (pu, pv) on the wheel plane at angle 0, z offset zo, own angle phi, size sx × sy × sz
 _piece(pu, pv, zo, phi, sx, sy, sz, blk) -> (
@@ -105,7 +114,7 @@ _piece(pu, pv, zo, phi, sx, sy, sz, blk) -> (
 
 _spawn() -> (
   global_ready = false;
-  run('kill @e[tag=fw]');
+  _kill_all();
   global_pieces = []; global_bulbs = []; global_seats = []; global_riders = {};
   R = global_R;
   for ([-1.3, 1.3],
@@ -123,7 +132,7 @@ _spawn() -> (
   // cabins: a seat each, with the gondola riding on it
   for (range(global_N),
     col = global_colors:(_ % 8);
-    s = spawn('armor_stand', global_C, '{Tags:["fw","fw_seat"],Invisible:1b,NoGravity:1b,Invulnerable:1b,Silent:1b,DisabledSlots:4144959}');
+    s = spawn('armor_stand', global_C, str('{Tags:["fw","fw_seat","%s"],Invisible:1b,NoGravity:1b,Invulnerable:1b,Silent:1b,DisabledSlots:4144959}', global_gen));
     global_seats += query(s, 'uuid');
     y0 = -0.72;                                                    // just under the rider's feet
     for ([[col + '_concrete', -0.9, y0, -0.9, 1.8, 0.12, 1.8],     // floor
@@ -139,7 +148,7 @@ _spawn() -> (
           ['iron_block', 0.81, y0, 0.81, 0.07, 2.25, 0.07],
           ['iron_block', -0.05, y0 + 2.6, -0.05, 0.1, 0.45, 0.1]],    // hanger up to the cross-bar
       q = _;
-      d = spawn('block_display', global_C, str('{Tags:["fw","fw_cab"],block_state:{Name:"minecraft:%s"},brightness:{sky:15,block:13},transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,%.3ff],scale:[%.3ff,%.3ff,%.3ff]}}',
+      d = spawn('block_display', global_C, str('{Tags:["fw","fw_cab","%s"],block_state:{Name:"minecraft:%s"},brightness:{sky:15,block:13},transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,%.3ff],scale:[%.3ff,%.3ff,%.3ff]}}', global_gen,
         q:0, q:1, q:2, q:3, q:4, q:5, q:6));
       run(str('ride %s mount %s', query(d, 'uuid'), query(s, 'uuid')))
     )
@@ -178,11 +187,12 @@ _seats(th) -> for (global_seats,
 _bottom() -> (k = round((270 - global_theta) / global_STEP) % global_N; if (k < 0, k + global_N, k));
 
 __on_tick() -> (
-  if (!global_ready, return());
+  if (!global_C, return());
   t = tick_time();
   if (t % 20 == 0, global_active = length(filter(player('all'), _real(_) && _ ~ 'dimension' == 'overworld'
     && abs(pos(_):0 - global_C:0) < 90 && abs(pos(_):2 - global_C:2) < 90)) > 0 || length(global_riders) > 0);
   if (!global_active, return());
+  if (!global_ready, _spawn(); return());
   global_t += 1;
   if (global_phase == 'move',
     f = min(1, global_t / global_MOVE);

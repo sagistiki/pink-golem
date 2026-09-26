@@ -17,7 +17,7 @@
 // bossbars. A title is only re-sent when it changed. Check any title offline with resourcepacks/hud/check_hud.py.
 
 // <generated> by resourcepacks/hud/build_pack.py — do not edit by hand, rebuild instead
-global_hud_font_id = 'clawdblock:hud';
+global_hud_font_id = 'pinkgolem:hud';
 global_hud_anchor = {'top_left' -> 0, 'top_centre' -> 1, 'top_right' -> 2, 'bottom_centre' -> 3, 'bottom_right' -> 4, 'bottom_left' -> 5, 'middle_left' -> 6, 'middle_right' -> 7};
 global_hud_neg = ['', '', '', '', '', '', '', '', '', ''];
 global_hud_pos = ['', '', '', '', '', '', '', '', '', ''];

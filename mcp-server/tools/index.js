@@ -9,7 +9,7 @@
 const v = new URL(import.meta.url).search;
 const load = (p) => import(new URL(p + v, import.meta.url).href);
 
-const LIBS = ["../lib/core.js", "../lib/features.js", "../lib/world.js", "../lib/safety.js", "../lib/crew.js", "../lib/bot.js", "../lib/jobs.js", "../lib/sight.js", "../lib/context.js", "../lib/devkit.js"];
+const LIBS = ["../lib/core.js", "../lib/features.js", "../lib/world.js", "../lib/safety.js", "../lib/crew.js", "../lib/bot.js", "../lib/jobs.js", "../lib/sight.js", "../lib/context.js", "../lib/trust.js", "../lib/devkit.js"];
 const GROUPS = ["./connection.js", "./chat.js", "./build.js", "./look.js", "./survey.js", "./rails.js", "./body.js", "./memory.js", "./health.js", "./dev.js", "./pack.js"];
 
 // JSON-ish arguments some clients send as strings
@@ -51,7 +51,8 @@ export async function create(ctx) {
     const h = H[name];
     if (!h) throw new Error(`Unknown tool: ${name}`);
     const miss = K.missing(REQ[name]);
-    if (miss.length) throw new Error(`${name} needs the ${miss.join(", ")} mod — install it with: python3 clawdblock.py mods add ${miss.join(" ")}`);
+    if (miss.length) throw new Error(`${name} needs the ${miss.join(", ")} mod — install it with: python3 pinkgolem.py mods add ${miss.join(" ")}`);
+    K.checkTrust(name, args);   // lib/trust.js: owners, guests, !approve — enforced here, not in the prompt
     return await h(args);
   }
   K.handle = handle;

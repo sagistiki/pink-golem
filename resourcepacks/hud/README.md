@@ -3,7 +3,7 @@
 HUD elements anywhere on the screen with no client mods: a speedometer dial, a compass tape, a 7-segment timer, bars
 and text, at eight anchors (corners, edges, centre). The composer is the scarpet library
 [`scarpet-apps/hud.scl`](../../scarpet-apps/hud.scl); the technique is explained in
-[`reference/hud.md`](../../skill/clawdblock/reference/hud.md). Minecraft 26.2 (pack format 88).
+[`reference/hud.md`](../../skill/pinkgolem/reference/hud.md). Minecraft 26.2 (pack format 88).
 
 | File | What |
 |---|---|
@@ -14,13 +14,13 @@ and text, at eight anchors (corners, edges, centre). The composer is the scarpet
 
 The pack contains:
 
-- `assets/clawdblock/font/hud.json` + `textures/font/hud_*.png` — small 5×7 text (two heights), big text (×2),
+- `assets/pinkgolem/font/hud.json` + `textures/font/hud_*.png` — small 5×7 text (two heights), big text (×2),
   7-segment digits, a 20-segment dial in two 18-px slices, bar segments, compass ticks and pointer, dark backdrop
   strips, and power-of-two space glyphs (−512 … +512 px);
 - `assets/minecraft/shaders/core/text.vsh` — the minimap's shader byte for byte plus the HUD block (built from
   `../minimap/build_pack.py`, so the two never drift apart);
 - transparent white bossbar sprites (the carrier bar is invisible);
-- `assets/clawdblock/hud_layout.json` — the band, the anchors and the minimap constants, for tools (the game ignores it).
+- `assets/pinkgolem/hud_layout.json` — the band, the anchors and the minimap constants, for tools (the game ignores it).
 
 ## Build, check, deploy
 

@@ -1,8 +1,8 @@
-# ClawdBlock documentation
+# Pink Golem documentation
 
 These pages are for **people**: players setting up a server for the first time, parents and teachers running one
 for kids, and developers who want to extend it. The AI has its own documentation, the skill in
-[`skill/clawdblock/`](../skill/clawdblock/SKILL.md), written for models to act on.
+[`skill/pinkgolem/`](../skill/pinkgolem/SKILL.md), written for models to act on.
 
 New here? Read **[Getting started](getting-started.md)**, then the page for your AI client.
 
@@ -12,20 +12,20 @@ New here? Read **[Getting started](getting-started.md)**, then the page for your
 
 | Page | Read it when |
 |---|---|
-| [Getting started](getting-started.md) | you're installing ClawdBlock: prerequisites, the installer, first start, joining, first prompts, updating, uninstalling |
+| [Getting started](getting-started.md) | you're installing Pink Golem: prerequisites, the installer, first start, joining, first prompts, updating, uninstalling |
 | [Playing with friends](exposing-to-friends.md) | others should join: LAN, port forwarding, tunnel services, whitelist, security |
 | [Troubleshooting](troubleshooting.md) | something doesn't work: Java, ports, RCON, Carpet, the MCP not showing up, lag, logs, backups, a fresh world |
 | [Upgrading](upgrading.md) | a new Minecraft version is out, or you want newer mods |
 
 ## Connect your AI
 
-Each page shows what `python3 clawdblock.py connect <client>` writes, how the skill loads, the bot's in-game
+Each page shows what `python3 pinkgolem.py connect <client>` writes, how the skill loads, the bot's in-game
 name, manual setup, and a first-session checklist.
 
 | Client | Bot name | Page |
 |---|---|---|
-| Claude Code | Claude (from `clawdblock.json`) | [clients/claude-code.md](clients/claude-code.md) |
-| Claude Desktop | Claude (from `clawdblock.json`) | [clients/claude-desktop.md](clients/claude-desktop.md) |
+| Claude Code | Claude (from `pinkgolem.json`) | [clients/claude-code.md](clients/claude-code.md) |
+| Claude Desktop | Claude (from `pinkgolem.json`) | [clients/claude-desktop.md](clients/claude-desktop.md) |
 | Gemini CLI | Gemini | [clients/gemini-cli.md](clients/gemini-cli.md) |
 | Codex CLI | Codex | [clients/codex.md](clients/codex.md) |
 | LM Studio, local models, any other MCP client | Buddy | [clients/local-models.md](clients/local-models.md) |
@@ -37,7 +37,7 @@ on one server without fighting over one body.
 
 | Page | Read it when |
 |---|---|
-| [Features, layout and mods](features.md) | you want the full list of what ClawdBlock does, what's in each folder and which mods it uses |
+| [Features, layout and mods](features.md) | you want the full list of what Pink Golem does, what's in each folder and which mods it uses |
 | [Case study: a roller coaster that really runs](case-study-roller-coaster.md) | you want to see a big project end to end: design, physics, a display-entity track, a custom train, the camera, testing on a live server |
 
 ## Build and extend
@@ -51,16 +51,16 @@ on one server without fighting over one body.
 ## Quick reference
 
 ```bash
-python3 clawdblock.py setup                 # install or repair (keeps your world)
-python3 clawdblock.py start [--background]  # start the server
-python3 clawdblock.py stop | status | doctor
-python3 clawdblock.py mods [list|add|remove|update] [names…]
-python3 clawdblock.py apps [list|add|remove] [names…]
-python3 clawdblock.py connect [claude-code|claude-desktop|gemini|codex|lmstudio|all|print]
-python3 clawdblock.py backup | new-world
+python3 pinkgolem.py setup                 # install or repair (keeps your world)
+python3 pinkgolem.py start [--background]  # start the server
+python3 pinkgolem.py stop | status | doctor
+python3 pinkgolem.py mods [list|add|remove|update] [names…]
+python3 pinkgolem.py apps [list|add|remove] [names…]
+python3 pinkgolem.py connect [claude-code|claude-desktop|gemini|codex|lmstudio|all|print]
+python3 pinkgolem.py backup | new-world
 ```
 
-On Windows, type `py` instead of `python3`, or use the `clawdblock.cmd` shortcut in the ClawdBlock folder
-(`clawdblock start` in Command Prompt, `.\clawdblock start` in PowerShell).
+On Windows, type `py` instead of `python3`, or use the `pinkgolem.cmd` shortcut in the Pink Golem folder
+(`pinkgolem start` in Command Prompt, `.\pinkgolem start` in PowerShell).
 
-ClawdBlock is open source under the MIT license: https://github.com/sagistiki/clawdblock
+Pink Golem is open source under the MIT license: https://github.com/sagistiki/pink-golem

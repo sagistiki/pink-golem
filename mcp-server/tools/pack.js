@@ -2,7 +2,7 @@
  * The server resource pack in one call: minecraft_pack build (merge + validate) · deploy (host under a NEW url,
  * server.properties, live push with the Key Bridge mod's /packpush) · status (deployed vs built).
  *
- * Configuration: "resource_pack" in clawdblock.json (all optional):
+ * Configuration: "resource_pack" in pinkgolem.json (all optional):
  *   {
  *     "parts": [{"path": "server/polymer/resource_pack.zip", "generated": true},   // merged in order, first wins;
  *               "resourcepacks/minimap/minimap.zip"],                          // generated = a mod makes it: problems don't block
@@ -13,7 +13,7 @@
  *     "publish_dir": "/var/www/packs", "public_url": "https://example.org/packs"   // copy there under a new name
  *   }
  * Without "parts": every resourcepacks/<name>/<name>.zip. Without an upload setting: deploy with url:'<where you put it>'.
- * Pure zip/validation helpers: lib/devkit.js. Guide: skill/clawdblock/reference/testing-apps.md
+ * Pure zip/validation helpers: lib/devkit.js. Guide: skill/pinkgolem/reference/testing-apps.md
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +21,7 @@ import path from "node:path";
 export const tools = [
   {
     name: "minecraft_pack",
-    description: "The server resource pack in one call (parts from clawdblock.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url (upload_command, or publish_dir + public_url, or url:'…' you uploaded yourself) → download check → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
+    description: "The server resource pack in one call (parts from pinkgolem.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url (upload_command, or publish_dir + public_url, or url:'…' you uploaded yourself) → download check → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
     inputSchema: { type: "object", properties: {
       action: { type: "string", enum: ["build", "deploy", "status"] }, dry_run: { type: "boolean" }, check_only: { type: "boolean" }, output: { type: "string" },
       url: { type: "string" }, force: { type: "boolean" }, skip_build: { type: "boolean" }, check_url: { type: "boolean" },
@@ -67,7 +67,7 @@ export function handlers(K, ctx) {
       parts.push({ name: p.path, buf });
       used.push({ path: p.path, size: buf.length, sha1: D.sha1(buf) });
     }
-    if (!parts.length) throw new Error("no pack parts found — set resource_pack.parts in clawdblock.json, or put packs in resourcepacks/<name>/<name>.zip");
+    if (!parts.length) throw new Error("no pack parts found — set resource_pack.parts in pinkgolem.json, or put packs in resourcepacks/<name>/<name>.zip");
     const m = D.mergePacks(parts, { mergeJson: cfg.merge_json !== false });
     const v = D.validatePack(m.files);
     // a part a mod generates (e.g. Polymer's own pack) works in game even when a check here fails: report, don't block
@@ -124,7 +124,7 @@ export function handlers(K, ctx) {
       fs.copyFileSync(file, path.join(cfg.publish_dir, name));
       return cfg.public_url.replace(/\/+$/, "") + "/" + name;
     }
-    throw new Error("no way to publish the pack: set resource_pack.upload_command or publish_dir + public_url in clawdblock.json, or upload it yourself and call deploy with url:'…'");
+    throw new Error("no way to publish the pack: set resource_pack.upload_command or publish_dir + public_url in pinkgolem.json, or upload it yourself and call deploy with url:'…'");
   }
   function setProps(kv) {
     const lines = fs.readFileSync(PROPS, "utf8").split(/\r?\n/);

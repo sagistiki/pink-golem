@@ -22,4 +22,4 @@ python3 resourcepacks/tools/block_render.py oak_planks grass_block --pack resour
 - Ready: `natural_32.zip` (smooth) and `natural_32_p8.zip` (8 tones), resource pack format 88 (Minecraft 26.2).
 
 Use it as a normal resource pack, or add the zip to your server pack's parts and deploy it with `minecraft_pack`.
-How it works and how to design more: [reference/textures.md](../../skill/clawdblock/reference/textures.md).
+How it works and how to design more: [reference/textures.md](../../skill/pinkgolem/reference/textures.md).

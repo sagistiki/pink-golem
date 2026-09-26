@@ -1,4 +1,4 @@
-# How ClawdBlock works
+# How Pink Golem works
 
 This page explains what happens between "build me a cottage" and the blocks appearing: the pieces, how they
 talk to each other, the safety rails, and the limits. Read it if you want to change the code, if you're
@@ -16,7 +16,7 @@ curious, or if you're debugging something the [troubleshooting](troubleshooting.
  └────────────┬─────────────┘
               │ MCP over stdio (JSON-RPC on stdin/stdout; the client starts `node mcp-server/index.js`)
  ┌────────────▼─────────────┐
- │ ClawdBlock MCP server    │  index.js  : RCON client, log watcher, tool loader (hot reload)
+ │ Pink Golem MCP server    │  index.js  : RCON client, log watcher, tool loader (hot reload)
  │ (Node, one per client)   │  lib/*.js  : shared helpers (safety, world reads, bot, crew, jobs, sight)
  │                          │  tools/*.js: 37 minecraft_* tools in 11 groups
  └──┬──────────────┬────────┘
@@ -51,9 +51,9 @@ files in `data/` are updated under the same kind of lock.
 ## Why RCON + Carpet, and not a bot that logs in
 
 Many Minecraft AI projects use a *protocol bot*, a program that pretends to be a Minecraft client and logs in over
-the network. ClawdBlock doesn't, and that choice is on purpose:
+the network. Pink Golem doesn't, and that choice is on purpose:
 
-| | Protocol bot | ClawdBlock (RCON + Carpet) |
+| | Protocol bot | Pink Golem (RCON + Carpet) |
 |---|---|---|
 | New Minecraft version | the bot library must learn the new network protocol first; this can take weeks | RCON and server commands barely change between versions; works as soon as Fabric and Carpet are out |
 | Building | places blocks one by one like a player, or needs op commands anyway | `/fill`, `/setblock`, `/clone` as the console: thousands of blocks per second |
@@ -135,12 +135,12 @@ Undo snapshots skip container and sign contents, and WorldEdit edits have their 
 
 ## Generators and jobs
 
-Big builds are **generators**: Python scripts that describe a build as voxels with `skill/clawdblock/scripts/mclib.py`
+Big builds are **generators**: Python scripts that describe a build as voxels with `skill/pinkgolem/scripts/mclib.py`
 (and ready parts from `parts.py`). `Build.commands()` compresses the voxels into `/fill` runs, layer by layer, and
 `Build.save()` writes them to `jobs/<name>.json`, split into `-1`, `-2`, … files past 1200 commands.
 
-`minecraft_generate` runs a generator (only files inside the ClawdBlock folder) with `CLAWDBLOCK_ROOT`,
-`CLAWDBLOCK_JOBS` and `CLAWDBLOCK_CU_DATA` set, collects the job files it wrote, and with `build:true` queues each
+`minecraft_generate` runs a generator (only files inside the Pink Golem folder) with `PINKGOLEM_ROOT`,
+`PINKGOLEM_JOBS` and `PINKGOLEM_CU_DATA` set, collects the job files it wrote, and with `build:true` queues each
 file as a **background job**. A job:
 
 1. snapshots the area (undo), and brings helper builders to the site (`helpers:N`, up to 4);
@@ -154,8 +154,8 @@ The AI follows with `minecraft_jobs action:wait` (up to 50 s per call). See [wri
 
 ## The scarpet apps
 
-Scarpet is Carpet's scripting language. Apps live in the world's `scripts/` folder, and ClawdBlock needs three
-of them (setup installs them from `skill/clawdblock/scripts/`):
+Scarpet is Carpet's scripting language. Apps live in the world's `scripts/` folder, and Pink Golem needs three
+of them (setup installs them from `skill/pinkgolem/scripts/`):
 
 | App | Job |
 |---|---|
@@ -164,7 +164,7 @@ of them (setup installs them from `skill/clawdblock/scripts/`):
 | `bubble` | speech bubbles (text displays) that float above the AI's head and the builders' |
 
 The optional apps in `scarpet-apps/` (fireworks, launch pads, races, secret doors, TNT Run, vendor stands, welcome) are
-game logic for players: `python3 clawdblock.py apps add race`. Each reads its settings from
+game logic for players: `python3 pinkgolem.py apps add race`. Each reads its settings from
 `server/world/scripts/<app>.data/*.json` and has a `reload()` function.
 
 ---
@@ -190,10 +190,16 @@ and learnings stay.
 
 ## Configuration
 
-The MCP server reads `clawdblock.json` (or the file in `CLAWDBLOCK_CONFIG`), then environment variables, which
+The MCP server reads `pinkgolem.json` (or the file in `PINKGOLEM_CONFIG`), then environment variables, which
 override it: `MC_BOT_NAME`, `MC_CHAT_COLOR`, `MC_SERVER_DIR`, `MC_RCON_HOST`, `MC_RCON_PORT`, `MC_RCON_PASSWORD`. The
-RCON port and password come from `server.properties` unless overridden. `clawdblock.json` also holds `bot_aliases`
+RCON port and password come from `server.properties` unless overridden. `pinkgolem.json` also holds `bot_aliases`
 (names players can use to address the AI) and `crew` (`names` of up to 4 helpers, optional `lines` they say).
+
+**The bot's look.** The default body is the player `Golem` with the team prefix `Pink `, so players see **Pink Golem**
+over its head, in the player list and in chat (a player name can't contain a space). It wears pink leather armor with a
+gold trim and a shimmer, and holds a pink block and a pink tulip, so nobody mistakes it for a player. `bot_prefix`
+changes the prefix (another `bot_name` gets none unless you set one), `chat_color` colours it, `bot_outfit: "none"`
+skips the outfit.
 
 ---
 
@@ -218,4 +224,4 @@ RCON port and password come from `server.properties` unless overridden. `clawdbl
 - [Contributing](contributing.md): add a tool, a lib helper, a blueprint, an app
 - [Writing blueprints](writing-blueprints.md)
 - [Upgrading](upgrading.md): newer Minecraft versions
-- [The skill](../skill/clawdblock/SKILL.md): how the AI is told to use all this
+- [The skill](../skill/pinkgolem/SKILL.md): how the AI is told to use all this

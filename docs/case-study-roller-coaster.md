@@ -4,9 +4,9 @@
 
 A player asked for *"an amazing roller coaster next to the stadium, with a loop, a high lift hill and a real coaster
 feeling — ridden in first person, a red train with orange flames"*. This page follows how the AI built it with
-ClawdBlock in one evening. It covers the design, the physics, the track, the train and the camera, and the bugs found
-along the way. The code is in [`skill/clawdblock/blueprints/coaster/`](../skill/clawdblock/blueprints/coaster) and the
-technique pages are in [`reference/rides.md`](../skill/clawdblock/reference/rides.md).
+Pink Golem in one evening. It covers the design, the physics, the track, the train and the camera, and the bugs found
+along the way. The code is in [`skill/pinkgolem/blueprints/coaster/`](../skill/pinkgolem/blueprints/coaster) and the
+technique pages are in [`reference/rides.md`](../skill/pinkgolem/reference/rides.md).
 
 | | |
 |---|---|
@@ -176,10 +176,10 @@ The server had players on it the whole time, so nothing was tested by "reload an
 
 | | |
 |---|---|
-| [`blueprints/coaster/track.py`](../skill/clawdblock/blueprints/coaster/track.py) | turtle path, loop, resampling, physics simulation, banking, frames |
-| [`blueprints/coaster/build.py`](../skill/clawdblock/blueprints/coaster/build.py) | track displays, supports, station, `track.json` for the app |
-| [`blueprints/coaster/pack.py`](../skill/clawdblock/blueprints/coaster/pack.py) | the train's models and textures |
-| [`blueprints/coaster/coaster.sc`](../skill/clawdblock/blueprints/coaster/coaster.sc) | the ride: physics, cars, riders, camera, effects, stats |
+| [`blueprints/coaster/track.py`](../skill/pinkgolem/blueprints/coaster/track.py) | turtle path, loop, resampling, physics simulation, banking, frames |
+| [`blueprints/coaster/build.py`](../skill/pinkgolem/blueprints/coaster/build.py) | track displays, supports, station, `track.json` for the app |
+| [`blueprints/coaster/pack.py`](../skill/pinkgolem/blueprints/coaster/pack.py) | the train's models and textures |
+| [`blueprints/coaster/coaster.sc`](../skill/pinkgolem/blueprints/coaster/coaster.sc) | the ride: physics, cars, riders, camera, effects, stats |
 | [`resourcepacks/tools/model_preview.py`](../resourcepacks/tools/model_preview.py) | render item and block models to PNG without a game client |
 | [`mods-src/keybridge/`](../mods-src/keybridge) | keys → scoreboard, `/packpush`, and the flip camera |
-| [`reference/rides.md`](../skill/clawdblock/reference/rides.md) | the techniques as a reference page |
+| [`reference/rides.md`](../skill/pinkgolem/reference/rides.md) | the techniques as a reference page |

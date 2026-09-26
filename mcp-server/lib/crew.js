@@ -1,6 +1,6 @@
 /**
  * crew — the helper builders: Carpet fake players in hard hats and hi-vis vests that work around a build site,
- * swing for real (helpers.sc) and chat now and then. Names and lines come from clawdblock.json "crew".
+ * swing for real (helpers.sc) and chat now and then. Names and lines come from pinkgolem.json "crew".
  * Also: speech bubbles above anyone's head (bubble.sc).
  */
 
@@ -42,6 +42,29 @@ export function install(K, ctx) {
     }
   };
   K.dressCrew = dress;
+
+  // The bot's own look, so players can tell it apart: a team gives the name its colour and prefix ("Pink " + "Golem"
+  // = "Pink Golem" over its head, in the player list and in chat); outfit "pink" = pink leather with gold trim and a
+  // shimmer, a pink block in hand and a pink tulip in the other (bot_outfit: "none" to skip).
+  const PINK = 16738740;                                       // #FF69B4
+  K.dressBot = async () => {
+    const n = K.BOT;
+    await K.cmd("team add bot_look").catch(() => {});
+    await K.cmd(`team modify bot_look color ${K.CHAT_COLOR}`).catch(() => {});
+    await K.cmd(`team modify bot_look prefix ${JSON.stringify({ text: K.BOT_PREFIX, color: K.CHAT_COLOR })}`).catch(() => {});
+    await K.cmd(`team join bot_look ${n}`).catch(() => {});
+    if (K.BOT_OUTFIT !== "pink") return;
+    const piece = (id) => `${id}[dyed_color=${PINK},trim={material:"gold",pattern:"silence"},enchantment_glint_override=true,unbreakable={}]`;
+    const items = [
+      ["armor.head", piece("leather_helmet")], ["armor.chest", piece("leather_chestplate")],
+      ["armor.legs", piece("leather_leggings")], ["armor.feet", piece("leather_boots")],
+      ["weapon.mainhand", "pink_concrete[enchantment_glint_override=true]"], ["weapon.offhand", "pink_tulip"],
+    ];
+    for (const [slot, it] of items) {
+      const out = await K.cmd(`item replace entity ${n} ${slot} with ${it}`).catch((e) => "ERR " + e.message);
+      if (K.looksLikeError(out)) await K.cmd(`item replace entity ${n} ${slot} with ${it.replace(/,trim=\{[^}]*\}/, "")}`).catch(() => {});
+    }
+  };
   // Carpet takes the name's real Mojang profile when one exists (skin + exact casing, e.g. "alex_builder"), so match
   // crew names case-insensitively and use the names as they are online.
   const isCrew = (n) => NAMES.some((m) => m.toLowerCase() === String(n).toLowerCase());

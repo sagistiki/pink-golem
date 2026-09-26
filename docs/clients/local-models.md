@@ -1,16 +1,16 @@
 # Local models (LM Studio and other MCP clients)
 
-This page is for running ClawdBlock with a model on your own computer, or with any MCP client that isn't covered
+This page is for running Pink Golem with a model on your own computer, or with any MCP client that isn't covered
 by its own page. It explains how to connect LM Studio, how to connect anything else, and what to expect from
 models of different sizes.
 
 | | |
 |---|---|
-| Connect LM Studio | `python3 clawdblock.py connect lmstudio` |
+| Connect LM Studio | `python3 pinkgolem.py connect lmstudio` |
 | MCP config | `~/.lmstudio/mcp.json` (Windows: `%USERPROFILE%\.lmstudio\mcp.json`) |
-| Skill | paste `skill/clawdblock/SYSTEM_PROMPT.md` into the system prompt |
+| Skill | paste `skill/pinkgolem/SYSTEM_PROMPT.md` into the system prompt |
 | Bot name | **Buddy** |
-| Any other client | `python3 clawdblock.py connect print` |
+| Any other client | `python3 pinkgolem.py connect print` |
 
 ---
 
@@ -21,7 +21,7 @@ models of different sizes.
 Setup offers this when it finds a `~/.lmstudio` folder. To do it later, or again:
 
 ```bash
-python3 clawdblock.py connect lmstudio
+python3 pinkgolem.py connect lmstudio
 ```
 
 It merges this entry into `~/.lmstudio/mcp.json`, keeping your other servers and saving a `.bak` copy first:
@@ -29,9 +29,9 @@ It merges this entry into `~/.lmstudio/mcp.json`, keeping your other servers and
 ```json
 {
   "mcpServers": {
-    "clawdblock": {
+    "pinkgolem": {
       "command": "/usr/local/bin/node",
-      "args": ["/home/you/clawdblock/mcp-server/index.js"],
+      "args": ["/home/you/pinkgolem/mcp-server/index.js"],
       "env": { "MC_BOT_NAME": "Buddy" }
     }
   }
@@ -39,12 +39,12 @@ It merges this entry into `~/.lmstudio/mcp.json`, keeping your other servers and
 ```
 
 Use a version of LM Studio with MCP support. Restart it (or reload its MCP settings) after connecting, then enable
-the `clawdblock` tools for your chat.
+the `pinkgolem` tools for your chat.
 
 ### Load the skill: SYSTEM_PROMPT.md
 
-A local chat app can't load a skill folder, so ClawdBlock ships a condensed version of it:
-**`skill/clawdblock/SYSTEM_PROMPT.md`**. Open it and copy **everything below the `---` line** into the chat's
+A local chat app can't load a skill folder, so Pink Golem ships a condensed version of it:
+**`skill/pinkgolem/SYSTEM_PROMPT.md`**. Open it and copy **everything below the `---` line** into the chat's
 **system prompt**. It holds:
 
 - the start of every session (`minecraft_status`, then spawn the body),
@@ -68,15 +68,15 @@ can play next to Claude or Gemini on the same server. To rename it, edit `MC_BOT
 Print the entry to paste:
 
 ```bash
-python3 clawdblock.py connect print
+python3 pinkgolem.py connect print
 ```
 
 ```json
 {
   "mcpServers": {
-    "clawdblock": {
+    "pinkgolem": {
       "command": "/usr/local/bin/node",
-      "args": ["/home/you/clawdblock/mcp-server/index.js"]
+      "args": ["/home/you/pinkgolem/mcp-server/index.js"]
     }
   }
 }
@@ -89,21 +89,21 @@ a stdio-to-HTTP bridge; see their docs.
 Add `"env": { "MC_BOT_NAME": "SomeName" }` to give that client its own body. For the instructions, use `SKILL.md`
 if the client supports skills or long system prompts, or `SYSTEM_PROMPT.md` if it doesn't.
 
-Other settings the MCP server reads (all optional, in `env` or in `clawdblock.json`):
+Other settings the MCP server reads (all optional, in `env` or in `pinkgolem.json`):
 
 | Variable | Default | Use |
 |---|---|---|
-| `MC_BOT_NAME` | `bot_name` in `clawdblock.json`, else `Claude` | the AI's name and body |
+| `MC_BOT_NAME` | `bot_name` in `pinkgolem.json`, else `Golem` (shown as "Pink Golem") | the AI's name and body |
 | `MC_CHAT_COLOR` | `light_purple` | colour of its chat name |
-| `MC_SERVER_DIR` | `server` (relative to the ClawdBlock folder) | where `server.properties`, `mods/` and `logs/latest.log` are |
+| `MC_SERVER_DIR` | `server` (relative to the Pink Golem folder) | where `server.properties`, `mods/` and `logs/latest.log` are |
 | `MC_RCON_HOST` / `MC_RCON_PORT` / `MC_RCON_PASSWORD` | `127.0.0.1` / from `server.properties` | the console connection |
-| `CLAWDBLOCK_CONFIG` | `clawdblock.json` in the ClawdBlock folder | another settings file |
+| `PINKGOLEM_CONFIG` | `pinkgolem.json` in the Pink Golem folder | another settings file |
 
 ---
 
 ## Which model? An honest guide
 
-ClawdBlock gives the model **33 tools**. Their descriptions and argument schemas take about **9,000 tokens**
+Pink Golem gives the model **37 tools**. Their descriptions and argument schemas take about **12,000 tokens**
 before you say a word, and tool results (a structure read as text, a job report) can be a few thousand tokens more.
 
 **Requirements**
@@ -133,7 +133,7 @@ hidden. Small models succeed through two things instead:
   a position (`--at X,Y,Z`) and a direction (`--facing`). A furnished house is **one tool call**:
 
 ```json
-minecraft_generate {"script": "skill/clawdblock/blueprints/cottage.py",
+minecraft_generate {"script": "skill/pinkgolem/blueprints/cottage.py",
                     "args": ["--at", "14,-61,5", "--facing", "south"], "build": true, "helpers": 3}
 ```
 
@@ -158,7 +158,7 @@ behind it.
 | The model describes tool calls instead of making them | it has no tool-calling support, or the tools aren't enabled for this chat |
 | Wrong coordinates, floating houses | the system prompt is missing; paste `SYSTEM_PROMPT.md` |
 | Answers get cut off or forget the start | context too small: raise it to 32k if your memory allows |
-| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 clawdblock.py start` |
+| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 pinkgolem.py start` |
 
 More in [troubleshooting.md](../troubleshooting.md).
 

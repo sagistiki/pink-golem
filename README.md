@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="ClawdBlock — your AI builds in Minecraft" width="100%">
+  <img src="assets/banner.jpg" alt="Pink Golem — your AI builds in Minecraft" width="100%">
 </p>
 
 <p align="center">
@@ -30,6 +30,7 @@ block, every room reachable from the door, no dark corners) and tells you where 
 | 🗺️ **Draw on screen, no mods** | a live minimap and a HUD (speedometer, compass, timers) from a resource pack |
 | 🩺 **Run a live server** | test apps with fake players, patch them without a reload, find what lags, back up safely |
 | 📚 **Know how** | a building skill with golden rules and 32 reference pages, for strong and small models alike |
+| 🔒 **Safe with strangers** | players are owners or guests; guests can't unlock generators or admin commands, enforced in code ([SECURITY.md](SECURITY.md)) |
 
 **[Everything, with links →](docs/features.md)**
 
@@ -56,7 +57,7 @@ Built over a few long sessions in a real world with friends: a fairytale palace,
 <img src="assets/screenshots/bluemap-overview.jpg" alt="BlueMap overview">
 </details>
 
-*Renders are ClawdBlock's own flat-colour renderer: the same pictures the AI uses to look at its work.*
+*Renders are Pink Golem's own flat-colour renderer: the same pictures the AI uses to look at its work.*
 
 ## Quick start
 
@@ -64,12 +65,12 @@ You need **Java 25**, **Node.js 20+**, **Python 3.9+** (the installer tells you 
 the **Minecraft Java 26.2** client.
 
 ```bash
-git clone https://github.com/sagistiki/clawdblock.git && cd clawdblock
+git clone https://github.com/sagistiki/pink-golem.git && cd pink-golem
 ./install.sh                     # server, mods, apps, MCP, your AI clients   (Windows: double-click install.cmd)
-python3 clawdblock.py start      # the first start builds the world (~1 min)
+python3 pinkgolem.py start      # the first start builds the world (~1 min)
 ```
 
-Join `localhost`, make yourself op (`op <your name>` in the server console), open your AI in the `clawdblock` folder
+Join `localhost`, make yourself op (`op <your name>` in the server console), open your AI in the `pinkgolem` folder
 and say hi. Setup for each AI (Claude Code, Claude Desktop, Gemini CLI, Codex, local models): **[getting started →](docs/getting-started.md)**
 
 ## Things to say
@@ -84,7 +85,7 @@ and say hi. Setup for each AI (Claude Code, Claude Desktop, Gemini CLI, Codex, l
 
 ```mermaid
 flowchart LR
-    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>37 minecraft_* tools" --> MCP["ClawdBlock MCP server<br/>(Node, hot-reloading tools)"]
+    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>37 minecraft_* tools" --> MCP["Pink Golem MCP server<br/>(Node, hot-reloading tools)"]
     MCP -- "RCON: any command as console" --> MC["Minecraft 26.2 server<br/>Fabric + Carpet"]
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC
@@ -118,15 +119,17 @@ A player asked for *"an amazing roller coaster, with a loop and a real coaster f
 ## More
 
 [All docs](docs/README.md) · [Features, layout and mods](docs/features.md) · [Contributing](docs/contributing.md) ·
-[Writing blueprints](docs/writing-blueprints.md) · [Lessons learned the hard way](skill/clawdblock/reference/lessons.md)
+[Writing blueprints](docs/writing-blueprints.md) · [Lessons learned the hard way](skill/pinkgolem/reference/lessons.md)
 
 **Credits:**
 - Idea, design and direction by [@sagistiki](https://github.com/sagistiki).
 - Built with Claude Opus 5.5 (Anthropic), pair-built live on a real server.
-- Banner generated with OpenAI `gpt-image-2.5` via Replicate.
+- Banner generated with Google `nano-banana-pro` via Replicate.
 - Standing on [Fabric](https://fabricmc.net), [Carpet](https://github.com/gnembon/fabric-carpet),
   [BlueMap](https://bluemap.bluecolored.de), [WorldEdit](https://enginehub.org/worldedit) and the
   [Model Context Protocol](https://modelcontextprotocol.io).
+
+Formerly **ClawdBlock** (renamed in September 2026; see [CHANGELOG](CHANGELOG.md)).
 
 [MIT](LICENSE). A fan project, not affiliated with or endorsed by Anthropic, Mojang Studios or Microsoft. Minecraft is
 a trademark of Mojang Studios.

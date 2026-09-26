@@ -110,7 +110,7 @@ def build():
         json.dump({"textures": TEX, "elements": elements}, open(os.path.join(mdir, f"{mid}.json"), "w"))
         json.dump({"model": {"type": "minecraft:model", "model": f"cars:item/{mid}", "tints": [{"type": "minecraft:dye", "default": -1}]}},
                   open(os.path.join(idir, f"{mid}.json"), "w"))
-    json.dump({"pack": {"description": "ClawdBlock cars", "min_format": 88, "max_format": 88}}, open(os.path.join(OUT, "pack.mcmeta"), "w"))
+    json.dump({"pack": {"description": "Pink Golem cars", "min_format": 88, "max_format": 88}}, open(os.path.join(OUT, "pack.mcmeta"), "w"))
     z = os.path.join(HERE, "cars.zip")
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         for root, _, files in os.walk(OUT):

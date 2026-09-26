@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "clawdblock": {
+    "pinkgolem": {
       "command": "node",
       "args": ["mcp-server/index.js"]
     }

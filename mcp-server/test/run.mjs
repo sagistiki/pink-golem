@@ -1,4 +1,4 @@
-// Drive the ClawdBlock MCP from a script — for testing tools without an AI client.
+// Drive the Pink Golem MCP from a script — for testing tools without an AI client.
 //   node test/run.mjs '[["minecraft_status",{}], ["minecraft_bot",{"action":"spawn","pos":[0,-60,0]}]]'
 //   node test/run.mjs calls.json            (a file with the same list)
 // Every call runs in ONE MCP process (so background jobs and state survive between calls). Images are saved to
@@ -13,7 +13,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const arg = process.argv[2] || "[]";
 const calls = JSON.parse(fs.existsSync(arg) ? fs.readFileSync(arg, "utf8") : arg);
 const transport = new StdioClientTransport({ command: process.execPath, args: [path.join(here, "..", "index.js")], env: { ...process.env }, stderr: "ignore" });
-const client = new Client({ name: "clawdblock-test", version: "1.0.0" });
+const client = new Client({ name: "pinkgolem-test", version: "1.0.0" });
 await client.connect(transport);
 let failed = 0;
 for (const [name, args] of calls) {

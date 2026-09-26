@@ -2,7 +2,7 @@
 """Build the Key Bridge server mod (a tiny Fabric mod) with plain javac — no Gradle, no Loom.
 
 Minecraft 26.x server jars are not obfuscated, so the mod compiles directly against the server jar that the
-ClawdBlock server already has, plus its libraries and three Fabric API modules (taken from the fabric-api jar in
+Pink Golem server already has, plus its libraries and three Fabric API modules (taken from the fabric-api jar in
 server/mods). Needs a JDK (javac + jar) of the same major version as the server's Java.
 
     python3 mods-src/keybridge/build.py              # → mods-src/keybridge/build/keybridge-<version>.jar
@@ -46,7 +46,7 @@ def fabric_modules(sd, tmp):
     """The Fabric API modules the mod uses, extracted from the fabric-api jar in mods/ (nested jars)."""
     api = sorted(sd.glob("mods/fabric-api-*.jar"))
     if not api:
-        sys.exit(f"no fabric-api jar in {sd / 'mods'} — install it first (python3 clawdblock.py mods)")
+        sys.exit(f"no fabric-api jar in {sd / 'mods'} — install it first (python3 pinkgolem.py mods)")
     out = []
     with zipfile.ZipFile(api[-1]) as z:
         for n in z.namelist():

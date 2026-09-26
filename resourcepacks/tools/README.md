@@ -16,7 +16,7 @@ python3 resourcepacks/tools/block_render.py oak_planks stone_bricks grass_block 
 Models and missing textures come from the client jar (found in the usual `.minecraft` folder; `--jar` / `--version`
 to change it); `--pack` is a folder or a .zip whose textures win. Biome-tinted faces get a plains green (`--tint`).
 `--compare` draws vanilla (left) and yours (right) for each block. Uses the blockstate's first variant, so stairs and
-slabs show one orientation. Workflow: [reference/textures.md](../../skill/clawdblock/reference/textures.md).
+slabs show one orientation. Workflow: [reference/textures.md](../../skill/pinkgolem/reference/textures.md).
 
 ## model_preview.py
 
@@ -42,7 +42,7 @@ python3 resourcepacks/tools/model_preview.py resourcepacks/cars/cars.zip cars:it
   mix-ups and orientation, not for lighting or transparency.
 - Remember the item_display flip: an `item_display` shows an item model turned 180° (its +z side faces away from the
   display's yaw), so a vehicle whose nose is at -z in the preview drives toward the display's +z / its yaw
-  ([reference/rides.md](../../skill/clawdblock/reference/rides.md), [vehicles.md](../../skill/clawdblock/reference/vehicles.md)).
+  ([reference/rides.md](../../skill/pinkgolem/reference/rides.md), [vehicles.md](../../skill/pinkgolem/reference/vehicles.md)).
 - It checks what the model looks like, not whether the game accepts the pack: run `minecraft_pack action:build
-  check_only:true` for that ([testing-apps.md](../../skill/clawdblock/reference/testing-apps.md)), and look at a
+  check_only:true` for that ([testing-apps.md](../../skill/pinkgolem/reference/testing-apps.md)), and look at a
   new model in game once — a model the client rejects shows as the purple-black missing-model cube.

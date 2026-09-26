@@ -30,7 +30,7 @@ export function install(K, ctx) {
   const runJob = async (job) => {
     job.status = "running";
     job.started = Date.now();
-    const bar = `clawdblock:job${job.id}`;
+    const bar = `pinkgolem:job${job.id}`;
     const name = (pct) => JSON.stringify({ text: `⚒ ${job.label}  ${pct}%`, color: "yellow" });
     await K.cmd(`bossbar remove ${bar}`).catch(() => {});
     await K.cmd(`bossbar add ${bar} ${name(0)}`).catch(() => {});
@@ -124,7 +124,8 @@ export function install(K, ctx) {
     fs.mkdirSync(K.P.JOBS, { recursive: true });
     const t0 = Date.now() - 1500;
     let r = null;
-    const env = { CLAWDBLOCK_ROOT: K.P.ROOT, CLAWDBLOCK_JOBS: K.P.JOBS, CLAWDBLOCK_CU_DATA: K.P.CU_DATA, PYTHONIOENCODING: "utf-8" };
+    const env = { PINKGOLEM_ROOT: K.P.ROOT, PINKGOLEM_JOBS: K.P.JOBS, PINKGOLEM_CU_DATA: K.P.CU_DATA, PYTHONIOENCODING: "utf-8" };
+    for (const [k, v] of Object.entries(env)) if (k.startsWith("PINKGOLEM_")) env[k.replace("PINKGOLEM_", "CLAWDBLOCK_")] = v;   // old generators
     for (const py of K.PYTHONS) {
       r = await K.run(py, [abs, ...argv.map(String)], { cwd: path.dirname(abs), timeout: 240000, env });
       if (!(r.err && r.err.code === "ENOENT")) break;

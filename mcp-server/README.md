@@ -1,6 +1,6 @@
-# ClawdBlock MCP server
+# Pink Golem MCP server
 
-The Node MCP server behind ClawdBlock: 37 `minecraft_*` tools over stdio. It talks to the Minecraft server through
+The Node MCP server behind Pink Golem: 37 `minecraft_*` tools over stdio. It talks to the Minecraft server through
 RCON (commands), `logs/latest.log` (chat) and Carpet's scarpet (fast world reads).
 
 ```
@@ -22,6 +22,6 @@ test/run.mjs      drives the real MCP from a script: node test/run.mjs '[["minec
 ```
 
 Everything in `lib/`, `tools/` and the helper modules hot-reloads: save a file and the next tool call uses it
-(changes to `index.js` need a client restart). Configuration comes from `../clawdblock.json` and environment
+(changes to `index.js` need a client restart). Configuration comes from `../pinkgolem.json` and environment
 variables (`MC_BOT_NAME`, `MC_CHAT_COLOR`, `MC_SERVER_DIR`, `MC_RCON_HOST`, `MC_RCON_PORT`, `MC_RCON_PASSWORD`,
-`CLAWDBLOCK_CONFIG`). See [../docs/architecture.md](../docs/architecture.md) and [../docs/contributing.md](../docs/contributing.md).
+`PINKGOLEM_CONFIG`). See [../docs/architecture.md](../docs/architecture.md) and [../docs/contributing.md](../docs/contributing.md).

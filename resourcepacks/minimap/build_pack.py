@@ -1,7 +1,7 @@
 """build_pack.py — the resource pack for the server-side minimap (scarpet-apps/minimap.sc), Minecraft 26.2.
 
 How it works (no client mods): the app sends each player a WHITE bossbar whose title is the map, written in the font
-"clawdblock:mm" — 1x2-px cell glyphs (one char per map row, the row set by the glyph ascent), coloured per cell, plus dot /
+"pinkgolem:mm" — 1x2-px cell glyphs (one char per map row, the row set by the glyph ascent), coloured per cell, plus dot /
 arrow / frame glyphs, joined by negative spaces. The pack
   • makes the white bossbar sprites transparent (only the title is seen),
   • overrides core/text.vsh: GUI glyphs whose colour carries the marker (R&3 == 1, G&3 == 2, B&3 == 3 cell / 1 overlay)
@@ -48,7 +48,7 @@ def cp(n):
 def build():
     if os.path.exists(OUT):
         shutil.rmtree(OUT)
-    tex = os.path.join(OUT, "assets/clawdblock/textures/font")
+    tex = os.path.join(OUT, "assets/pinkgolem/textures/font")
     # cell: 1 px wide, 2 px tall, white (tinted by the text colour)
     png(os.path.join(tex, "cell.png"), 1, 2, lambda x, y: (255, 255, 255, 255))
     # friend dot 4x4 with a dark rim, self arrow 7x7 in 8 directions
@@ -88,20 +88,20 @@ def build():
     providers.append({"type": "space", "advances": adv})
     # cell rows: U+E000 + r, ascent so the row's top lands at y = TOP + 2r (glyph top = 3 + 7 - ascent)
     for r in range(CELLS):
-        providers.append({"type": "bitmap", "file": "clawdblock:font/cell.png", "ascent": 10 - (TOP + 2 * r), "height": 2, "chars": [cp(0xE000 + r)]})
+        providers.append({"type": "bitmap", "file": "pinkgolem:font/cell.png", "ascent": 10 - (TOP + 2 * r), "height": 2, "chars": [cp(0xE000 + r)]})
     # dots per row (centred on the row): U+E100 + r
     for r in range(CELLS):
-        providers.append({"type": "bitmap", "file": "clawdblock:font/dot.png", "ascent": 10 - (TOP + 2 * r - 1), "height": 4, "chars": [cp(0xE100 + r)]})
+        providers.append({"type": "bitmap", "file": "pinkgolem:font/dot.png", "ascent": 10 - (TOP + 2 * r - 1), "height": 4, "chars": [cp(0xE100 + r)]})
     # arrows (centre row): U+E200 + d
     mid = CELLS // 2
     for d in range(8):
-        providers.append({"type": "bitmap", "file": f"clawdblock:font/arrow{d}.png", "ascent": 10 - (TOP + 2 * mid - 3), "height": 7, "chars": [cp(0xE200 + d)]})
-    providers.append({"type": "bitmap", "file": "clawdblock:font/frame.png", "ascent": 10 - (TOP - 4), "height": FRAME, "chars": [cp(0xE300)]})
-    providers.append({"type": "bitmap", "file": "clawdblock:font/north.png", "ascent": 10 - (TOP - 6), "height": 8, "chars": [cp(0xE301)]})
+        providers.append({"type": "bitmap", "file": f"pinkgolem:font/arrow{d}.png", "ascent": 10 - (TOP + 2 * mid - 3), "height": 7, "chars": [cp(0xE200 + d)]})
+    providers.append({"type": "bitmap", "file": "pinkgolem:font/frame.png", "ascent": 10 - (TOP - 4), "height": FRAME, "chars": [cp(0xE300)]})
+    providers.append({"type": "bitmap", "file": "pinkgolem:font/north.png", "ascent": 10 - (TOP - 6), "height": 8, "chars": [cp(0xE301)]})
     # the N badge travels around the ring as the map turns: one glyph per top y, U+E400 + i → top = TOP - 7 + i
     for i in range(2 * CELLS + 7):
-        providers.append({"type": "bitmap", "file": "clawdblock:font/north.png", "ascent": 10 - (TOP - 7 + i), "height": 8, "chars": [cp(0xE400 + i)]})
-    fdir = os.path.join(OUT, "assets/clawdblock/font")
+        providers.append({"type": "bitmap", "file": "pinkgolem:font/north.png", "ascent": 10 - (TOP - 7 + i), "height": 8, "chars": [cp(0xE400 + i)]})
+    fdir = os.path.join(OUT, "assets/pinkgolem/font")
     os.makedirs(fdir, exist_ok=True)
     json.dump({"providers": providers}, open(os.path.join(fdir, "mm.json"), "w"), ensure_ascii=False)
 
@@ -115,7 +115,7 @@ def build():
     os.makedirs(sh, exist_ok=True)
     open(os.path.join(sh, "text.vsh"), "w").write(VSH.replace("%W%", f"{2 * CELLS}.0").replace("%LEFT%", f"{LEFT}.0"))
 
-    json.dump({"pack": {"description": "ClawdBlock minimap", "min_format": PACK_FORMAT, "max_format": PACK_FORMAT}},
+    json.dump({"pack": {"description": "Pink Golem minimap", "min_format": PACK_FORMAT, "max_format": PACK_FORMAT}},
               open(os.path.join(OUT, "pack.mcmeta"), "w"), ensure_ascii=False)
     png(os.path.join(OUT, "pack.png"), 64, 64, lambda x, y: ((240, 70, 160, 255) if (x - 31.5) ** 2 + (y - 31.5) ** 2 < 900 else (0, 0, 0, 0)))
 
@@ -157,7 +157,7 @@ out vec2 texCoord0;
 void main() {
     vec3 pos = Position;
 #if defined(IS_GUI)
-    // ClawdBlock minimap: glyphs whose colour carries the marker are moved from the centred bossbar title to the
+    // Pink Golem minimap: glyphs whose colour carries the marker are moved from the centred bossbar title to the
     // top-left corner; map cells (B&3 == 3) are widened by 1 px to close the bitmap glyph spacing.
     ivec3 c = ivec3(round(Color.rgb * 255.0));
     if ((c.r & 3) == 1 && (c.g & 3) == 2 && ((c.b & 3) == 3 || (c.b & 3) == 1)) {

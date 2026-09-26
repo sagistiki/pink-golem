@@ -1,16 +1,16 @@
 # Codex
 
-This page connects OpenAI's **Codex CLI** to your ClawdBlock server. Codex is a terminal agent: it reads the skill,
-writes build generators into `jobs/`, and uses all 33 tools. Its body in the game is called **Codex**, so it can
+This page connects OpenAI's **Codex CLI** to your Pink Golem server. Codex is a terminal agent: it reads the skill,
+writes build generators into `jobs/`, and uses all 37 tools. Its body in the game is called **Codex**, so it can
 build next to other AIs.
 
 | | |
 |---|---|
-| Connect | `python3 clawdblock.py connect codex` |
+| Connect | `python3 pinkgolem.py connect codex` |
 | MCP config | `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`) |
-| Skill | `AGENTS.md` in the ClawdBlock folder, loaded automatically |
+| Skill | `AGENTS.md` in the Pink Golem folder, loaded automatically |
 | Bot name | **Codex** |
-| Start it | `codex`, run inside the ClawdBlock folder |
+| Start it | `codex`, run inside the Pink Golem folder |
 
 ---
 
@@ -19,18 +19,18 @@ build next to other AIs.
 Setup offers this when it finds the `codex` command or a `~/.codex` folder. To do it later, or again:
 
 ```bash
-python3 clawdblock.py connect codex
+python3 pinkgolem.py connect codex
 ```
 
 ## What it writes
 
-A `[mcp_servers.clawdblock]` table in `~/.codex/config.toml`. If the file already has one, it is replaced. The
+A `[mcp_servers.pinkgolem]` table in `~/.codex/config.toml`. If the file already has one, it is replaced. The
 rest of the file is kept.
 
 ```toml
-[mcp_servers.clawdblock]
+[mcp_servers.pinkgolem]
 command = "/usr/local/bin/node"
-args = ["/home/you/clawdblock/mcp-server/index.js"]
+args = ["/home/you/pinkgolem/mcp-server/index.js"]
 env = { MC_BOT_NAME = "Codex" }
 startup_timeout_sec = 20
 tool_timeout_sec = 120
@@ -45,11 +45,11 @@ tool_timeout_sec = 120
 
 ## How the skill loads
 
-Codex reads `AGENTS.md` from the folder you start it in. ClawdBlock's `AGENTS.md` tells it to read
-`skill/clawdblock/SKILL.md` before doing anything in the world, and to open the matching page in
-`skill/clawdblock/reference/` before each kind of task. It also describes the repository layout and says never to
+Codex reads `AGENTS.md` from the folder you start it in. Pink Golem's `AGENTS.md` tells it to read
+`skill/pinkgolem/SKILL.md` before doing anything in the world, and to open the matching page in
+`skill/pinkgolem/reference/` before each kind of task. It also describes the repository layout and says never to
 start, stop or reset the server unless you ask. Codex opens these files itself with its file tools, so start it in
-the ClawdBlock folder.
+the Pink Golem folder.
 
 ## Bot name: Codex
 
@@ -60,18 +60,18 @@ lock. To choose another name, edit `MC_BOT_NAME` in `config.toml` and restart Co
 
 ## Manual setup
 
-1. Find the paths: `which node` (Windows: `where node`) and the full path of your ClawdBlock folder.
+1. Find the paths: `which node` (Windows: `where node`) and the full path of your Pink Golem folder.
 2. Open (or create) `~/.codex/config.toml` and paste the table above with your paths. On Windows, TOML strings
-   in double quotes need doubled backslashes: `"C:\\Users\\you\\clawdblock\\mcp-server\\index.js"`.
-3. Start `codex` in the ClawdBlock folder.
+   in double quotes need doubled backslashes: `"C:\\Users\\you\\pinkgolem\\mcp-server\\index.js"`.
+3. Start `codex` in the Pink Golem folder.
 
 ---
 
 ## First-session checklist
 
-1. The Minecraft server is running (`python3 clawdblock.py status`), and you are in the game.
-2. `cd` into the ClawdBlock folder and run `codex`.
-3. Type `/mcp`: the `clawdblock` server and its `minecraft_*` tools should be listed.
+1. The Minecraft server is running (`python3 pinkgolem.py status`), and you are in the game.
+2. `cd` into the Pink Golem folder and run `codex`.
+3. Type `/mcp`: the `pinkgolem` server and its `minecraft_*` tools should be listed.
 4. Ask: *"Read the skill, check the Minecraft server and spawn in next to me."*
 5. Check that it called `minecraft_status` first and that a player called Codex appeared next to you.
 6. Ask for a first build: *"Build me a cottage facing the road, just east of me."*
@@ -79,7 +79,7 @@ lock. To choose another name, edit `MC_BOT_NAME` in `config.toml` and restart Co
 ## Tips
 
 - **Approvals.** Codex asks before tool calls and file writes, depending on its approval mode. When it writes a
-  generator it only needs write access to `jobs/` inside the ClawdBlock folder.
+  generator it only needs write access to `jobs/` inside the Pink Golem folder.
 - **Ask it to read first.** Codex follows `AGENTS.md`, but a request that names the page helps: *"read
   reference/landscaping.md, then build a garden around my house"*.
 - **Preview before building.** *"Generate it, show me a preview, then build."* `minecraft_preview` renders the
@@ -91,10 +91,10 @@ lock. To choose another name, edit `MC_BOT_NAME` in `config.toml` and restart Co
 
 | Symptom | Fix |
 |---|---|
-| No clawdblock server | a TOML syntax error in `config.toml`, or Codex was already running during `connect`. Restart Codex |
+| No pinkgolem server | a TOML syntax error in `config.toml`, or Codex was already running during `connect`. Restart Codex |
 | Tool calls time out | raise `tool_timeout_sec`; long waits are normal for chat and job tools |
-| Codex skips the build rules | it wasn't started in the ClawdBlock folder (no `AGENTS.md`), or ask it to read `SKILL.md` |
-| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 clawdblock.py start` |
+| Codex skips the build rules | it wasn't started in the Pink Golem folder (no `AGENTS.md`), or ask it to read `SKILL.md` |
+| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 pinkgolem.py start` |
 
 More in [troubleshooting.md](../troubleshooting.md).
 

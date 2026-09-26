@@ -1,6 +1,6 @@
 # Playing with friends
 
-This page shows how to let other people join your ClawdBlock server: on the same Wi-Fi, over the internet
+This page shows how to let other people join your Pink Golem server: on the same Wi-Fi, over the internet
 through your router, or through a tunnel service. It also covers the safety settings to check first. Read the
 [security notes](#security-checklist) before you open anything to the internet.
 
@@ -15,10 +15,10 @@ through your router, or through a tunnel service. It also covers the safety sett
 |---|---|
 | Friends use **Minecraft Java Edition 26.2** | the client version must match the server |
 | Friends own Minecraft Java | `online-mode=true` (set by setup) checks every account with Microsoft, so nobody can join under someone else's name |
-| You made a backup: `python3 clawdblock.py backup` | new people plus an AI that builds on request: have a way back |
+| You made a backup: `python3 pinkgolem.py backup` | new people plus an AI that builds on request: have a way back |
 | You decided who is an operator | ops can run every command, including `/stop` and WorldEdit |
 
-New ClawdBlock worlds start in **creative** mode on **peaceful** difficulty. To change that for everyone, edit
+New Pink Golem worlds start in **creative** mode on **peaceful** difficulty. To change that for everyone, edit
 `gamemode` and `difficulty` in `server/server.properties` while the server is stopped. To change it for one
 player, run `/gamemode survival <name>`.
 
@@ -140,7 +140,7 @@ only when its owner asks. Every AI build can be undone, and the AI remembers peo
 (`minecraft_people`). Tell it who is in charge ("only build when I ask, or when my brother asks") and it will note that. It is still
 a powerful helper, so invite people you trust, and keep backups.
 
-**Mods that help on a public server:** `ledger` (block logging and rollback, `python3 clawdblock.py mods add
+**Mods that help on a public server:** `ledger` (block logging and rollback, `python3 pinkgolem.py mods add
 ledger`) shows who changed what, and `spark` finds lag.
 
 ## See also

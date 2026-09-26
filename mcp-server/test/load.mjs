@@ -16,3 +16,19 @@ const t = await mod.create(ctx);
 console.log(`${t.TOOLS.length} tools: ${t.TOOLS.map((x) => x.name.replace("minecraft_", "")).join(", ")}`);
 const r = await t.handle("minecraft_notes", { action: "read" });
 console.log("notes:", r.content[0].text.slice(0, 80));
+
+// Every "N tools" in the docs must match the real number (the README once said 37 while client pages said 33).
+import fs from "node:fs";
+const docs = [path.join(root, "README.md"), ...fs.readdirSync(path.join(root, "docs"), { recursive: true })
+  .filter((f) => f.endsWith(".md")).map((f) => path.join(root, "docs", f))];
+const wrong = [];
+for (const f of docs)
+  fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+    for (const m of line.matchAll(/\b(\d+)\*{0,2} (?:MCP )?tools\b/g))
+      if (+m[1] !== t.TOOLS.length) wrong.push(`${path.relative(root, f)}:${i + 1} says ${m[1]} tools`);
+  });
+if (wrong.length) {
+  console.error(`tool count: the server has ${t.TOOLS.length} tools, but\n  ${wrong.join("\n  ")}`);
+  process.exit(1);
+}
+console.log(`tool count: every doc says ${t.TOOLS.length}`);

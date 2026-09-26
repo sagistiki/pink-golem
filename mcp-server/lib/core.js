@@ -13,6 +13,9 @@ export function install(K, ctx) {
   K.log = ctx.log;
   K.looksLikeError = ctx.looksLikeError;
   K.BOT = C.BOT_NAME;
+  K.BOT_PREFIX = C.BOT_PREFIX || "";
+  K.BOT_DISPLAY = K.BOT_PREFIX + K.BOT;            // what people see: "Pink Golem"
+  K.BOT_OUTFIT = C.BOT_OUTFIT ?? "pink";
   K.CHAT_COLOR = C.CHAT_COLOR;
   K.MAX_FILL_VOLUME = C.MAX_FILL_VOLUME;
 
@@ -41,7 +44,7 @@ export function install(K, ctx) {
   K.safePath = (p) => {
     const f = path.isAbsolute(p) ? path.resolve(p) : path.resolve(C.ROOT, p);
     const inside = (d) => f === path.resolve(d) || f.startsWith(path.resolve(d) + path.sep);
-    if (!inside(C.ROOT) && !inside(C.SERVER_DIR)) throw new Error(`${p}: files must be inside the ClawdBlock folder (${C.ROOT})`);
+    if (!inside(C.ROOT) && !inside(C.SERVER_DIR)) throw new Error(`${p}: files must be inside the Pink Golem folder (${C.ROOT})`);
     return f;
   };
   K.rel = (f) => path.relative(C.ROOT, f).split(path.sep).join("/");
@@ -123,7 +126,7 @@ export function install(K, ctx) {
   K.sayAsBot = async (message, target = "@a") => {
     const lines = String(message).split(/\n/).flatMap((l) => chunkText(l));
     for (const line of lines) {
-      const comp = ["", { text: "<", color: "white" }, { text: K.BOT, color: K.CHAT_COLOR }, { text: "> ", color: "white" }, { text: line }];
+      const comp = ["", { text: "<", color: "white" }, { text: K.BOT_DISPLAY, color: K.CHAT_COLOR }, { text: "> ", color: "white" }, { text: line }];
       const out = await K.cmd(`tellraw ${target} ${JSON.stringify(comp)}`);
       if (K.looksLikeError(out)) throw new Error(`tellraw failed: ${out}`);
     }
@@ -246,7 +249,7 @@ export function install(K, ctx) {
     const e = raw ? String(expr) : K.cleanScarpet(expr);
     const out = await K.cmd(`script run ${e}`);
     if (/Unknown or incomplete command/i.test(out))
-      throw new Error("Scarpet (/script) is not available — the Carpet mod is required (python3 clawdblock.py mods).");
+      throw new Error("Scarpet (/script) is not available — the Carpet mod is required (python3 pinkgolem.py mods).");
     const m = /^\s*=\s*([\s\S]*?)\s*(?:\([^()]*\d[^()]*s\))?\s*$/.exec(out);
     return { raw: out, value: m ? m[1] : out, expr: e };
   };

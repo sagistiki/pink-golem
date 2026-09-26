@@ -30,7 +30,7 @@ export const tools = [
   {
     name: "minecraft_helpers",
     requires: ["carpet"],
-    description: "Helper builders (up to 4 fake players in hard hats and hi-vis vests; names from clawdblock.json). action: spawn (count, near pos or player) | dismiss | list | say (name, message → speech bubble) | work (pos: all face it and hammer) | dress. Background jobs bring them automatically with helpers:N; they stay on site between jobs and go home after 10 idle minutes.",
+    description: "Helper builders (up to 4 fake players in hard hats and hi-vis vests; names from pinkgolem.json). action: spawn (count, near pos or player) | dismiss | list | say (name, message → speech bubble) | work (pos: all face it and hammer) | dress. Background jobs bring them automatically with helpers:N; they stay on site between jobs and go home after 10 idle minutes.",
     inputSchema: { type: "object", properties: { action: { type: "string", enum: ["spawn", "dismiss", "list", "say", "work", "dress"] }, count: { type: "number" }, pos: vec, player: { type: "string" }, name: { type: "string" }, message: { type: "string" } }, required: ["action"] },
   },
 ];
@@ -62,6 +62,7 @@ export function handlers(K, ctx) {
           await K.cmd(`gamemode ${args.mode || "adventure"} ${B}`).catch(() => {});
           await K.cmd(`effect give ${B} resistance infinite 4 true`).catch(() => {});
           await K.cmd(`effect give ${B} saturation infinite 0 true`).catch(() => {});
+          await K.dressBot();
           if (target) await K.cmd(`execute as ${B} at @s facing entity ${target} eyes run tp @s ~ ~ ~ ~ ~`).catch(() => {});
           return K.text(`${out || "spawned"}${where ? " (" + where.trim() + ")" : ""}`);
         }

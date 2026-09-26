@@ -124,7 +124,7 @@ export function install(K) {
       if (!fs.existsSync(f)) return K.text(`not ready yet: ${path.basename(f)} — try again in a few seconds`);
       return reply(f);
     }
-    if (!K.features.bluemap) throw new Error("real screenshots need the BlueMap mod (python3 clawdblock.py mods add bluemap) — use mode iso/top/pov instead");
+    if (!K.features.bluemap) throw new Error("real screenshots need the BlueMap mod (python3 pinkgolem.py mods add bluemap) — use mode iso/top/pov instead");
     if (!CHROME) throw new Error("Google Chrome or Microsoft Edge was not found on this machine — real screenshots need one of them");
     const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
     const span = Math.max(hi[0] - lo[0], hi[2] - lo[2], 20);
@@ -145,7 +145,7 @@ export function install(K) {
   // Headless Chrome driven over the DevTools protocol: waits until BlueMap has finished loading, then captures.
   const chromeShot = async (url, { W = 1280, H = 800, budget = 30, settle = 4 } = {}) => {
     if (typeof WebSocket === "undefined") throw new Error("this Node has no WebSocket (needs Node 22+) — real screenshots unavailable");
-    const prof = path.join(K.tmpdir, `clawdblock-shot-${process.pid}-${Date.now() % 100000}`);
+    const prof = path.join(K.tmpdir, `pinkgolem-shot-${process.pid}-${Date.now() % 100000}`);
     const ch = spawn(CHROME, ["--headless=new", `--user-data-dir=${prof}`, "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "--hide-scrollbars", "--mute-audio",
       "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", `--window-size=${W},${H}`, "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
     const kill = () => { try { ch.kill("SIGKILL"); } catch {} setTimeout(() => { try { fs.rmSync(prof, { recursive: true, force: true }); } catch {} }, 1500).unref?.(); };

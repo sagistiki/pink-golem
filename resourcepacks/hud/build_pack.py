@@ -28,13 +28,13 @@ import zipfile
 import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-NS = "clawdblock"                                                   # font id <NS>:hud, textures <NS>:font/hud_*
+NS = "pinkgolem"                                                   # font id <NS>:hud, textures <NS>:font/hud_*
 MINIMAP_GEN = os.path.join(HERE, "..", "minimap", "build_pack.py")  # the minimap's shader + layout come from here
 OUT = os.path.join(HERE, "build")
 ZIP = os.path.join(HERE, "hud.zip")
 SCL = os.path.join(HERE, "..", "..", "scarpet-apps", "hud.scl")     # its generated block is rewritten
 PACK_FORMAT = 88
-DESCRIPTION = "ClawdBlock HUD + minimap shader"
+DESCRIPTION = "Pink Golem HUD + minimap shader"
 
 BAND_TOP, BAND_H, PITCH, ROW2 = 2, 18, 19, 18   # glyph boxes live in y 2..20 of a bossbar slot; slots are 19 apart
 TITLE_Y0 = 3                                     # bossbar slot 0 title y (BossHealthOverlay: 12 - 9), glyph top = y + 7 - ascent

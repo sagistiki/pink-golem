@@ -1,15 +1,15 @@
 # Claude Desktop
 
-This page connects the **Claude Desktop** app to your ClawdBlock server. Desktop is the friendliest way to play if
+This page connects the **Claude Desktop** app to your Pink Golem server. Desktop is the friendliest way to play if
 you'd rather not work in a terminal: you chat in a window and Claude builds in your world. Setting it up takes two
 steps, the MCP entry and the skill upload.
 
 | | |
 |---|---|
-| Connect | `python3 clawdblock.py connect claude-desktop` |
+| Connect | `python3 pinkgolem.py connect claude-desktop` |
 | MCP config | `claude_desktop_config.json` (path per system below) |
-| Skill | upload `dist/clawdblock-skill.zip` in **Settings → Capabilities → Skills** |
-| Bot name | the one in `clawdblock.json` (default **Claude**) |
+| Skill | upload `dist/pinkgolem-skill.zip` in **Settings → Capabilities → Skills** |
+| Bot name | the one in `pinkgolem.json` (default **Claude**) |
 | After connecting | **quit and reopen** Claude Desktop |
 
 ---
@@ -19,7 +19,7 @@ steps, the MCP entry and the skill upload.
 Setup offers this automatically when it finds Claude Desktop's settings folder. To do it later, or again:
 
 ```bash
-python3 clawdblock.py connect claude-desktop
+python3 pinkgolem.py connect claude-desktop
 ```
 
 ## What it writes
@@ -36,9 +36,9 @@ python3 clawdblock.py connect claude-desktop
 ```json
 {
   "mcpServers": {
-    "clawdblock": {
+    "pinkgolem": {
       "command": "/usr/local/bin/node",
-      "args": ["/home/you/clawdblock/mcp-server/index.js"]
+      "args": ["/home/you/pinkgolem/mcp-server/index.js"]
     }
   }
 }
@@ -47,7 +47,7 @@ python3 clawdblock.py connect claude-desktop
 The `command` is the **absolute path** of `node`. Desktop apps don't see your terminal's `PATH` (on macOS they
 don't read your shell profile), so a bare `node` often fails there. Setup writes the full path for you.
 
-**2. The skill as a zip**: `dist/clawdblock-skill.zip`, which contains the `clawdblock/` skill folder (`SKILL.md`,
+**2. The skill as a zip**: `dist/pinkgolem-skill.zip`, which contains the `pinkgolem/` skill folder (`SKILL.md`,
 `reference/`, `scripts/`, `blueprints/`).
 
 ## Load the skill
@@ -55,24 +55,24 @@ don't read your shell profile), so a bare `node` often fails there. Setup writes
 1. Quit Claude Desktop completely: menu bar (macOS) or system tray (Windows) → **Quit**. Closing the window is not
    enough; the app keeps running.
 2. Open it again.
-3. **Settings → Capabilities → Skills → Upload skill**, and choose `dist/clawdblock-skill.zip` from your
-   ClawdBlock folder.
-4. Make sure the `clawdblock` skill is switched on.
+3. **Settings → Capabilities → Skills → Upload skill**, and choose `dist/pinkgolem-skill.zip` from your
+   Pink Golem folder.
+4. Make sure the `pinkgolem` skill is switched on.
 
 If you don't see a Skills section, update Claude Desktop. Skills and the settings they need can depend on your plan
 and on other options on the same Capabilities page.
 
-**After every ClawdBlock update**, run `connect claude-desktop` again (it rebuilds the zip) and upload the new zip.
+**After every Pink Golem update**, run `connect claude-desktop` again (it rebuilds the zip) and upload the new zip.
 The uploaded skill is a copy; it doesn't follow the files in your folder.
 
 ## Bot name
 
-Claude Desktop uses the `bot_name` from `clawdblock.json` (**Claude** by default), the same as Claude Code. That is
+Claude Desktop uses the `bot_name` from `pinkgolem.json` (**Golem**, shown as **Pink Golem**, by default), the same as Claude Code. That is
 fine as long as you use one of them at a time. To run both together, give Desktop its own body by adding an `env`
 block to its entry:
 
 ```json
-"clawdblock": { "command": "…", "args": ["…"], "env": { "MC_BOT_NAME": "Claudia" } }
+"pinkgolem": { "command": "…", "args": ["…"], "env": { "MC_BOT_NAME": "Claudia" } }
 ```
 
 Separate names matter because the bot name is the AI's body, its chat name and the owner of its builds. Two AIs
@@ -84,19 +84,19 @@ body, undo stack and protected builds.
 1. Find your node path: `which node` (macOS/Linux) or `where node` (Windows).
 2. Open the config file from the table above (create it if it doesn't exist; Claude Desktop's
    **Settings → Developer → Edit Config** opens it too).
-3. Add the `clawdblock` entry inside `"mcpServers"`, with your two absolute paths. On Windows, write backslashes
-   twice: `"C:\\Users\\you\\clawdblock\\mcp-server\\index.js"`.
-4. Make the zip yourself if needed: zip the folder `skill/clawdblock` so that the zip contains `clawdblock/SKILL.md`.
+3. Add the `pinkgolem` entry inside `"mcpServers"`, with your two absolute paths. On Windows, write backslashes
+   twice: `"C:\\Users\\you\\pinkgolem\\mcp-server\\index.js"`.
+4. Make the zip yourself if needed: zip the folder `skill/pinkgolem` so that the zip contains `pinkgolem/SKILL.md`.
 5. Quit and reopen Claude Desktop, then upload the skill.
 
 ---
 
 ## First-session checklist
 
-1. The Minecraft server is running (`python3 clawdblock.py status`), and you are in the game.
+1. The Minecraft server is running (`python3 pinkgolem.py status`), and you are in the game.
 2. Claude Desktop was fully restarted after `connect`.
-3. The tools menu in the chat box lists **clawdblock** with its `minecraft_*` tools.
-4. The `clawdblock` skill is uploaded and enabled.
+3. The tools menu in the chat box lists **pinkgolem** with its `minecraft_*` tools.
+4. The `pinkgolem` skill is uploaded and enabled.
 5. Ask: *"Check the Minecraft server and spawn in next to me."* Approve the tool calls when asked (you can allow
    them for the whole chat).
 6. Then: *"Build me a cottage next to me."*
@@ -118,9 +118,9 @@ body, undo stack and protected builds.
 
 | Symptom | Fix |
 |---|---|
-| No clawdblock tools after restart | the app wasn't fully quit; or the JSON has a typo (check with a JSON validator); or `node` isn't an absolute path |
-| "Server disconnected" | open the MCP log: **Settings → Developer**. Usually `npm install` did not run: `python3 clawdblock.py doctor` |
-| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 clawdblock.py start` |
+| No pinkgolem tools after restart | the app wasn't fully quit; or the JSON has a typo (check with a JSON validator); or `node` isn't an absolute path |
+| "Server disconnected" | open the MCP log: **Settings → Developer**. Usually `npm install` did not run: `python3 pinkgolem.py doctor` |
+| Tools answer `ECONNREFUSED` | the Minecraft server is off: `python3 pinkgolem.py start` |
 | Claude ignores the build rules | the skill isn't uploaded or is switched off |
 
 More in [troubleshooting.md](../troubleshooting.md).

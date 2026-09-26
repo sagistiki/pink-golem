@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping. This page shows how to add each kind of thing to ClawdBlock: a tool, a lib helper, a
+Thank you for helping. This page shows how to add each kind of thing to Pink Golem: a tool, a lib helper, a
 blueprint, a scarpet app, a reference page or a lesson. It also covers how to test your change and what a good
 pull request looks like. [architecture.md](architecture.md) gives the background for the code sections.
 
@@ -50,7 +50,7 @@ Things to know:
 | Needs a mod | add `requires: ["worldedit"]` to the schema (keys: `carpet`, `worldedit`, `bluemap`, `polydecorations`, `essential_commands`, `chunky`, `spark`, `lithium`, `ledger`). The tool is hidden when the mod is missing |
 | Changes blocks | go through the rails like `tools/build.js` does: `K.targetsFromCommands` → `K.zoneGuard` → `K.snapshotFor` → run → `K.afterBuild` |
 | Runs commands | `K.cmd(c)` (locked, one at a time across all AI clients), `K.runMany(list)`, `K.scarpet(expr)`, `K.inApp("cu", expr)` |
-| Files from the model | always `K.safePath(p)`; it keeps paths inside the ClawdBlock folder |
+| Files from the model | always `K.safePath(p)`; it keeps paths inside the Pink Golem folder |
 | Arguments sent as strings | some clients send `"3"` or `"true"`. If your new argument is a number, boolean or array, add its name to `NUMS`, `BOOLS` or `ARRAYS` in `tools/index.js` |
 | A new group file | add it to `GROUPS` in `tools/index.js` |
 
@@ -91,7 +91,7 @@ Edits to `lib/` and `tools/` take effect on the next tool call, even in a runnin
 A blueprint is a generator that anyone (and any model) can run with one tool call. The full walkthrough, with a
 complete example, is in **[writing-blueprints.md](writing-blueprints.md)**. The checklist:
 
-1. File in `skill/clawdblock/blueprints/<name>.py`, with a docstring header like the others: what it builds and
+1. File in `skill/pinkgolem/blueprints/<name>.py`, with a docstring header like the others: what it builds and
    why it is a good example, the command line, what `--at` means (front-left corner or centre), the size, and
    the job files it writes.
 2. `sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))`, then `from mclib import …` and
@@ -104,13 +104,13 @@ complete example, is in **[writing-blueprints.md](writing-blueprints.md)**. The 
 6. Print the box and the entrance at the end: the AI uses them for the access check and the world map.
 7. Run it by hand in all four directions (`--facing north|south|east|west`) and check that it doesn't crash.
 8. Build it on a real server (below) and look at it from two sides and inside.
-9. Add a row to the blueprint table in `skill/clawdblock/SKILL.md` (Part 4), and to the list in `SYSTEM_PROMPT.md`
+9. Add a row to the blueprint table in `skill/pinkgolem/SKILL.md` (Part 4), and to the list in `SYSTEM_PROMPT.md`
    if small models should use it.
 
 ## Add a scarpet app
 
 Game-logic apps go in `scarpet-apps/<name>.sc`. Follow the header format of the existing apps, because
-`python3 clawdblock.py apps list` shows the first comment line:
+`python3 pinkgolem.py apps list` shows the first comment line:
 
 ```
 // vendor.sc — button stands that serve things: a drink bar, an ice-cream cart, a gift shop.
@@ -128,11 +128,11 @@ Game-logic apps go in `scarpet-apps/<name>.sc`. Follow the header format of the 
 | Skip fake players where it matters: `query(p, 'player_type') == 'fake'` | the AI's bot and the helpers shouldn't trigger shows or win races |
 | Start-up cleans up politely | `script load` re-runs start-up. Never strand a player who is mid-ride or mid-race |
 
-Install it on your server with `python3 clawdblock.py apps add <name>`, then test it with real players.
+Install it on your server with `python3 pinkgolem.py apps add <name>`, then test it with real players.
 
 ## Add a reference page
 
-Reference pages in `skill/clawdblock/reference/` are read **by AI models**, from small local models to Claude, and
+Reference pages in `skill/pinkgolem/reference/` are read **by AI models**, from small local models to Claude, and
 by curious humans. Style:
 
 - Start with 2-4 lines: what the page is for and when to read it.
@@ -147,7 +147,7 @@ Then add the page to the table in Part 8 of `SKILL.md`.
 
 ## Add a lesson
 
-Lessons live in `skill/clawdblock/reference/lessons.md`, numbered, in sections. Each is one bold sentence telling
+Lessons live in `skill/pinkgolem/reference/lessons.md`, numbered, in sections. Each is one bold sentence telling
 what went wrong, then the general rule and how to avoid it:
 
 ```markdown
@@ -165,8 +165,8 @@ and prevents the next one.
 | What | Command | Needs a server? |
 |---|---|---|
 | The tool layer loads (syntax, wiring, every tool has a handler) | `cd mcp-server && npm run check` | no |
-| Everything is installed and talking | `python3 clawdblock.py doctor` (it also runs the load check) | partly |
-| A generator runs | `python3 skill/clawdblock/blueprints/<name>.py --at 0,-61,0 --facing east` | no |
+| Everything is installed and talking | `python3 pinkgolem.py doctor` (it also runs the load check) | partly |
+| A generator runs | `python3 skill/pinkgolem/blueprints/<name>.py --at 0,-61,0 --facing east` | no |
 | Tools against a live world | `node test/run.mjs '<list of calls>'` | yes |
 
 `test/run.mjs` drives the MCP server like an AI client would. Every call runs in **one** process, so background
@@ -175,7 +175,7 @@ jobs survive between calls:
 ```bash
 cd mcp-server
 node test/run.mjs '[["minecraft_status",{}],
-  ["minecraft_generate",{"script":"skill/clawdblock/blueprints/cottage.py","args":["--at","200,-61,0","--facing","south"],"build":true}],
+  ["minecraft_generate",{"script":"skill/pinkgolem/blueprints/cottage.py","args":["--at","200,-61,0","--facing","south"],"build":true}],
   ["minecraft_jobs",{"action":"wait"}], ["minecraft_jobs",{"action":"wait"}], ["minecraft_jobs",{"action":"wait"}],
   ["minecraft_screenshot",{"from":[192,-61,-8],"to":[215,-45,12]}]]'
 ```
@@ -186,7 +186,7 @@ far from real builds.
 
 ## Pull request checklist
 
-- [ ] `npm run check` passes, and `python3 clawdblock.py doctor` shows no new problems.
+- [ ] `npm run check` passes, and `python3 pinkgolem.py doctor` shows no new problems.
 - [ ] Tested on a real server; **screenshots** in the PR for anything visible (iso from two sides, and a `cut_y`
       cutaway for interiors). Say which Minecraft version you tested on.
 - [ ] New blueprints run in all four facings; builds finish with `errors: 0`, `verify.mismatches: 0` (except

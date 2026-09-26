@@ -6,9 +6,9 @@
  * census (by type, chunk and tag), tells the ops online once and removes only obvious junk (1000+ dropped items in
  * one chunk). It works with no AI connected.
  * This half adds what the game can't see: free disk, swap, the JVM's busiest threads, one incident log
- * (data/watchdog/incidents.jsonl), `clawdblock.py backup`, and a background check every 60 s (one MCP process at a
+ * (data/watchdog/incidents.jsonl), `pinkgolem.py backup`, and a background check every 60 s (one MCP process at a
  * time) that tells the ops in chat when the disk runs low — once per level, never more than once per 10 minutes.
- * Settings: "watchdog" in clawdblock.json, e.g. {"disk_warn_gb": 5, "disk_crit_gb": 2, "loop": false}. MC_WATCHDOG=0
+ * Settings: "watchdog" in pinkgolem.json, e.g. {"disk_warn_gb": 5, "disk_crit_gb": 2, "loop": false}. MC_WATCHDOG=0
  * turns the background check off.
  */
 import fs from "node:fs";
@@ -178,7 +178,7 @@ export function handlers(K, ctx) {
   }
   // what could be freed inside this install (report only)
   const CANDIDATES = [
-    [path.join(K.P.ROOT, "backups"), "world backups (clawdblock.py backup keeps the newest 3)"],
+    [path.join(K.P.ROOT, "backups"), "world backups (pinkgolem.py backup keeps the newest 3)"],
     [path.join(K.P.WORLD, "ledger.sqlite"), "Ledger block history: trim old rows in game with /ledger purge (the owner decides)"],
     [path.join(K.P.SCRIPTS, "cu.data"), "undo snapshots (minecraft_undo needs the recent ones)"],
     [path.join(K.P.SERVER, "bluemap"), "BlueMap render cache (it re-renders by itself, which costs CPU)"],
@@ -271,7 +271,7 @@ export function handlers(K, ctx) {
     const add = (dir, ext) => { try { for (const f of fs.readdirSync(dir)) if (f.endsWith(ext) && f !== "watchdog.sc") srcs.push([f, fs.readFileSync(path.join(dir, f), "utf8")]); } catch {} };
     add(K.P.SCRIPTS, ".sc");
     add(K.P.JOBS, ".py");
-    add(path.join(K.P.ROOT, "skill", "clawdblock", "blueprints"), ".py");
+    add(path.join(K.P.ROOT, "skill", "pinkgolem", "blueprints"), ".py");
     const out = {};
     for (const g of groups) {
       const esc = g.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -282,7 +282,7 @@ export function handlers(K, ctx) {
   }
   async function hotThreads(ms = 3000) {
     const proc = await serverProc();
-    if (!proc) return { error: "server process not found (start it with clawdblock.py start --background, or run on Linux/macOS)" };
+    if (!proc) return { error: "server process not found (start it with pinkgolem.py start --background, or run on Linux/macOS)" };
     const jcmds = ["jcmd", process.env.JAVA_HOME && path.join(process.env.JAVA_HOME, "bin", "jcmd")].filter(Boolean);
     const snap = async () => {
       for (const j of jcmds) {
@@ -385,7 +385,7 @@ export function handlers(K, ctx) {
     };
   }
   async function backup(args) {
-    const argv = [path.join(K.P.ROOT, "clawdblock.py"), "backup", "--json", "--keep", String(Math.max(1, Math.min(Number(args.keep) || 3, 30)))];
+    const argv = [path.join(K.P.ROOT, "pinkgolem.py"), "backup", "--json", "--keep", String(Math.max(1, Math.min(Number(args.keep) || 3, 30)))];
     if (bool(args.dry_run)) argv.push("--dry-run");
     if (bool(args.include_ledger)) argv.push("--include-ledger");
     if (args.dest) argv.push("--dest", String(args.dest));
@@ -396,7 +396,7 @@ export function handlers(K, ctx) {
       if (!(r.err && r.err.code === "ENOENT")) break;
     }
     let j;
-    try { j = JSON.parse(r.stdout); } catch { j = { ok: false, error: "clawdblock.py backup did not answer in JSON", stdout: r.stdout.slice(-1500), stderr: r.stderr.slice(-1500) }; }
+    try { j = JSON.parse(r.stdout); } catch { j = { ok: false, error: "pinkgolem.py backup did not answer in JSON", stdout: r.stdout.slice(-1500), stderr: r.stderr.slice(-1500) }; }
     logIncident({ kind: "backup", ok: j.ok, dry_run: bool(args.dry_run), refused: !!j.refused, zip: j.zip, size: j.zip_size, rotated: j.rotated, reason: j.reason || j.error, simulated_free: j.simulated_free || undefined });
     return j;
   }

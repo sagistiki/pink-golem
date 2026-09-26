@@ -2,7 +2,7 @@
 
 This tutorial takes one idea, a market stall, and turns it into a **parametrised blueprint**: a Python generator
 that builds the stall at any position, facing any direction, in several styles, with one tool call. Read it if you
-want to add your own buildings to ClawdBlock, or understand the generators your AI writes. You need a little
+want to add your own buildings to Pink Golem, or understand the generators your AI writes. You need a little
 Python; you don't need to know Minecraft commands.
 
 A blueprint is worth writing when a building will be built more than once, or when you want small models to build
@@ -87,7 +87,7 @@ runs *after* the blocks (summons, `place feature` trees).
 
 ## 5. Use the parts library
 
-`skill/clawdblock/scripts/parts.py` has tested components, so you don't have to work out chair stairs or lantern
+`skill/pinkgolem/scripts/parts.py` has tested components, so you don't have to work out chair stairs or lantern
 chains yourself. A few of them:
 
 | Part | Call |
@@ -135,7 +135,7 @@ sign and a small cobbled square in front.
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.environ.get("CLAWDBLOCK_ROOT", "."), "skill/clawdblock/scripts"))
+sys.path.insert(0, os.path.join(os.environ.get("PINKGOLEM_ROOT", "."), "skill/pinkgolem/scripts"))
 from mclib import Build, Frame, parse_args          # noqa: E402
 import parts as P                                    # noqa: E402
 
@@ -197,7 +197,7 @@ What to notice:
 
 ## Run it by hand
 
-From the ClawdBlock folder (no server needed; this only writes job files):
+From the Pink Golem folder (no server needed; this only writes job files):
 
 ```bash
 python3 jobs/gen_market_stall.py --at 0,-61,0 --facing east
@@ -273,7 +273,7 @@ A row of stalls is then a loop over `f.sub(n * (W + 2), 0, 0)`, a new Frame for 
 
 ## From `jobs/` to a shared blueprint
 
-When your generator is good enough to share, move it to `skill/clawdblock/blueprints/<name>.py` and change the
+When your generator is good enough to share, move it to `skill/pinkgolem/blueprints/<name>.py` and change the
 import path to be relative to the file, as the other blueprints do:
 
 ```python
@@ -285,8 +285,8 @@ four facings, a real-server test with screenshots, and a row in the blueprint ta
 
 ## See also
 
-- The ready blueprints, to read and copy: `skill/clawdblock/blueprints/cottage.py` (a small house),
+- The ready blueprints, to read and copy: `skill/pinkgolem/blueprints/cottage.py` (a small house),
   `modern_villa.py` (two storeys), `tower.py` (round), `park.py` (landscaping), `drop_tower.py` (tall + game logic), `tnt_run.py` (an arena + a full game), `ferris_wheel.py` (a moving ride made of display entities)
 - [Contributing](contributing.md) · [Architecture](architecture.md#generators-and-jobs)
-- For the AI's side: [the skill](../skill/clawdblock/SKILL.md), Part 4, and the reference pages on
-  [coordinates](../skill/clawdblock/reference/coordinates.md) and [block states](../skill/clawdblock/reference/block-states.md)
+- For the AI's side: [the skill](../skill/pinkgolem/SKILL.md), Part 4, and the reference pages on
+  [coordinates](../skill/pinkgolem/reference/coordinates.md) and [block states](../skill/pinkgolem/reference/block-states.md)

@@ -27,8 +27,8 @@ export function handlers(K, ctx) {
         world: K.isFlat ? { type: "flat", ground_y: K.flatGroundY, feet_y: K.flatGroundY + 1, note: `floors and paths replace the grass at y=${K.flatGroundY}; walls start at y=${K.flatGroundY + 1}` }
           : { type: "normal terrain", note: "read the ground height where you build: minecraft_get_players → standingOn.y, or script in cu run ytop(x,z)" },
         mods: f.known ? { installed: f.jars.length, carpet: f.carpet, worldedit: f.worldedit, bluemap: f.bluemap, polydecorations: f.polydecorations, essential_commands: f.essential_commands } : "unknown (the server's mods folder is not on this machine)",
-        ...(f.known && !f.carpet ? { PROBLEM: "Carpet is not installed — the bot body, scarpet, undo, vision and most checks need it. Run: python3 clawdblock.py mods add carpet" } : {}),
-        ...(recommended.length ? { could_add: recommended.map((m) => `${m} (python3 clawdblock.py mods add ${m})`) } : {}),
+        ...(f.known && !f.carpet ? { PROBLEM: "Carpet is not installed — the bot body, scarpet, undo, vision and most checks need it. Run: python3 pinkgolem.py mods add carpet" } : {}),
+        ...(recommended.length ? { could_add: recommended.map((m) => `${m} (python3 pinkgolem.py mods add ${m})`) } : {}),
         lastChatId: ctx.chat.seq,
         learnings: fs.existsSync(K.P.LEARNINGS) ? "data/LEARNINGS.md has notes from earlier sessions — read them with minecraft_notes action:read" : "no notes yet",
       };
@@ -43,7 +43,7 @@ export function handlers(K, ctx) {
       } catch (e) {
         st.connected = false;
         st.error = e.message;
-        st.next = "The Minecraft server is not reachable. Start it with `python3 clawdblock.py start` (in the ClawdBlock folder), wait for 'Done', then call minecraft_status again. Meanwhile you can plan, write generators and preview them (minecraft_preview works offline).";
+        st.next = "The Minecraft server is not reachable. Start it with `python3 pinkgolem.py start` (in the Pink Golem folder), wait for 'Done', then call minecraft_status again. Meanwhile you can plan, write generators and preview them (minecraft_preview works offline).";
       }
       return K.text(st);
     },

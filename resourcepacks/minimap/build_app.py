@@ -36,7 +36,7 @@ COLORS = {
 cmap = "{" + ", ".join(f"'{k}' -> {v}" for k, v in COLORS.items()) + "}"
 
 SRC = r"""// minimap.sc — a live minimap in the top-left corner for everyone, no client mods (only a server resource pack).
-// Needs the server resource pack from resourcepacks/minimap/ (font clawdblock:mm + core/text.vsh +
+// Needs the server resource pack from resourcepacks/minimap/ (font pinkgolem:mm + core/text.vsh +
 // invisible white bossbar). Each player gets a WHITE bossbar whose title IS the map: 24x24 cells (4x4 blocks each,
 // round mask) coloured from the vanilla map colours of the top block (map_colour) with map-style height shading,
 // friends as coloured dots (clamped to the rim when far), you as a gold arrow in the middle, a pink ring and an N.
@@ -196,7 +196,7 @@ _overlays(p, n, q, yw, parts) -> (
   );
   // you: a gold arrow pointing where you look (north up)
   parts += {'text' -> _sp(M * 2 - 3) + global_arr:0 + _sp(-(M * 2 - 3 + 8)) + _sp(global_N * 2), 'color' -> '#FDDA21'};
-  root = encode_json({'text' -> '', 'font' -> 'clawdblock:mm', 'shadow_color' -> 0, 'extra' -> parts});
+  root = encode_json({'text' -> '', 'font' -> 'pinkgolem:mm', 'shadow_color' -> 0, 'extra' -> parts});
   if (global_last:n != root, global_last:n = root; run(str('bossbar set %s name %s', _id(n), root)))   // unchanged = nothing sent
 );
 """

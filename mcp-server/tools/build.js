@@ -19,7 +19,7 @@ export const tools = [
       properties: {
         command: { type: "string", description: "A single command" },
         commands: { type: "array", items: { type: "string" }, description: "Several commands, run in order" },
-        commands_file: { type: "string", description: "A file inside the ClawdBlock folder, e.g. 'jobs/cottage.json': a JSON array of commands, or one command per line (# = comment)." },
+        commands_file: { type: "string", description: "A file inside the Pink Golem folder, e.g. 'jobs/cottage.json': a JSON array of commands, or one command per line (# = comment)." },
         commands_files: { type: "array", items: { type: "string" }, description: "Several command files run in order as ONE job (one progress bar)" },
         background: { type: "boolean", description: "Run as a background job with a boss bar; returns a job id at once (then minecraft_jobs action:wait). Use for anything over ~300 commands so you can keep talking." },
         label: { type: "string", description: "Name on the progress bar and in the undo list — make it descriptive ('cottage walls')" },
@@ -81,10 +81,10 @@ export const tools = [
   },
   {
     name: "minecraft_generate",
-    description: "Run a Python build generator inside the ClawdBlock folder (e.g. skill/clawdblock/blueprints/cottage.py, or your own in jobs/). Generators use skill/clawdblock/scripts/mclib.py and write command files into jobs/. Returns stdout and the files written. With build:true the files are queued as background jobs (undo, zone guard, verification, auto-zone), helpers join the first one, and entrance/check_access runs on the last one. Pass generator arguments in args (blueprints take --at x,y,z and --facing). No file access in your client? Pass the Python source in `code` and a file name in `script` (saved under jobs/, then run).",
+    description: "Run a Python build generator inside the Pink Golem folder (e.g. skill/pinkgolem/blueprints/cottage.py, or your own in jobs/). Generators use skill/pinkgolem/scripts/mclib.py and write command files into jobs/. Returns stdout and the files written. With build:true the files are queued as background jobs (undo, zone guard, verification, auto-zone), helpers join the first one, and entrance/check_access runs on the last one. Pass generator arguments in args (blueprints take --at x,y,z and --facing). No file access in your client? Pass the Python source in `code` and a file name in `script` (saved under jobs/, then run).",
     inputSchema: { type: "object", properties: {
-      script: { type: "string", description: "path relative to the ClawdBlock folder (with code: a file name like jobs/gen_bakery.py)" }, args: { type: "array", items: { type: "string" } },
-      code: { type: "string", description: "optional Python source to save as `script` (must be under jobs/) before running it" },
+      script: { type: "string", description: "path relative to the Pink Golem folder (with code: a file name like jobs/gen_bakery.py)" }, args: { type: "array", items: { type: "string" } },
+      code: { type: "string", description: "optional Python source to save as `script` (must be under jobs/) before running it. Off unless security.allow_code is true in pinkgolem.json (it runs on the host computer)" },
       build: { type: "boolean", description: "queue the generated files as build jobs (default false = generate only, then minecraft_preview them)" },
       files: { type: "array", items: { type: "string" }, description: "only build these of the generated files (names or globs like cottage-*)" },
       helpers: { type: "number" }, allow_protected: { type: "boolean" }, label: { type: "string" }, entrance: vec, check_access: { type: "boolean" },

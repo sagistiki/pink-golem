@@ -68,21 +68,21 @@ python3 --version   # 3.9 or higher (Windows: py --version)
 
 ---
 
-## 2. Get ClawdBlock
+## 2. Get Pink Golem
 
 With git:
 
 ```bash
-git clone https://github.com/sagistiki/clawdblock.git
-cd clawdblock
+git clone https://github.com/sagistiki/pink-golem.git
+cd pink-golem
 ```
 
 Without git: on the GitHub page choose **Code → Download ZIP**, unzip it somewhere you'll find again (for example
 your Documents folder), and open a terminal in that folder.
 
-> **Windows users:** throughout these docs, type `py` wherever you see `python3`. The `clawdblock.cmd` shortcut
-> works too: in the ClawdBlock folder, `clawdblock start` (Command Prompt) or `.\clawdblock start` (PowerShell) is
-> the same as `py clawdblock.py start`.
+> **Windows users:** throughout these docs, type `py` wherever you see `python3`. The `pinkgolem.cmd` shortcut
+> works too: in the Pink Golem folder, `pinkgolem start` (Command Prompt) or `.\pinkgolem start` (PowerShell) is
+> the same as `py pinkgolem.py start`.
 
 ---
 
@@ -94,7 +94,7 @@ All three ways run the same `setup` command. The first two only add a friendly c
 |---|---|---|
 | macOS / Linux | `./install.sh` | checks Python, Java, Node, then runs setup |
 | Windows | double-click `install.cmd` | opens PowerShell and runs `install.ps1`. From a terminal: `powershell -ExecutionPolicy Bypass -File install.ps1` |
-| anything | `python3 clawdblock.py setup` | the setup itself, without the checks |
+| anything | `python3 pinkgolem.py setup` | the setup itself, without the checks |
 
 Setup asks a few questions. Pressing Enter accepts the suggested answer (shown in `[brackets]`).
 
@@ -107,7 +107,7 @@ Setup asks a few questions. Pressing Enter accepts the suggested answer (shown i
 | **3/7 Minecraft server** | Downloads the Fabric server launcher for your Minecraft version, asks you to accept the Minecraft EULA, and writes `server.properties`: RCON on with a random 20-character password; for a new world also creative mode, peaceful, flight allowed, `online-mode=true` |
 | **4/7 Mods** | Downloads mods from Modrinth. Fabric API and Carpet are required. It asks about the recommended ones (Lithium, WorldEdit, BlueMap, Essential Commands, spark), and in interactive mode also the optional ones |
 | **5/7 Game-logic apps** | Copies the three scarpet apps the AI needs (`cu`, `helpers`, `bubble`) into the world's `scripts/` folder |
-| **6/7 MCP server** | Runs `npm install` in `mcp-server/` and saves your answers in `clawdblock.json` |
+| **6/7 MCP server** | Runs `npm install` in `mcp-server/` and saves your answers in `pinkgolem.json` |
 | **7/7 Connect your AI** | Finds AI apps on this computer (Claude Code, Claude Desktop, Gemini CLI, Codex, LM Studio) and offers to connect each one. See [clients/](clients/claude-code.md) |
 
 **World type:** *flat* (recommended) is an endless creative plain. The ground is at y = -61 and players stand at
@@ -122,7 +122,7 @@ and mods when newer builds exist, and re-copies the core apps.
 For scripts, remote machines, or when you just want the defaults:
 
 ```bash
-python3 clawdblock.py setup --yes --accept-eula
+python3 pinkgolem.py setup --yes --accept-eula
 ```
 
 | Flag | Meaning |
@@ -134,13 +134,13 @@ python3 clawdblock.py setup --yes --accept-eula
 | `--memory MB` | server RAM in MB (default: half your computer's RAM, at least 2048 and at most 8192) |
 | `--world flat\|normal` | world type for a new server (ignored when a world already exists) |
 | `--bot-name NAME` | the AI's in-game name (default `Claude`) |
-| `--no-connect` | don't touch any AI client now; do it later with `python3 clawdblock.py connect` |
+| `--no-connect` | don't touch any AI client now; do it later with `python3 pinkgolem.py connect` |
 | `--mc-version X` | Minecraft version (default 26.2, the tested one). See [upgrading.md](upgrading.md) |
 
 Example: a normal-terrain world on port 25570 with 6 GB of RAM and no client changes:
 
 ```bash
-python3 clawdblock.py setup --yes --accept-eula --world normal --port 25570 --memory 6144 --no-connect
+python3 pinkgolem.py setup --yes --accept-eula --world normal --port 25570 --memory 6144 --no-connect
 ```
 
 ---
@@ -148,7 +148,7 @@ python3 clawdblock.py setup --yes --accept-eula --world normal --port 25570 --me
 ## 4. Start the server
 
 ```bash
-python3 clawdblock.py start
+python3 pinkgolem.py start
 ```
 
 The first start creates the world and takes about a minute. It is ready when the console prints a line with
@@ -158,9 +158,9 @@ The first start creates the world and takes about a minute. It is ready when the
 To run it without keeping a terminal open:
 
 ```bash
-python3 clawdblock.py start --background    # or -b; waits up to 180 s for "Done" (change with --wait N)
-python3 clawdblock.py status                # running? who is online? which mods?
-python3 clawdblock.py stop                  # saves the world, then stops
+python3 pinkgolem.py start --background    # or -b; waits up to 180 s for "Done" (change with --wait N)
+python3 pinkgolem.py status                # running? who is online? which mods?
+python3 pinkgolem.py stop                  # saves the world, then stops
 ```
 
 In the background, console output goes to `server/logs/console.log`. There is no console to type into, so use the
@@ -175,7 +175,7 @@ AI or a foreground start for console commands.
 2. **Multiplayer → Add Server.** Server address: `localhost` (or `localhost:25570` if you chose another port).
 3. Join. You arrive in creative mode.
 
-You don't need any client mods. Everything ClawdBlock adds works on the server side.
+You don't need any client mods. Everything Pink Golem adds works on the server side.
 
 ### Make yourself an operator
 
@@ -192,7 +192,7 @@ It runs `op` through its console connection.
 
 ## 6. Talk to your AI
 
-Open your AI client in the ClawdBlock folder (or restart the desktop app you connected) and ask it to build. The
+Open your AI client in the Pink Golem folder (or restart the desktop app you connected) and ask it to build. The
 per-client pages explain the details: [Claude Code](clients/claude-code.md) · [Claude Desktop](clients/claude-desktop.md)
 · [Gemini CLI](clients/gemini-cli.md) · [Codex](clients/codex.md) · [local models](clients/local-models.md).
 
@@ -217,8 +217,8 @@ offers a few numbered options to choose from.
 
 | Path | What | Committed to git? |
 |---|---|---|
-| `clawdblock.py` | the command-line tool: setup, start, stop, status, doctor, mods, apps, connect, new-world, backup | yes |
-| `clawdblock.json` | your settings: server folder, Minecraft version, memory, bot name, chat colour, helper names, installed mods | no |
+| `pinkgolem.py` | the command-line tool: setup, start, stop, status, doctor, mods, apps, connect, new-world, backup | yes |
+| `pinkgolem.json` | your settings: server folder, Minecraft version, memory, bot name, chat colour, helper names, installed mods | no |
 | `server/` | the Minecraft server: launcher jar, `mods/`, `world/`, `logs/`, `server.properties`, `ops.json`, `whitelist.json` | no |
 | `server/world/scripts/` | installed scarpet apps (`cu.sc`, …) and their `<app>.data/` folders | no |
 | `data/` | what the AI remembers: `world_index.json` (map of builds), `zones.json` (protected builds), `undo.json`, `people.json`, `LEARNINGS.md` (shared journal), `screenshots/` | no |
@@ -226,7 +226,7 @@ offers a few numbered options to choose from.
 | `backups/` | world backups and archived worlds | no |
 | `dist/` | the skill as a zip, for Claude Desktop | no |
 | `mcp-server/` | the MCP server (Node) | yes |
-| `skill/clawdblock/` | the building skill: `SKILL.md`, `SYSTEM_PROMPT.md`, `reference/`, `scripts/`, `blueprints/` | yes |
+| `skill/pinkgolem/` | the building skill: `SKILL.md`, `SYSTEM_PROMPT.md`, `reference/`, `scripts/`, `blueprints/` | yes |
 | `scarpet-apps/` | optional game-logic apps: fireworks, launch pads, races, secret doors, TNT Run, vendor stands, welcome | yes |
 
 Everything the tools write stays inside this folder. Don't hand-edit files in `data/` while an AI session is running.
@@ -236,43 +236,43 @@ Everything the tools write stays inside this folder. Don't hand-edit files in `d
 ## 8. Everyday commands
 
 ```bash
-python3 clawdblock.py status              # is it running, who is online
-python3 clawdblock.py doctor              # find and explain problems (see troubleshooting.md)
-python3 clawdblock.py mods list           # which mods are installed; mods add|remove|update <names>
-python3 clawdblock.py apps list           # scarpet apps; apps add race vendor
-python3 clawdblock.py backup              # zip the world into backups/
-python3 clawdblock.py connect             # (re)connect AI clients
-python3 clawdblock.py new-world           # archive this world; the next start makes a fresh one
+python3 pinkgolem.py status              # is it running, who is online
+python3 pinkgolem.py doctor              # find and explain problems (see troubleshooting.md)
+python3 pinkgolem.py mods list           # which mods are installed; mods add|remove|update <names>
+python3 pinkgolem.py apps list           # scarpet apps; apps add race vendor
+python3 pinkgolem.py backup              # zip the world into backups/
+python3 pinkgolem.py connect             # (re)connect AI clients
+python3 pinkgolem.py new-world           # archive this world; the next start makes a fresh one
 ```
 
-On macOS and Linux, `./clawdblock <command>` is a shortcut for `python3 clawdblock.py <command>`.
+On macOS and Linux, `./pinkgolem <command>` is a shortcut for `python3 pinkgolem.py <command>`.
 
 ---
 
 ## 9. Updating
 
 ```bash
-python3 clawdblock.py stop
-git pull                                   # or download the new ZIP and copy your server/, data/, jobs/, clawdblock.json over
-python3 clawdblock.py setup                # keeps your world; updates dependencies and the core apps
-python3 clawdblock.py start
+python3 pinkgolem.py stop
+git pull                                   # or download the new ZIP and copy your server/, data/, jobs/, pinkgolem.json over
+python3 pinkgolem.py setup                # keeps your world; updates dependencies and the core apps
+python3 pinkgolem.py start
 ```
 
 Then restart your AI client so it loads the new MCP server. Claude Desktop users: upload the new
-`dist/clawdblock-skill.zip` (see [clients/claude-desktop.md](clients/claude-desktop.md)). On Windows, where the
+`dist/pinkgolem-skill.zip` (see [clients/claude-desktop.md](clients/claude-desktop.md)). On Windows, where the
 skill is copied rather than linked, run `connect` again.
 
 ---
 
 ## 10. Uninstall
 
-1. `python3 clawdblock.py stop`, and `python3 clawdblock.py backup` if you want to keep the world. Copy
+1. `python3 pinkgolem.py stop`, and `python3 pinkgolem.py backup` if you want to keep the world. Copy
    `backups/` somewhere safe.
-2. Remove the `clawdblock` entry from each AI client you connected (the file for each client is listed on its
+2. Remove the `pinkgolem` entry from each AI client you connected (the file for each client is listed on its
    page under [clients/](clients/claude-code.md)). Setup saved a `.bak` copy next to each config file it changed.
-   If you registered Claude Code in user scope: `claude mcp remove clawdblock --scope user` and delete
-   `~/.claude/skills/clawdblock`.
-3. Delete the ClawdBlock folder. Nothing was installed anywhere else, apart from Java, Node and Python, which
+   If you registered Claude Code in user scope: `claude mcp remove pinkgolem --scope user` and delete
+   `~/.claude/skills/pinkgolem`.
+3. Delete the Pink Golem folder. Nothing was installed anywhere else, apart from Java, Node and Python, which
    you can keep or remove with the tool you installed them with.
 
 ---

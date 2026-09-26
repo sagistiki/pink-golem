@@ -1,4 +1,4 @@
-# Minecraft server (created by clawdblock.py setup) — keep only the README
+# Minecraft server (created by pinkgolem.py setup) — keep only the README
 server/*
 !server/README.md
 backups/
@@ -9,6 +9,7 @@ data/*
 jobs/*
 !jobs/README.md
 # local config (contains the RCON password path, bot name…) and client configs
+pinkgolem.json
 clawdblock.json
 .mcp.json
 .claude/

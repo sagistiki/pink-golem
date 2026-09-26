@@ -1,10 +1,10 @@
 # Upgrading Minecraft and mods
 
-This page covers moving your server to a newer Minecraft version and keeping its mods up to date. ClawdBlock is
+This page covers moving your server to a newer Minecraft version and keeping its mods up to date. Pink Golem is
 tested on **Minecraft 26.2**. Newer versions usually work, because the MCP server talks to Minecraft through server
 commands and the log rather than the network protocol. The mods and a few block names are what can lag behind.
 
-**Before any upgrade:** `python3 clawdblock.py backup`, and copy `data/` too. A world opened in a newer version
+**Before any upgrade:** `python3 pinkgolem.py backup`, and copy `data/` too. A world opened in a newer version
 **cannot go back** to an older one.
 
 ---
@@ -12,9 +12,9 @@ commands and the log rather than the network protocol. The mods and a few block 
 ## Updating mods (same Minecraft version)
 
 ```bash
-python3 clawdblock.py stop
-python3 clawdblock.py mods update
-python3 clawdblock.py start
+python3 pinkgolem.py stop
+python3 pinkgolem.py mods update
+python3 pinkgolem.py start
 ```
 
 `mods update` asks Modrinth for the newest **release** build of every managed mod you have installed, for your
@@ -22,7 +22,7 @@ Minecraft version, and swaps the jar if it changed. Mods you dropped into `serve
 update those by hand. `mods list` shows what's installed. Mods added or updated while the server runs take effect
 after a restart.
 
-Running `python3 clawdblock.py setup` again does the same for the mods it manages, and also updates the Fabric
+Running `python3 pinkgolem.py setup` again does the same for the mods it manages, and also updates the Fabric
 launcher and the core scarpet apps.
 
 ---
@@ -45,13 +45,13 @@ you a broken server.
 ### 2. Run setup with the new version
 
 ```bash
-python3 clawdblock.py stop
-python3 clawdblock.py backup
-python3 clawdblock.py setup --mc-version 26.3
+python3 pinkgolem.py stop
+python3 pinkgolem.py backup
+python3 pinkgolem.py setup --mc-version 26.3
 ```
 
 Setup downloads the Fabric launcher for that version, fetches every mod's build for it, re-copies the core apps
-and saves the version in `clawdblock.json`. Your world, port and RCON password stay.
+and saves the version in `pinkgolem.json`. Your world, port and RCON password stay.
 
 Watch the mod step. A line like
 
@@ -63,17 +63,17 @@ means the **old jar for the old version is still in `server/mods/`**, and an old
 starting. Remove it until a new build is out:
 
 ```bash
-python3 clawdblock.py mods remove worldedit
+python3 pinkgolem.py mods remove worldedit
 ```
 
-Later, `python3 clawdblock.py mods add worldedit` brings it back. The `minecraft_worldedit` tool hides itself while
-WorldEdit is missing, and the rest of ClawdBlock keeps working.
+Later, `python3 pinkgolem.py mods add worldedit` brings it back. The `minecraft_worldedit` tool hides itself while
+WorldEdit is missing, and the rest of Pink Golem keeps working.
 
 ### 3. Start and check
 
 ```bash
-python3 clawdblock.py start
-python3 clawdblock.py doctor
+python3 pinkgolem.py start
+python3 pinkgolem.py doctor
 ```
 
 `doctor` confirms that Carpet answers scarpet (`script run 1+1`) and that the `cu` app is loaded. Then, in the
@@ -92,7 +92,7 @@ The fastest full test is the **catalog**: it places one of every component from 
 it's a regression test for the whole library.
 
 ```
-minecraft_generate script:"skill/clawdblock/blueprints/catalog.py" args:["--at","0,-61,40","--facing","south"] build:true
+minecraft_generate script:"skill/pinkgolem/blueprints/catalog.py" args:["--at","0,-61,40","--facing","south"] build:true
 minecraft_jobs action:wait
 ```
 
@@ -104,7 +104,7 @@ Build all the blueprints once too.
 
 Less common, but it happens: a block gains or loses a state (`facing`, `half`, `type`…), or a command's syntax
 changes. The job's `failures` show the exact command and the server's answer. Also check
-`skill/clawdblock/reference/block-states.md` and fix any examples that changed.
+`skill/pinkgolem/reference/block-states.md` and fix any examples that changed.
 
 ### Scarpet changes
 
@@ -116,8 +116,8 @@ Carpet updates can change scarpet functions or event names. Signs:
 - a game app (race, vendor…) stops reacting.
 
 Read the server log (`minecraft_server_log filter:"scarpet"`, or search `server/logs/latest.log`). Carpet's
-changelog lists scarpet changes. Fix the app in `skill/clawdblock/scripts/` or `scarpet-apps/`, then
-`python3 clawdblock.py apps add <name>` to copy and reload it.
+changelog lists scarpet changes. Fix the app in `skill/pinkgolem/scripts/` or `scarpet-apps/`, then
+`python3 pinkgolem.py apps add <name>` to copy and reload it.
 
 ### Server log format
 
@@ -127,7 +127,7 @@ hearing chat while everything else works. The patterns are at the top of the log
 
 ### Superflat defaults
 
-ClawdBlock assumes the default superflat ground at y = -61 on flat worlds (players stand at -60). `minecraft_status`
+Pink Golem assumes the default superflat ground at y = -61 on flat worlds (players stand at -60). `minecraft_status`
 reports the ground level it detects. If it's different on the new version, the skill already tells the AI to read
 the ground (`standingOn.y`) rather than assume it.
 
@@ -139,15 +139,15 @@ A world that has been opened by a newer Minecraft version isn't safe to open wit
 restore the backup you made before upgrading:
 
 ```bash
-python3 clawdblock.py stop
-python3 clawdblock.py setup --mc-version 26.2     # back to the tested version and its mods
+python3 pinkgolem.py stop
+python3 pinkgolem.py setup --mc-version 26.2     # back to the tested version and its mods
 ```
 
 Then move `server/world` away, unzip the backup inside `server/`, restore your copy of `data/`, and start.
 
 ## Telling others
 
-Found that a new version works, or fixed a rename? Open a pull request: update `MC_VERSION` in `clawdblock.py`
+Found that a new version works, or fixed a rename? Open a pull request: update `MC_VERSION` in `pinkgolem.py`
 only once a version has been tested with every blueprint and the catalog. See [contributing.md](contributing.md).
 
 ## See also

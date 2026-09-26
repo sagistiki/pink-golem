@@ -74,8 +74,9 @@ export function handlers(K) {
     if (pts.length < 2) throw new Error("points: at least 2 [x,y,z] corners, each leg straight along x or z");
     const name = String(args.name || "rails-" + Date.now().toString(36)).replace(/[^\w.-]/g, "_");
     const spec = { points: pts, name, boost_every: args.boost_every ?? 5, curve_boost: args.curve_boost ?? 2, support: args.support ?? "smooth_stone", closed: !!args.closed };
-    const script = path.join(K.P.ROOT, "skill", "clawdblock", "scripts", "city.py");
-    const env = { CLAWDBLOCK_ROOT: K.P.ROOT, CLAWDBLOCK_JOBS: K.P.JOBS, PYTHONIOENCODING: "utf-8" };
+    const script = path.join(K.P.ROOT, "skill", "pinkgolem", "scripts", "city.py");
+    const env = { PINKGOLEM_ROOT: K.P.ROOT, PINKGOLEM_JOBS: K.P.JOBS, PYTHONIOENCODING: "utf-8" };
+    for (const [k, v] of Object.entries(env)) if (k.startsWith("PINKGOLEM_")) env[k.replace("PINKGOLEM_", "CLAWDBLOCK_")] = v;   // old generators
     let r = null;
     for (const py of K.PYTHONS) {
       r = await K.run(py, [script, "rails", JSON.stringify(spec)], { cwd: path.dirname(script), timeout: 60000, env });

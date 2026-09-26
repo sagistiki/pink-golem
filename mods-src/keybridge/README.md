@@ -67,7 +67,7 @@ once the rider is past vertical, give the flipped camera the direction the rider
 that direction's pitch. At pitch ±90° (straight up or down) the normal and the flipped camera show the same picture,
 which is the seamless place to switch.
 
-Resource pack: add `mods-src/keybridge/flipcam/flipcam.zip` to `resource_pack.parts` in `clawdblock.json` (it is not
+Resource pack: add `mods-src/keybridge/flipcam/flipcam.zip` to `resource_pack.parts` in `pinkgolem.json` (it is not
 included by default) and deploy with `minecraft_pack`. Side effect: anyone spectating a real spider in spectator mode
 also sees the flipped view. While the camera is not the player's own, the client doesn't send its own movement
 (vanilla behaviour for any camera entity) — fine for a rider.
@@ -78,7 +78,7 @@ Needs a JDK (javac) of the server's Java version and a server that has run once 
 
 ```bash
 python3 mods-src/keybridge/build.py --install   # builds build/keybridge-<version>.jar and copies it into server/mods
-python3 clawdblock.py stop && python3 clawdblock.py start
+python3 pinkgolem.py stop && python3 pinkgolem.py start
 ```
 
 It compiles with plain `javac` against the (unobfuscated) Minecraft 26.x server jar, the server's libraries and three

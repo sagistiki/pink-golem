@@ -1,18 +1,18 @@
-# ClawdBlock — instructions for AI agents (Codex, Gemini CLI, and others)
+# Pink Golem — instructions for AI agents (Codex, Gemini CLI, and others)
 
-This repository runs a Minecraft Java server that you can build in through the ClawdBlock MCP server (tools named
+This repository runs a Minecraft Java server that you can build in through the Pink Golem MCP server (tools named
 `minecraft_*`).
 
-**Before doing anything in the Minecraft world, read `skill/clawdblock/SKILL.md` and follow it.** It has the golden
+**Before doing anything in the Minecraft world, read `skill/pinkgolem/SKILL.md` and follow it.** It has the golden
 rules, a step-by-step recipe for any build request, a table of every tool, and links to the reference pages in
-`skill/clawdblock/reference/` — read the page that matches your task before you start it.
+`skill/pinkgolem/reference/` — read the page that matches your task before you start it.
 
-If your context is small, `skill/clawdblock/SYSTEM_PROMPT.md` is the condensed version.
+If your context is small, `skill/pinkgolem/SYSTEM_PROMPT.md` is the condensed version.
 
 Repository layout:
-- `clawdblock.py` — setup / start / stop / status / doctor / mods / apps / connect (Python, stdlib only)
+- `pinkgolem.py` — setup / start / stop / status / doctor / mods / apps / connect (Python, stdlib only)
 - `mcp-server/` — the MCP server (Node): `index.js` core, `lib/` shared helpers, `tools/` tool groups
-- `skill/clawdblock/` — SKILL.md, `reference/`, `scripts/` (mclib.py, parts.py, city.py, scarpet helper apps), `blueprints/`
+- `skill/pinkgolem/` — SKILL.md, `reference/`, `scripts/` (mclib.py, parts.py, city.py, scarpet helper apps), `blueprints/`
 - `scarpet-apps/` — example game-logic apps (launch pads, races, TNT Run, vendor stands, secret doors…)
 - `jobs/` — generated build files (yours go here too); `data/` — the world map, zones, undo, notes, screenshots
 

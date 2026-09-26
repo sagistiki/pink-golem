@@ -4,7 +4,7 @@
  *                       collected) · patch (a live function definition of any size, no reload) · errors (from the log)
  *   minecraft_playtest  one call = a scripted test with Carpet fake players → timeline + PASS/FAIL, with a cleanup that
  *                       always runs (fake players and their files, records keyed by their names, app globals)
- * Pure helpers (lint, records) live in lib/devkit.js. Background: skill/clawdblock/reference/testing-apps.md
+ * Pure helpers (lint, records) live in lib/devkit.js. Background: skill/pinkgolem/reference/testing-apps.md
  */
 import fs from "node:fs";
 import path from "node:path";

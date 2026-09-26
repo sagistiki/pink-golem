@@ -1,8 +1,8 @@
-# ClawdBlock installer for Windows (PowerShell).
+# Pink Golem installer for Windows (PowerShell).
 #   Right-click → Run with PowerShell, or:  powershell -ExecutionPolicy Bypass -File install.ps1 [--yes]
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
-Write-Host "ClawdBlock — checking what your computer has" -ForegroundColor Magenta
+Write-Host "Pink Golem — checking what your computer has" -ForegroundColor Magenta
 $py = $null
 foreach ($c in @("py", "python", "python3")) {
   if (Get-Command $c -ErrorAction SilentlyContinue) {
@@ -20,5 +20,5 @@ if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   Write-Host "! Node.js 20+ is needed for the AI connection:  winget install OpenJS.NodeJS.LTS" -ForegroundColor Yellow
 }
-& $py clawdblock.py setup @args
+& $py pinkgolem.py setup @args
 exit $LASTEXITCODE

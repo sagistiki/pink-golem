@@ -1,11 +1,11 @@
-# ClawdBlock — instructions for Claude Code
+# Pink Golem — instructions for Claude Code
 
-This folder is a ClawdBlock install: a Minecraft server (`server/`), the MCP server that gives you tools in it
-(`mcp-server/`, tools named `minecraft_*`) and the building skill (`skill/clawdblock/`).
+This folder is a Pink Golem install: a Minecraft server (`server/`), the MCP server that gives you tools in it
+(`mcp-server/`, tools named `minecraft_*`) and the building skill (`skill/pinkgolem/`).
 
 - When `minecraft_*` tools are available, or the user talks about their Minecraft world, follow
-  **`skill/clawdblock/SKILL.md`** (loaded automatically as the `clawdblock` skill after `python3 clawdblock.py connect claude-code`).
-- Server control: `python3 clawdblock.py start | stop | status | doctor` (never start/stop the server without the user asking).
+  **`skill/pinkgolem/SKILL.md`** (loaded automatically as the `pinkgolem` skill after `python3 pinkgolem.py connect claude-code`).
+- Server control: `python3 pinkgolem.py start | stop | status | doctor` (never start/stop the server without the user asking).
 - Generators you write go in `jobs/` (e.g. `jobs/gen_bakery.py`) and are run with `minecraft_generate`.
 - Runtime data (`data/`: world map, zones, undo stack, screenshots, LEARNINGS.md) is written by the tools — don't
   hand-edit it while an AI session is running.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ClawdBlock MCP server — core.
+ * Pink Golem MCP server — core.
  *
  * Talks to a Minecraft server the version-proof way:
  *   - RCON          runs any server command as the console (op level 4) and returns its output
@@ -25,11 +25,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
 function log(...a) {
-  console.error("[clawdblock]", ...a);
+  console.error("[pinkgolem]", ...a);
 }
 
 function loadConfig() {
-  const file = process.env.CLAWDBLOCK_CONFIG || path.join(ROOT, "clawdblock.json");
+  const legacy = path.join(ROOT, "clawdblock.json");           // the project was called ClawdBlock until 2026-09-27
+  const plain = path.join(ROOT, "pinkgolem.json");
+  const file = process.env.PINKGOLEM_CONFIG || process.env.CLAWDBLOCK_CONFIG || (!fs.existsSync(plain) && fs.existsSync(legacy) ? legacy : plain);
   let c = {};
   try {
     c = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -37,14 +39,19 @@ function loadConfig() {
     if (e.code !== "ENOENT") log(`cannot read ${file}: ${e.message}`);
   }
   const abs = (p) => (p ? (path.isAbsolute(p) ? p : path.resolve(ROOT, p)) : null);
-  const botName = process.env.MC_BOT_NAME || c.bot_name || "Claude";
+  // The default body is "Golem" with a team prefix "Pink " → "Pink Golem" over its head, in the player list and chat
+  // (a player name can't hold a space). Another bot_name gets no prefix unless bot_prefix says so.
+  const botName = process.env.MC_BOT_NAME || c.bot_name || "Golem";
+  const botPrefix = c.bot_prefix ?? (botName === "Golem" ? "Pink " : "");
   return {
     ROOT,
     CONFIG_FILE: file,
     SERVER_DIR: abs(process.env.MC_SERVER_DIR || c.server_dir || "server"),
     BOT_NAME: botName,
+    BOT_PREFIX: botPrefix,
+    BOT_OUTFIT: c.bot_outfit ?? "pink",
     CHAT_COLOR: process.env.MC_CHAT_COLOR || c.chat_color || "light_purple",
-    BOT_ALIASES: c.bot_aliases || [botName, "claude", "bot"],
+    BOT_ALIASES: c.bot_aliases || [...new Set([botPrefix + botName, botName, "golem", "bot"])],
     CREW: c.crew || {},
     RCON_HOST: process.env.MC_RCON_HOST || c.rcon_host || "127.0.0.1",
     RCON_PORT: process.env.MC_RCON_PORT || c.rcon_port || null,
@@ -142,7 +149,7 @@ class Rcon {
         this.connecting = null;
         return reject(
           new Error(
-            `RCON password is empty (${PROPS_FILE}). Run "python3 clawdblock.py setup" or set enable-rcon=true and rcon.password=<something> in server.properties, then restart the Minecraft server.`
+            `RCON password is empty (${PROPS_FILE}). Run "python3 pinkgolem.py setup" or set enable-rcon=true and rcon.password=<something> in server.properties, then restart the Minecraft server.`
           )
         );
       }
@@ -167,7 +174,7 @@ class Rcon {
       sock.on("error", (e) => {
         const hint =
           e.code === "ECONNREFUSED"
-            ? ` — nothing is listening on ${cfg.host}:${cfg.port}. Is the Minecraft server running (python3 clawdblock.py start)${cfg.enabled ? "" : " and is enable-rcon=true in server.properties (it is false now)"}?`
+            ? ` — nothing is listening on ${cfg.host}:${cfg.port}. Is the Minecraft server running (python3 pinkgolem.py start)${cfg.enabled ? "" : " and is enable-rcon=true in server.properties (it is false now)"}?`
             : "";
         done(new Error(`RCON error: ${e.message}${hint}`));
         this.failAll(new Error(`RCON connection lost: ${e.message}`));
@@ -401,7 +408,7 @@ async function tools() {
 }
 
 // ───────────────────────────── MCP wiring ─────────────────────────────
-const server = new Server({ name: "clawdblock", version: "1.0.0" }, { capabilities: { tools: { listChanged: true } } });
+const server = new Server({ name: "pinkgolem", version: "1.0.0" }, { capabilities: { tools: { listChanged: true } } });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: (await tools()).TOOLS }));
 

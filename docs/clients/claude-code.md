@@ -1,16 +1,16 @@
 # Claude Code
 
-This page connects **Claude Code** (Anthropic's terminal coding agent) to your ClawdBlock server. Claude Code is
-the most capable client for ClawdBlock: besides using the 33 tools, it can write its own build generators into
+This page connects **Claude Code** (Anthropic's terminal coding agent) to your Pink Golem server. Claude Code is
+the most capable client for Pink Golem: besides using the 37 tools, it can write its own build generators into
 `jobs/`, read the reference pages as it needs them, and even improve the tools themselves.
 
 | | |
 |---|---|
-| Connect | `python3 clawdblock.py connect claude-code` |
-| MCP config | `.mcp.json` in the ClawdBlock folder (project scope) |
-| Skill | `.claude/skills/clawdblock` → a link to `skill/clawdblock/` |
-| Bot name | the one in `clawdblock.json` (default **Claude**) |
-| Start it | `claude`, run inside the ClawdBlock folder |
+| Connect | `python3 pinkgolem.py connect claude-code` |
+| MCP config | `.mcp.json` in the Pink Golem folder (project scope) |
+| Skill | `.claude/skills/pinkgolem` → a link to `skill/pinkgolem/` |
+| Bot name | the one in `pinkgolem.json` (default **Claude**) |
+| Start it | `claude`, run inside the Pink Golem folder |
 
 ---
 
@@ -19,23 +19,23 @@ the most capable client for ClawdBlock: besides using the 33 tools, it can write
 Setup offers this automatically when it finds the `claude` command. To do it later, or again:
 
 ```bash
-python3 clawdblock.py connect claude-code
+python3 pinkgolem.py connect claude-code
 ```
 
-It then asks whether to also make ClawdBlock available **in every folder** (user scope). The default is no, which
-keeps ClawdBlock tied to this folder. That is usually what you want.
+It then asks whether to also make Pink Golem available **in every folder** (user scope). The default is no, which
+keeps Pink Golem tied to this folder. That is usually what you want.
 
 ## What it writes
 
-**1. `.mcp.json` in the ClawdBlock folder.** It merges this entry into the file (other servers already in it
+**1. `.mcp.json` in the Pink Golem folder.** It merges this entry into the file (other servers already in it
 stay as they are, and a `.mcp.json.bak` copy is saved first):
 
 ```json
 {
   "mcpServers": {
-    "clawdblock": {
+    "pinkgolem": {
       "command": "/usr/local/bin/node",
-      "args": ["/home/you/clawdblock/mcp-server/index.js"]
+      "args": ["/home/you/pinkgolem/mcp-server/index.js"]
     }
   }
 }
@@ -44,25 +44,25 @@ stay as they are, and a `.mcp.json.bak` copy is saved first):
 Both paths are **absolute**: the full path of your `node` and of the MCP server. Absolute paths work no matter
 which folder the client starts in.
 
-**2. The skill link.** `.claude/skills/clawdblock` becomes a symbolic link to `skill/clawdblock/`, so the skill
+**2. The skill link.** `.claude/skills/pinkgolem` becomes a symbolic link to `skill/pinkgolem/`, so the skill
 always matches the code. On Windows without Developer Mode, links are not allowed and the folder is **copied**
 instead. Run `connect claude-code` again after every update to refresh the copy.
 
-**3. User scope (only if you said yes):** a second link at `~/.claude/skills/clawdblock`, and
+**3. User scope (only if you said yes):** a second link at `~/.claude/skills/pinkgolem`, and
 
 ```bash
-claude mcp add clawdblock --scope user -- <node path> <ClawdBlock folder>/mcp-server/index.js
+claude mcp add pinkgolem --scope user -- <node path> <Pink Golem folder>/mcp-server/index.js
 ```
 
 ## How the skill loads
 
-Claude Code finds skills in `.claude/skills/` and loads `clawdblock` whenever `minecraft_*` tools are available or
+Claude Code finds skills in `.claude/skills/` and loads `pinkgolem` whenever `minecraft_*` tools are available or
 you ask for something in Minecraft. `CLAUDE.md` in the folder is read at the start of every session and points to
 the same skill, so Claude follows `SKILL.md` from the first message.
 
 ## Bot name
 
-Claude Code uses the `bot_name` from `clawdblock.json` (**Claude** unless you chose another name at setup).
+Claude Code uses the `bot_name` from `pinkgolem.json` (**Golem**, shown as **Pink Golem**, unless you chose another name at setup).
 Claude Desktop uses the same name by default. If you run both at the same time, give one of them its own name
 (see below). Otherwise two AIs drive one body and undo each other's walking.
 
@@ -73,31 +73,31 @@ over the other's.
 To use another name for Claude Code only, add an `env` block to its entry in `.mcp.json`:
 
 ```json
-"clawdblock": { "command": "…", "args": ["…"], "env": { "MC_BOT_NAME": "Clawd" } }
+"pinkgolem": { "command": "…", "args": ["…"], "env": { "MC_BOT_NAME": "Golem" } }
 ```
 
 ## Manual setup
 
-If `connect` failed or you want to do it by hand, run these in the ClawdBlock folder:
+If `connect` failed or you want to do it by hand, run these in the Pink Golem folder:
 
 ```bash
-claude mcp add clawdblock --scope project -- "$(command -v node)" "$PWD/mcp-server/index.js"
-mkdir -p .claude/skills && ln -s ../../skill/clawdblock .claude/skills/clawdblock
+claude mcp add pinkgolem --scope project -- "$(command -v node)" "$PWD/mcp-server/index.js"
+mkdir -p .claude/skills && ln -s ../../skill/pinkgolem .claude/skills/pinkgolem
 ```
 
 On Windows (PowerShell), write `.mcp.json` yourself with the shape above (use `where node` for the node path and
-double backslashes in JSON, e.g. `"C:\\Program Files\\nodejs\\node.exe"`), and copy `skill\clawdblock` to
-`.claude\skills\clawdblock`.
+double backslashes in JSON, e.g. `"C:\\Program Files\\nodejs\\node.exe"`), and copy `skill\pinkgolem` to
+`.claude\skills\pinkgolem`.
 
 ---
 
 ## First-session checklist
 
-1. The Minecraft server is running: `python3 clawdblock.py status`.
+1. The Minecraft server is running: `python3 pinkgolem.py status`.
 2. You are in the game (the AI spawns next to a player).
-3. Run `claude` **inside the ClawdBlock folder**. The first time, Claude Code asks whether to trust the project's
-   MCP server `clawdblock`. Approve it.
-4. Type `/mcp`: `clawdblock` should be *connected*. 33 tools with every recommended mod; fewer if WorldEdit is not
+3. Run `claude` **inside the Pink Golem folder**. The first time, Claude Code asks whether to trust the project's
+   MCP server `pinkgolem`. Approve it.
+4. Type `/mcp`: `pinkgolem` should be *connected*. 37 tools with every recommended mod; fewer if WorldEdit is not
    installed (its tool is hidden) or Carpet is missing (the bot and helper tools are hidden).
 5. Ask: *"Check the server and spawn in next to me."* Claude should call `minecraft_status`, read its notes and the
    world map, then spawn its body beside you.
@@ -105,8 +105,8 @@ double backslashes in JSON, e.g. `"C:\\Program Files\\nodejs\\node.exe"`), and c
 
 ## Tips
 
-- **Tool permissions.** Claude Code asks before each new tool. To allow every ClawdBlock tool at once, add
-  `"mcp__clawdblock"` to `permissions.allow` in `.claude/settings.json` (or pick "don't ask again" when prompted).
+- **Tool permissions.** Claude Code asks before each new tool. To allow every Pink Golem tool at once, add
+  `"mcp__pinkgolem"` to `permissions.allow` in `.claude/settings.json` (or pick "don't ask again" when prompted).
 - **Let it write generators.** For anything custom ("a bakery with a shop window and an apartment upstairs"), Claude
   writes `jobs/gen_bakery.py` with `mclib` and `parts`, previews it, then builds it. You can read and keep that file.
   Good ones can become blueprints ([writing-blueprints.md](../writing-blueprints.md)).
@@ -124,10 +124,10 @@ double backslashes in JSON, e.g. `"C:\\Program Files\\nodejs\\node.exe"`), and c
 
 | Symptom | Fix |
 |---|---|
-| No `minecraft_*` tools | You started `claude` in another folder, or declined the project server. Run it in the ClawdBlock folder; `/mcp` shows the state |
-| `/mcp` shows *failed* | `python3 clawdblock.py doctor`; usually `npm install` did not run in `mcp-server/` |
-| Tools answer `ECONNREFUSED` | the Minecraft server is not running: `python3 clawdblock.py start` |
-| The skill seems unknown | check that `.claude/skills/clawdblock/SKILL.md` exists; run `connect claude-code` again |
+| No `minecraft_*` tools | You started `claude` in another folder, or declined the project server. Run it in the Pink Golem folder; `/mcp` shows the state |
+| `/mcp` shows *failed* | `python3 pinkgolem.py doctor`; usually `npm install` did not run in `mcp-server/` |
+| Tools answer `ECONNREFUSED` | the Minecraft server is not running: `python3 pinkgolem.py start` |
+| The skill seems unknown | check that `.claude/skills/pinkgolem/SKILL.md` exists; run `connect claude-code` again |
 
 More in [troubleshooting.md](../troubleshooting.md).
 

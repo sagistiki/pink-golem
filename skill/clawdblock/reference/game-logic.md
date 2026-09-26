@@ -311,6 +311,7 @@ point clear of roofs and 6+ blocks from people.
 | "Respawn it if `entity_selector` finds none" | The entity may just be in an unloaded chunk — hundreds pile up. Respawn only with a real player near and the spot loaded, and remove extras (`rails.md`) |
 | A seat / spectator spot facing the wrong way | Yaw toward a point = `atan2(-dx, dz)` (yaw 0 = south, 180 = north); compute it, don't hardcode 180 |
 | Core game input is a button click | Prefer standing on a pad / crossing a line — a fake player can then test the whole round (`minigames.md`) |
+| Raising `setworldspawn`'s y so new players appear above the floor | Does nothing: the spawn finder always moves down until the feet touch the ground. Lift them from `__on_player_respawns` / `__on_player_connects` (a tick later, only when they stand within ~1.5 blocks of `system_info('world_spawn_point')`) |
 
 ## See also
 [scarpet.md](scarpet.md) · [minigames.md](minigames.md) · [gamekit.md](gamekit.md) · [vehicles.md](vehicles.md) · [hud.md](hud.md) · [rails.md](rails.md) · [redstone.md](redstone.md) · [entities.md](entities.md) ·

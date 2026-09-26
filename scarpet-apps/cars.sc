@@ -10,6 +10,8 @@
 // 1-block steps are climbed, it falls off edges, grass/sand slow it, mobs in the way are pushed aside (players never).
 // Camera: "chase" (default) — you spectate a camera entity that trails the car, a mannequin with your skin sits at the
 // wheel; "first" — you sit in the seat (F5 works). /cars view toggles it. Shift = get out beside the driver's door.
+// Two seats: the first one in drives, a second one sits next to the driver (same views, the chase camera is shared;
+// Shift gets out through the right door). If the driver gets out, the passenger stays and the next one in drives.
 // Parked cars that were moved go back to their spot after 3 minutes with nobody near.
 //
 // Parking lot: <app>.data/lot.json = {"spots": [[x, y, z, yaw, "model", "colour"], ...], "show": [x, y, z, "model",
@@ -39,6 +41,8 @@ global_COL = {'red' -> 12597547, 'blue' -> 3949738, 'white' -> 15790320, 'black'
 global_ROAD_SLOW = {'grass_block' -> 0.72, 'dirt' -> 0.72, 'sand' -> 0.6, 'gravel' -> 0.75, 'moss_block' -> 0.72, 'mud' -> 0.5,
   'water' -> 0.3, 'farmland' -> 0.6, 'snow_block' -> 0.7};
 global_ICE = {'ice' -> 1, 'packed_ice' -> 1, 'blue_ice' -> 1};
+// seat -> [its camera mode key, its mannequin key, its seat entity key, its side: 1 = left]
+global_SEAT = {'driver' -> ['mode', 'man', 'seat', 1], 'pass' -> ['pmode', 'pman', 'seat2', -1]};
 
 global_cars = {};          // id -> car
 global_gen = str('%s_g%d', global_T, floor(rand(1000000000)));
@@ -90,10 +94,14 @@ _new_car(model, colour, q, yaw, home) -> (
   body = spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"cars:%s","minecraft:dyed_color":%d}},teleport_duration:2,Rotation:[%.1ff,0f],view_range:4f,shadow_radius:1.4f,shadow_strength:0.6f,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
     tags, model, rgb, yaw + global_MODEL_YAW, m:1 / 2, m:1, m:1, m:1));
   hit = spawn('interaction', q, str('{Tags:[%s],width:%.2ff,height:1.6f,response:1b}', tags, m:9 * 2 + 0.2));
-  seat = spawn('armor_stand', q, str('{Tags:[%s],Marker:1b,Invisible:1b,NoGravity:1b,Invulnerable:1b,Rotation:[%.1ff,0f]}', tags, yaw));
+  seat_nbt = str('{Tags:[%s],Marker:1b,Invisible:1b,NoGravity:1b,Invulnerable:1b,Rotation:[%.1ff,0f]}', tags, yaw);
+  seat = spawn('armor_stand', q, seat_nbt);
+  seat2 = spawn('armor_stand', q, seat_nbt);
   global_cars:id = {'id' -> id, 'model' -> model, 'colour' -> colour, 'body' -> query(body, 'uuid'), 'hit' -> query(hit, 'uuid'),
-    'seat' -> query(seat, 'uuid'), 'x' -> q:0, 'y' -> q:1, 'z' -> q:2, 'h' -> yaw, 'vx' -> 0, 'vz' -> 0, 'vy' -> 0, 'steer' -> 0,
-    'driver' -> null, 'cam' -> null, 'man' -> null, 'mode' -> null, 'idle' -> 0, 'ch' -> yaw,
+    'seat' -> query(seat, 'uuid'), 'seat2' -> query(seat2, 'uuid'),
+    'x' -> q:0, 'y' -> q:1, 'z' -> q:2, 'h' -> yaw, 'vx' -> 0, 'vz' -> 0, 'vy' -> 0, 'steer' -> 0,
+    'driver' -> null, 'cam' -> null, 'man' -> null, 'mode' -> null, 'pass' -> null, 'pman' -> null, 'pmode' -> null,
+    'idle' -> 0, 'ch' -> yaw,
     'home' -> if (home, [q:0, q:1, q:2, yaw], null)};
   _place(global_cars:id, 0);
   id
@@ -110,59 +118,86 @@ _car_of_entity(e) -> (
 __on_player_interacts_with_entity(p, e, hand) -> (
   if (hand != 'mainhand' || query(e, 'type') != 'interaction' || !_real(p), return());
   id = _car_of_entity(e); if (id == null, return());
-  c = global_cars:id; if (!c, return());
-  if (c:'driver', _msg(p ~ 'name', 'This car is taken', 'red'); return());
-  if (first(values(global_cars), _:'driver' == (p ~ 'name')) != null, return());
-  enter(p ~ 'name', id)
+  c = global_cars:id; n = p ~ 'name';
+  if (!c || _seat_of(n), return());
+  if (c:'driver' && c:'pass', _msg(n, 'This car is full', 'red'); return());
+  enter(n, id)
 );
 
+// [car, 'driver' | 'pass'] for someone sitting in a car, else null
+_seat_of(n) -> (for (values(global_cars), c = _; for (['driver', 'pass'], if (c:_ == n, return([c, _])))); null);
+
+// the first one in drives, a second one sits next to the driver
 enter(n, id) -> (
-  p = player(n); c = global_cars:id; if (!p || !c || c:'driver', return('no'));
+  p = player(n); c = global_cars:id; if (!p || !c || _seat_of(n), return('no'));
+  r = if (!c:'driver', 'driver', !c:'pass', 'pass', return('full'));
   global_restore:n = {'mode' -> p ~ 'gamemode'}; write_file('restore', 'json', global_restore);
-  c:'driver' = n; c:'idle' = 0;
-  _set_view(c, _or(global_view:n, 'chase'));
-  _msg(n, str('%s · W/S gas/brake · A/D steer · Space handbrake (drift) · Ctrl boost · Shift get out · /%s view camera', global_M:(c:'model'):0, global_T), 'yellow');
+  c:r = n; c:'idle' = 0;
+  _set_view(c, r, _or(global_view:n, 'chase'));
+  name = global_M:(c:'model'):0;
+  if (r == 'driver',
+    _msg(n, str('%s · W/S gas/brake · A/D steer · Space handbrake (drift) · Ctrl boost · Shift get out · /%s view camera', name, global_T), 'yellow'),
+    _msg(n, str('%s · next to %s · Shift get out · /%s view camera', name, c:'driver', global_T), 'yellow');
+    _msg(c:'driver', str('%s got in next to you', n), 'light_purple'));
   run(str('playsound minecraft:block.iron_door.close master @a %.1f %.1f %.1f 0.8 1.4', c:'x', c:'y', c:'z'));
-  'in'
+  r
 );
 
-_set_view(c, mode) -> (
-  n = c:'driver'; p = player(n);
-  _drop_cam(c);
-  c:'mode' = mode;
+_set_view(c, r, mode) -> (
+  [km, kman, kseat, side] = global_SEAT:r;
+  n = c:r; p = player(n);
+  _drop_man(c, r);
+  c:km = mode;
   if (mode == 'chase',
-    m = global_M:(c:'model');
-    cq = _cam_target(c); c:'ch' = c:'h';
-    cam = spawn('item_display', cq, str('{Tags:[%s],teleport_duration:2,Rotation:[%.1ff,%.1ff]}', _tags(c:'id'), c:'h', atan2(m:7 - 1, m:6)));
-    c:'cam' = query(cam, 'uuid');
+    _cam(c);
     prof = if ((p ~ 'player_type') != 'fake', str(',profile:{name:"%s"}', n), '');
     man = spawn('mannequin', [c:'x', c:'y', c:'z'], str('{Tags:[%s],immovable:1b,hide_description:1b,Invulnerable:1b%s}', _tags(c:'id'), prof));
-    c:'man' = query(man, 'uuid');
-    run(str('ride %s mount %s', c:'man', c:'seat'));
+    c:kman = query(man, 'uuid');
+    run(str('ride %s mount %s', c:kman, c:kseat));
     if (query(p, 'mount'), run(str('ride %s dismount', n)));
     run(str('gamemode spectator %s', n));
     schedule(2, '_spectate', n, c:'cam'),                                     // after the game mode switch
     // first person: sit in the seat
     run(str('gamemode %s %s', _or(global_restore:n:'mode', _fallback(p)), n));
-    run(str('ride %s mount %s', n, c:'seat'))
-  )
+    run(str('ride %s mount %s', n, c:kseat))
+  );
+  _cam_check(c)
 );
 _spectate(n, u) -> run(str('spectate %s %s', u, n));
-_drop_cam(c) -> for (['cam', 'man'], u = c:_; if (u, e = entity_id(u); if (e, modify(e, 'remove'))); c:_ = null);
+
+// the chase camera: one per car, shared by everyone in it who uses the chase view
+_cam(c) -> (
+  if (c:'cam' && entity_id(c:'cam'), return());
+  m = global_M:(c:'model');
+  cq = _cam_target(c); c:'ch' = c:'h';
+  cam = spawn('item_display', cq, str('{Tags:[%s],teleport_duration:2,Rotation:[%.1ff,%.1ff]}', _tags(c:'id'), c:'h', atan2(m:7 - 1, m:6)));
+  c:'cam' = query(cam, 'uuid')
+);
+_cam_check(c) -> (
+  if (c:'cam' && c:'mode' != 'chase' && c:'pmode' != 'chase',
+    e = entity_id(c:'cam'); if (e, modify(e, 'remove')); c:'cam' = null)
+);
+_drop_man(c, r) -> (k = global_SEAT:r:1; u = c:k; if (u, e = entity_id(u); if (e, modify(e, 'remove'))); c:k = null);
+
+// someone vanished (logged out): free the seat
+_gone(c, r) -> (_drop_man(c, r); c:r = null; k = global_SEAT:r:0; c:k = null; _cam_check(c));
+
+leave(id) -> (c = global_cars:id; if (c, _out(c, 'driver')));
 
 // Exit: stop spectating FIRST, restore the game mode, switch flying off (spectator → creative keeps flying on),
-// and put the player down beside the driver's door 2 ticks later, once the game mode has really switched.
-leave(id) -> (
-  c = global_cars:id; if (!c || !c:'driver', return());
-  n = c:'driver'; p = player(n);
-  _drop_cam(c);
-  c:'driver' = null; c:'mode' = null; c:'vx' = 0; c:'vz' = 0;                  // parked: it does not roll on
+// and put the player down beside their own door (driver left, passenger right) 2 ticks later, once the game mode
+// has really switched. A parked car does not roll on; a passenger left alone keeps the seat.
+_out(c, r) -> (
+  n = c:r; if (!n, return());
+  side = global_SEAT:r:3; p = player(n);
+  _gone(c, r);
+  if (r == 'driver', c:'vx' = 0; c:'vz' = 0);
   if (p,
     if (query(p, 'mount'), run(str('ride %s dismount', n)));
     run(str('execute as %s run spectate', n));
     _restore_player(n);
     modify(p, 'flying', false);
-    h = c:'h'; ox = c:'x' + cos(h) * 1.8; oz = c:'z' + sin(h) * 1.8;            // the driver's side
+    h = c:'h'; ox = c:'x' + side * cos(h) * 1.8; oz = c:'z' + side * sin(h) * 1.8;
     schedule(2, '_put_down', n, ox, c:'y', oz, h));
   run(str('playsound minecraft:block.iron_door.open master @a %.1f %.1f %.1f 0.8 1.3', c:'x', c:'y', c:'z'))
 );
@@ -183,18 +218,18 @@ _restore_player(n) -> (
 cmd_view() -> (
   p = player(); n = p ~ 'name';
   v = if (global_view:n == 'first', 'chase', 'first'); global_view:n = v; write_file('views', 'json', global_view);
-  c = first(values(global_cars), _:'driver' == n); if (c, _set_view(c, v));
+  s = _seat_of(n); if (s, _set_view(s:0, s:1, v));
   if (v == 'first', 'Camera: first person (F5 for third person)', 'Camera: chase view behind the car')
 );
-cmd_home() -> (p = player(); c = first(values(global_cars), _:'driver' == (p ~ 'name')); if (c, leave(c:'id'); _go_home(c)); 'ok');
+cmd_home() -> (p = player(); s = _seat_of(p ~ 'name'); if (s && s:1 == 'driver', c = s:0; _out(c, 'pass'); _out(c, 'driver'); _go_home(c)); 'ok');
 cmd_here(model, colour) -> (
   p = player(); if (!global_M:model, return('models: ' + join(', ', keys(global_M))));
   if (!global_spawned, global_spawned = true);
   str('car %d', _new_car(model, colour, pos(p), p ~ 'yaw', false))
 );
-cmd_list() -> map(values(global_cars), str('%d %s %s %s', _:'id', _:'model', _:'colour', _or(_:'driver', '-')));
+cmd_list() -> map(values(global_cars), str('%d %s %s %s %s', _:'id', _:'model', _:'colour', _or(_:'driver', '-'), _or(_:'pass', '-')));
 
-__on_player_disconnects(p, r) -> (n = p ~ 'name'; c = first(values(global_cars), _:'driver' == n); if (c, _drop_cam(c); c:'driver' = null; c:'mode' = null));
+__on_player_disconnects(p, r) -> (s = _seat_of(p ~ 'name'); if (s, _gone(s:0, s:1)));
 __on_player_connects(p) -> (n = p ~ 'name'; if (has(global_restore, n), schedule(20, '_restore_player', n)));
 
 // ───────────── the loop ─────────────
@@ -208,16 +243,24 @@ __on_tick() -> (
   if (global_show && t % 20 == 0, e = entity_id(global_show); if (e, sh = global_lot:'show'; modify(e, 'location', sh:0, sh:1, sh:2, (t / 20 * 18) % 360, 0)));
   for (values(global_cars),
     c = _;
+    if (c:'pass', _pass_tick(c));
     if (c:'driver',
       p = player(c:'driver');
-      if (!p, _drop_cam(c); c:'driver' = null; continue());
+      if (!p, _gone(c, 'driver'); continue());
       k = _keys(c:'driver');
       if (_bit(k, 32) && c:'mode' == 'chase', leave(c:'id'); continue());          // Shift in the chase view
       if (c:'mode' == 'first' && !query(p, 'mount'), leave(c:'id'); continue());   // dismounted in first person
       _drive(c, k, t),
       if (abs(c:'vx') + abs(c:'vz') > 0.005 || c:'vy' != 0, _drive(c, 0, t),
-        if (c:'home' && t % 200 == 0, _maybe_home(c))))
+        if (c:'home' && !c:'pass' && t % 200 == 0, _maybe_home(c))))
   )
+);
+
+// the passenger gets out with Shift in the chase view, or by standing up in first person
+_pass_tick(c) -> (
+  n = c:'pass'; p = player(n);
+  if (!p, _gone(c, 'pass'); return());
+  if ((c:'pmode' == 'chase' && _bit(_keys(n), 32)) || (c:'pmode' == 'first' && !query(p, 'mount')), _out(c, 'pass'))
 );
 
 _maybe_home(c) -> (
@@ -298,8 +341,10 @@ _drive(c, k, t) -> (
     run(str('particle minecraft:white_smoke %.2f %.2f %.2f 0.4 0.05 0.4 0.01 3', nx - fx * m:8, y + 0.1, nz - fz * m:8));
     if (t % 4 == 0, run(str('playsound minecraft:block.sand.break neutral @a %.1f %.1f %.1f 0.6 0.6', nx, y, nz))));
   if (boost && gas && t % 2 == 0, run(str('particle minecraft:flame %.2f %.2f %.2f 0.1 0.05 0.1 0.01 2', nx - fx * (m:8 + 0.3), y + 0.4, nz - fz * (m:8 + 0.3))));
-  if (c:'driver' && t % 10 == 0,
-    _msg(c:'driver', str('%d km/h%s', round(s * 72), if (hand, ' · drift!', boost && gas, ' · boost!', '')), if (hand, 'light_purple', boost && gas, 'gold', 'white')))
+  if (t % 10 == 0,
+    txt = str('%d km/h%s', round(s * 72), if (hand, ' · drift!', boost && gas, ' · boost!', ''));
+    col = if (hand, 'light_purple', boost && gas, 'gold', 'white');
+    for (['driver', 'pass'], if (c:_, _msg(c:_, txt, col))))
 );
 
 // the car's footprint (corners + side midpoints) against solid blocks at the feet and one above
@@ -317,13 +362,14 @@ _place(c, t) -> (
   x = c:'x'; y = c:'y'; z = c:'z'; h = c:'h';
   e = entity_id(c:'body'); if (e, modify(e, 'location', x, y, z, h + global_MODEL_YAW, 0));
   e = entity_id(c:'hit'); if (e, modify(e, 'pos', x, y, z));
-  e = entity_id(c:'seat'); if (e, modify(e, 'location', x - sin(h) * 0.15 + cos(h) * 0.45, y + 0.35, z + cos(h) * 0.15 + sin(h) * 0.45, h, 0));
+  e = entity_id(c:'seat'); if (e, modify(e, 'location', x - sin(h) * 0.15 + cos(h) * 0.45, y + 0.35, z + cos(h) * 0.15 + sin(h) * 0.45, h, 0));    // driver: left
+  e = entity_id(c:'seat2'); if (e, modify(e, 'location', x - sin(h) * 0.15 - cos(h) * 0.45, y + 0.35, z + cos(h) * 0.15 - sin(h) * 0.45, h, 0));   // passenger: right
   if (c:'cam',
     dh = ((h - c:'ch') % 360 + 540) % 360 - 180; c:'ch' = c:'ch' + dh * 0.18;
     m = global_M:(c:'model'); ch = c:'ch';
     pitch = atan2(m:7 - 1, m:6);
     e = entity_id(c:'cam'); if (e, modify(e, 'location', x + sin(ch) * m:6, y + m:7, z - cos(ch) * m:6, ch, pitch));
-    if (c:'man', _man_fix(c:'man', h, ch, pitch * 0.6)))
+    for (['man', 'pman'], if (c:_, _man_fix(c:_, h, ch, pitch * 0.6))))
 );
 
 // A riding mannequin ignores body_yaw; the game only keeps its body within 50° of its own yaw. Push the yaw 50° past

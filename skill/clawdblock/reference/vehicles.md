@@ -131,6 +131,19 @@ Order matters; each step fixes a bug seen in play:
 6. **2 ticks later**, teleport beside the driver's door on the ground: step up out of walls/other cars, then down to
    the first solid block. Teleporting in the same tick as the mode switch lands in the wrong place.
 
+## A second seat (passenger)
+
+The first player in drives; a second right-click puts the next player in the passenger seat.
+
+- A second marker armor stand, the driver's seat offset mirrored to the right. Keep a table
+  `role → [mode key, mannequin key, seat key, side]` so every step above runs per role: view, mannequin, exit door
+  (`side * cos(h)`), log-out cleanup.
+- **One chase camera per car**, shared. Create it when someone switches to the chase view and it's missing; remove it
+  only when nobody in the car still uses the chase view. Two players can spectate the same entity.
+- Show the speed to both. The passenger's Shift (chase view) or standing up (first person) gets only them out.
+- If the driver gets out, the passenger stays seated and the car parks. The next one in drives. An occupied car must
+  not be sent home by the idle timer.
+
 ## Spawning safely
 
 - **Lazy spawn:** build the fleet in `__on_tick` only when a real player is within ~96 blocks of the lot (its chunks
@@ -171,6 +184,8 @@ Everything else (camera, seat, probes) uses the real heading `h` (0 = south, yaw
 | Respawning parts at server start | frozen copies pile up in unloaded chunks | lazy spawn + generation tag + load handler |
 | Pushing everything in front | players get shoved off the road | skip players, stands, mannequins |
 | Reading keys of a fake player | always 0 | `set_keys(name, bits)` for tests |
+| A client mod (minimap, HUD) reads `mc.player`'s position in the chase view | frozen where the player got in: the server moves a spectator to its camera but never tells that client | use `mc.getCameraEntity()`; for the car itself, find its model display a few blocks ahead of the camera. Server-side `pos(p)` is fine |
+| One camera per rider | two cameras fight, or leaving drops the other rider's view | one shared camera, removed when the last chase viewer leaves |
 | Speed shown in blocks/tick | meaningless to players | km/h = b/t × 72 |
 
 ## See also

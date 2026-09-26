@@ -167,7 +167,7 @@ Everything else (camera, seat, probes) uses the real heading `h` (0 = south, yaw
 | Vehicle | Keep | Change |
 |---|---|---|
 | **Boat** | parts, input, camera, exit, spawning | drive only while the block under the centre is water (else strong drag); grip ≈ 0.08 (boats slide); no step-up; bob `y` with `sin(t * 9) * 0.05`; stop at the shore instead of bouncing |
-| **Plane** | parts, input, camera, exit | a pitch state: Space/Ctrl change pitch; lift ∝ speed² cancels gravity above a stall speed; A/D bank (tilt the body with `left_rotation` about the nose axis) and turn with the bank; vertical speed from pitch; get out only on the ground; camera pitch follows the plane |
+| **Plane** | parts, input, camera, exit | see "Planes and helicopters" below: quaternion attitude, lift/stall, shared camera |
 | **Coaster** | parts, exit, spawning | no steering: precompute the track as points; `s` = distance along it; `v += g * (y_prev - y_next) / step - friction`; place the car at `s` with yaw/pitch from the tangent; riders sit in the seat (first person); Shift only at the station |
 
 ## Traps
@@ -187,6 +187,35 @@ Everything else (camera, seat, probes) uses the real heading `h` (0 = south, yaw
 | A client mod (minimap, HUD) reads `mc.player`'s position in the chase view | frozen where the player got in: the server moves a spectator to its camera but never tells that client | use `mc.getCameraEntity()`; for the car itself, find its model display a few blocks ahead of the camera. Server-side `pos(p)` is fine |
 | One camera per rider | two cameras fight, or leaving drops the other rider's view | one shared camera, removed when the last chase viewer leaves |
 | Speed shown in blocks/tick | meaningless to players | km/h = b/t × 72 |
+
+
+## Planes and helicopters (planes.sc)
+
+[`scarpet-apps/planes.sc`](../../../scarpet-apps/planes.sc) + models in [`resourcepacks/planes/`](../../../resourcepacks/planes)
+(`build_pack.py` draws the textures with PIL and prints each model's ground offset). Same parts and input as the cars,
+with these differences:
+
+- **Attitude is one quaternion** on the body's `left_rotation` (entity yaw/pitch stay 0): at identity the display's
+  local frame is the world frame (x left, y up, z forward) and the model's nose sits at model -z (drawn at local +z).
+  `q = Ry(-heading) · Rx(pitch) · Rz(roll)` with the game's signs (pitch negative = nose up, roll positive = right wing
+  down). Per tick: `modify(e, 'pos', …)` + `nbt_merge {transformation:{left_rotation:[…]}, start_interpolation:0}`
+  with `interpolation_duration:2` and `teleport_duration:2`. Put the fuselage axis at model (x 8, y 8) so the aircraft
+  turns about itself, and lift the model by `(8 − lowest y) / 16 × scale` so the wheels sit on the entity's y.
+- **Flight model:** lift `min(1, (v / stall)²)` cancels gravity; on the ground `vy = 0` and the nose rises by itself
+  above ~72 % of the top speed, `air` becomes true only when the pitch reaches the rotate angle (never from
+  "y > ground" while rolling); in the air no input levels the pitch slowly, below 80 % of the stall speed the nose
+  drops and a dive gains speed (`v += sin(pitch) · 0.03`), so a throttled-down aircraft lands by itself. Banking
+  (eased to ±bank · speed factor) turns the heading. Ground = the heightmap (`top('motion', x, 0, z)`): roofs and
+  helipads are landing spots; arriving from the side of a wall = stop where you are.
+- **Helicopter:** rotor rpm spins up with a pilot (42°/tick) and winds down without; Space/Ctrl = vertical speed,
+  W/S = forward/back with the nose tilting, A/D = turn on the spot (only in the air). The rotor is a second
+  item_display at `pivot + q · (0, mast, 0)` turned by `q · Ry(spin)`.
+- **Riders:** 4 slots, nobody drawn, everyone spectates ONE camera 13-20 behind and 4.5-6.5 above the aircraft that
+  looks at a point 4 ahead of it (heading eased 0.15; it never rolls → a stable horizon). The first in flies; when the
+  pilot leaves the next slot flies. Shift on the ground = beside the door; in the air = parachute (teleport below the
+  aircraft + slow_falling).
+- **Testing:** `board(name, id)` + `set_keys(name, bits)` with `global_allow_fake = true` drive a fake player through
+  take-off, turns, pull-up, parachute, landing and the helicopter in about 20 s.
 
 ## See also
 [displays.md](displays.md) · [game-logic.md](game-logic.md) · [hud.md](hud.md) · [scarpet.md](scarpet.md) ·

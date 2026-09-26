@@ -121,6 +121,7 @@ The `cu` helper app (always loaded): `occupied`, `count`, `surface`, `level`, `s
 | `drop_tower.py --style pride\|ocean\|sunset --height 60` | launch pad up, free fall down a colour spiral into a pool, lit windows | centre | r8 |
 | `tnt_run.py` | TNT Run arena: 4 vanishing floors over TNT, glass wall, lobby with JOIN pad, viewing gallery; loads `tntrun.sc` (lobby always north) | arena centre | r17 + lobby 36 north, 40 high |
 | `ferris_wheel.py` | classic colourful Ferris wheel that turns and that players ride (display entities, no mods), fairground plaza, BOARD/EXIT pads; loads `ferris.sc` (wheel face-on from north/south) | ground under the axle | 30×20, 30 high |
+| `coaster/build.py [--layout …] [--title …]` | steel roller coaster on display entities: lift, drop, loop, helix; first-person ride; installs + loads `coaster.sc` (turns right, platform on the left; `--facing` = the way the train leaves) | ground block under the station track start | 46×213, 74 high |
 | `catalog.py` | one of every component on labelled tiles — a visual reference | first tile corner | 19 tiles |
 
 Run: `minecraft_generate script:"skill/clawdblock/blueprints/cottage.py" args:["--at","100,-61,40","--facing","south"] build:true helpers:3 entrance:[<printed entrance>]`.
@@ -225,6 +226,7 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Changing, reloading or testing an app on a live server; shipping a resource pack | `reference/testing-apps.md` |
 | Trams, coasters, rail lines | `reference/rails.md` |
 | Drivable cars, boats, planes (physics, chase camera, getting in/out) | `reference/vehicles.md` |
+| Roller coasters and rides along a path (display track, physics, first-person camera, loops) | `reference/rides.md`, `blueprints/coaster/` |
 | A HUD / minimap / anything drawn on the screen without mods | `reference/hud.md` (speedometer, compass, timer, text), `reference/minimap.md` |
 | Is it right? | `reference/verification.md` |
 | Something failed | `reference/troubleshooting.md` |

@@ -4,13 +4,13 @@
 
 <p align="center">
   <b>Give your AI a body, hands and eyes in a Minecraft world — and the know-how to build like a pro.</b><br>
-  One installer · an MCP server with 33 tools · a deep building skill · works with Claude, Gemini, Codex and local models
+  One installer · an MCP server with 37 tools · a deep building skill · works with Claude, Gemini, Codex and local models
 </p>
 
 <p align="center">
   <img alt="Minecraft 26.2" src="https://img.shields.io/badge/Minecraft-26.2-62B47A">
   <img alt="Fabric + Carpet" src="https://img.shields.io/badge/Fabric-Carpet-DBB064">
-  <img alt="MCP" src="https://img.shields.io/badge/MCP-29_tools-7C5CFF">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-37_tools-7C5CFF">
   <img alt="macOS · Windows · Linux" src="https://img.shields.io/badge/macOS_·_Windows_·_Linux-supported-3C8DBC">
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
@@ -26,18 +26,32 @@ reachable from the front door, no dark corners where mobs could spawn — and te
 
 - 🧰 **A cross-platform installer** — one command sets up a Minecraft 26.2 Fabric server with Carpet, recommended mods,
   RCON and the game-logic apps, and connects your AI client.
-- 🤖 **An MCP server with 33 tools** — the AI's body (walks with pathfinding, opens doors, swings), hands (commands,
+- 🤖 **An MCP server with 37 tools** — the AI's body (walks with pathfinding, opens doors, swings), hands (commands,
   generators, background jobs, helper builders), eyes (text vision, isometric / top-down / first-person renders,
   previews of builds that don't exist yet) and memory (a world map, people, a shared learning journal).
 - 🛡️ **Safety rails** — automatic undo for every build, protected zones for other people's builds, an overwrite guard,
   verification after every job, and an access check that walks every room from the entrance.
-- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 25 reference pages
+- 📚 **A building skill** — golden rules and a step-by-step recipe a small model can follow, plus 31 reference pages
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
 - 🏗️ **A building library and blueprints** — `mclib` + `parts` (furniture, roofs, stairs, windows, lamps, gardens,
   round towers, pools, flags) that work facing any direction, and eight ready blueprints to use and learn from.
 - 🎮 **Game-logic apps** — launch pads, free-fall drops, timed races with record boards, a TNT Run arena game, a rideable Ferris wheel, vendor
   stands, secret doors, welcome shows, fireworks.
+- 🎢 **A roller coaster that really runs** — a smooth steel track of display entities, a flame-painted train from a
+  small resource pack and real gravity: ride it in first person up a chain lift, down a 67° drop and through a loop.
+  Design and test your own layout in Python before building ([how it works](skill/clawdblock/reference/rides.md)).
+- 🧩 **Game kit, cars and a HUD** — `gamekit.scl` gives any round-based minigame a join zone with a countdown, safe
+  save/restore, eliminations, spectating, end screens and records (demo: Shrinking Ring); drivable GTA-style cars with
+  drift physics and a chase camera; a HUD toolkit (speedometer, compass, timer, text anywhere on screen) that shares one
+  shader with the minimap ([gamekit](skill/clawdblock/reference/gamekit.md) · [vehicles](skill/clawdblock/reference/vehicles.md) · [HUD](skill/clawdblock/reference/hud.md)).
+- 🧪 **Developer tools for live servers** — `minecraft_app` lints scarpet apps for the traps that break them, patches a
+  function live without a reload and reloads only when nobody is using the app; `minecraft_playtest` runs a scripted
+  test with fake players in one call and cleans up after itself; `minecraft_pack` merges, validates and deploys the
+  server resource pack ([guide](skill/clawdblock/reference/testing-apps.md)).
+- 🩺 **A server watchdog** — finds what makes the server slow (entity piles, leaking apps that re-create the same
+  entity, hot chunks, busy threads), tells the ops once, cleans only obvious junk, warns before the disk fills up, and
+  makes safe rotating backups ([how to find lag](skill/clawdblock/reference/watchdog.md)).
 - 🗺️ **A live minimap with no client mods** — a round map in the top-left corner for everyone, turning with your
   view, friends as dots; a resource pack + a scarpet app ([how it works](skill/clawdblock/reference/minimap.md)).
 
@@ -118,14 +132,14 @@ Join `localhost` in Minecraft 26.2, make yourself op in the server console (`op 
 
 ```mermaid
 flowchart LR
-    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>33 minecraft_* tools" --> MCP["ClawdBlock MCP server<br/>(Node, hot-reloading tools)"]
+    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>37 minecraft_* tools" --> MCP["ClawdBlock MCP server<br/>(Node, hot-reloading tools)"]
     MCP -- "RCON: any command as console" --> MC["Minecraft 26.2 server<br/>Fabric + Carpet"]
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC
     MC --- APPS["scarpet apps<br/>cu · helpers · bubble<br/>launchpad · race · vendor …"]
     MCP -- "runs" --> GEN["Python generators<br/>mclib + parts + blueprints"]
     GEN -- "jobs/*.json" --> MCP
-    SKILL["Skill<br/>SKILL.md + 25 reference pages"] -. "how to build well" .-> AI
+    SKILL["Skill<br/>SKILL.md + 31 reference pages"] -. "how to build well" .-> AI
 ```
 
 No protocol bot, no client mods: the MCP drives the server through **RCON** (so it works on any Minecraft version the
@@ -138,16 +152,18 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 
 | Path | What |
 |---|---|
-| [`clawdblock.py`](clawdblock.py) | setup · start · stop · status · doctor · mods · apps · connect · new-world · backup (stdlib Python) |
+| [`clawdblock.py`](clawdblock.py) | setup · start · stop · status · doctor · mods · apps · connect · new-world · backup (rotation, refuses without room) (stdlib Python) |
 | [`install.sh`](install.sh) / [`install.cmd`](install.cmd) / [`install.ps1`](install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
 | [`skill/clawdblock/SKILL.md`](skill/clawdblock/SKILL.md) | the skill: golden rules, the recipe, tools at a glance, facts that break builds |
-| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 25 deep-dive pages |
+| [`skill/clawdblock/reference/`](skill/clawdblock/reference) | 31 deep-dive pages |
 | [`skill/clawdblock/scripts/`](skill/clawdblock/scripts) | `mclib.py`, `parts.py`, `city.py` (roads, rail lines), and the helper scarpet apps |
-| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, Ferris wheel, catalog |
+| [`skill/clawdblock/blueprints/`](skill/clawdblock/blueprints) | cottage, modern villa, tower, park, drop tower, TNT Run arena, Ferris wheel, roller coaster, catalog |
 | [`skill/clawdblock/SYSTEM_PROMPT.md`](skill/clawdblock/SYSTEM_PROMPT.md) | a condensed prompt for small / local models |
-| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks |
-| [`resourcepacks/minimap/`](resourcepacks/minimap) | the minimap's resource pack (font + text shader) and its builders |
+| [`scarpet-apps/`](scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks, cars, ring (+ `gamekit.scl`, `hud.scl`), watchdog |
+| [`skill/clawdblock/blueprints/coaster/`](skill/clawdblock/blueprints/coaster) | a roller coaster: track + physics, builder, train pack, ride app, layouts |
+| [`resourcepacks/`](resourcepacks) | minimap, HUD toolkit, car models, and `tools/model_preview.py` (render item/block models to PNG without a game client) |
+| [`mods-src/keybridge/`](mods-src/keybridge) | Key Bridge, a tiny server-side Fabric mod: movement keys → scoreboard for scarpet apps, and `/packpush` to send a new resource pack to everyone live |
 | [`docs/`](docs) | getting started, clients, friends, architecture, troubleshooting, contributing, writing blueprints |
 
 ## Mods
@@ -157,6 +173,7 @@ verification. More: [docs/architecture.md](docs/architecture.md).
 | Fabric API, **Carpet** | required | Carpet gives the AI its body (fake players) and scarpet (fast world reads, undo, checks) |
 | Lithium, WorldEdit, BlueMap, Essential Commands, spark | recommended | performance · big edits · a 3D web map + real-texture screenshots · warps · lag profiling |
 | Chunky, Polydecorations (+Polymer), Ledger, Carpet Extra | optional | pre-generation · server-side furniture · rollback logs · extra rules |
+| Key Bridge (built from `mods-src/keybridge`) | optional | movement keys for scarpet vehicles and rides; live resource-pack push |
 
 All downloaded from Modrinth by the installer for your Minecraft version; `python3 clawdblock.py mods` adds or removes
 them later. Tools that need a missing mod hide themselves. Players need **no** client mods.

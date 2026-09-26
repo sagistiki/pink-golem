@@ -2,9 +2,14 @@
 
 <img src="preview.png" alt="The 32x textures, 8 tones">
 
-25 block textures in a natural, near-vanilla look, drawn by code at any resolution: four woods (planks, bark, log
-tops with rings), stone, smooth stone, cobblestone, stone bricks, bricks, dirt, sand, gravel, grass (biome-tinted),
-oak leaves and glass. Everything tiles.
+111 block textures in a natural, near-vanilla look, drawn by code at any resolution:
+- all nine woods (planks, bark, log tops with rings);
+- the stone and deepslate families, bricks;
+- concrete, wool (knitted) and terracotta in all 16 colours, and the quartz family;
+- dirt, sand, gravel and grass (biome-tinted);
+- all ten leaves, and glass.
+
+Everything tiles.
 
 ```bash
 pip install numpy scipy pillow

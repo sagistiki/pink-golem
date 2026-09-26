@@ -2,10 +2,15 @@
 
 No image is drawn by hand. Every surface is a value field in [0, 1] mapped through a material ramp (dark → light)
 whose tones are sampled from the vanilla textures, so the result sits well next to vanilla blocks:
-  wood    planks with warped grain that bends around knots, worn edges; bark in vertical plates; log tops with rings
-  stone   stone, smooth stone, cobblestone (tileable Voronoi cells lit as domes), stone bricks, bricks
-  ground  dirt with clods and pebbles, sand with ripples, gravel, grass (grey + tinted by the game per biome)
-  other   glass with a frame and glints, oak leaves (grey + tinted, see-through gaps)
+  wood     9 woods: planks with warped grain that bends around knots; bark in vertical plates; log tops with rings
+  stone    stone, smooth stone, cobblestone (tileable Voronoi cells lit as domes), stone bricks, bricks
+  deep     deepslate, cobbled, polished, bricks, tiles
+  colours  concrete, wool (knitted), terracotta in all 16 colours; the quartz family (veins, bricks, fluted pillars)
+  ground   dirt with clods and pebbles, sand with ripples, gravel, grass (grey + tinted by the game per biome)
+  leaves   all ten kinds with see-through gaps: the six biome-tinted ones in grey, cherry / azalea / pale oak in colour
+  other    glass with a frame and glints
+Colours: the first blocks use hand-picked ramps; everything else samples its 5 tones from the vanilla texture itself
+(so all 16 dye colours come out right), widened a little where vanilla is nearly flat (concrete, terracotta).
 Every texture tiles seamlessly. Feature sizes are tuned at 64 px and scale with K = res / 64.
 
     python3 build_pack.py [res] [--pixel=N] [--out DIR]
@@ -13,7 +18,8 @@ Every texture tiles seamlessly. Feature sizes are tuned at 64 px and scale with 
       --pixel=N  pixel-art shading: each texture keeps only N tones (8 looks clearly pixel-art, 12 softer)
       --out DIR  output folder (default natural_<res>[_p<N>] next to this file); a .zip of it is written too
 
-Needs numpy, scipy and Pillow (pip install numpy scipy pillow). Resource pack format 88 = Minecraft 26.2.
+Needs numpy, scipy and Pillow (pip install numpy scipy pillow) and the Minecraft 26.2 client jar (found in the
+usual .minecraft folder; MC_JAR=<path> to point elsewhere). Resource pack format 88 = Minecraft 26.2.
 """
 import json
 import os
@@ -32,6 +38,18 @@ _out = next((sys.argv[i + 1] for i, a in enumerate(sys.argv[:-1]) if a == "--out
 OUT = _out or os.path.join(HERE, f"natural_{R}" + (f"_p{PIXEL}" if PIXEL else ""))
 K = R / 64.0
 PACK_FORMAT = 88
+
+
+def find_jar(version="26.2"):
+    """the client jar in the launcher's usual folder on macOS, Windows or Linux (or MC_JAR)"""
+    if os.environ.get("MC_JAR"):
+        return os.environ["MC_JAR"]
+    for base in (os.path.expanduser("~/Library/Application Support/minecraft"),
+                 os.path.join(os.environ.get("APPDATA", ""), ".minecraft"), os.path.expanduser("~/.minecraft")):
+        p = os.path.join(base, "versions", version, version + ".jar")
+        if os.path.exists(p):
+            return p
+    raise SystemExit(f"client jar for {version} not found: start that version once in the launcher, or set MC_JAR")
 
 
 def hx(c):
@@ -272,6 +290,9 @@ def dirt(seed=14):
     return img
 
 
+
+
+
 # ─────────────────────────────── logs, the stone family, ground, glass, leaves ───────────────────────────────
 def voronoi(g, n):
     """Tileable Voronoi: distance to the nearest and second-nearest site, and the nearest site's id."""
@@ -508,14 +529,322 @@ def grass_side_parts(seed=15):
     return (side, fringe), over
 
 
+# ─────────────────────────────── concrete, wool, terracotta, quartz (tones sampled per colour) ───────────────
+COLOURS = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan",
+           "purple", "blue", "brown", "green", "red", "black"]
+LUMA = np.array([0.299, 0.587, 0.114])
+_JAR = []
+
+
+def vanilla_rgb(name):
+    import io
+    import zipfile
+    if not _JAR:
+        _JAR.append(zipfile.ZipFile(find_jar()))
+    im = Image.open(io.BytesIO(_JAR[0].read(f"assets/minecraft/textures/block/{name}.png"))).convert("RGBA")
+    a = np.array(im).reshape(-1, 4)
+    return a[a[:, 3] > 0, :3].astype(float)
+
+
+def ramp_of(px):
+    """5 tones dark → light from any set of pixels (brightness percentiles 4, 27, 50, 73, 96)"""
+    order = np.argsort(px @ LUMA)
+    n, w = len(px), max(1, len(px) // 20)
+    return [px[order[max(0, int(q * n) - w):min(n, int(q * n) + w + 1)]].mean(0) for q in (0.04, 0.27, 0.5, 0.73, 0.96)]
+
+
+def vanilla_ramp(name):
+    """5 tones dark → light from the vanilla texture's own pixels (brightness percentiles 4, 27, 50, 73, 96)"""
+    px = vanilla_rgb(name)
+    order = np.argsort(px @ LUMA)
+    n, w = len(px), max(1, len(px) // 20)
+    return [px[order[max(0, int(q * n) - w):min(n, int(q * n) + w + 1)]].mean(0) for q in (0.04, 0.27, 0.5, 0.73, 0.96)]
+
+
+def flat_ramp(name, spread):
+    """for textures that are almost flat in vanilla (concrete, terracotta): the average colour, darkened / lightened by
+    up to `spread` (toward black / white, so black and white get visible tones too), hue kept"""
+    m = vanilla_rgb(name).mean(0)
+    return [m * (1 - spread * f) if f > 0 else m + (255 - m) * spread * 0.7 * -f for f in (1, 0.5, 0, -0.5, -1)]
+
+
+def use_ramp(key, tones):
+    RAMP[key] = tones
+    return key
+
+
+def concrete(seed, col):
+    g = np.random.default_rng(seed)
+    v = 0.5 + noise(g, 5) * 0.10 + noise(g, 18) * 0.08 + (g.random((R, R)) - 0.5) * 0.16
+    v[g.random((R, R)) < 0.025] -= 0.25                              # a few darker grains of aggregate
+    v[g.random((R, R)) < 0.015] += 0.20
+    return ramp(use_ramp(f"concrete:{col}", flat_ramp(f"{col}_concrete", 0.10)), v)
+
+
+def wool(seed, col):
+    """knitted: columns of V stitches (8x6 px at 32), fuzzy fibres on top"""
+    g = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:R, 0:R].astype(float)
+    sw, sh = 16 * K, 12 * K
+    u = (xx % sw) / sw
+    t = (yy % sh) / sh
+    leg = np.where(u < 0.5, u * 2, (1 - u) * 2)                     # 0 at the column edge, 1 in its middle
+    stitch = np.clip(1 - np.abs(leg - t) * 2.4, 0, 1)
+    v = 0.34 + stitch * 0.40 - (t < 0.14) * 0.12 - (np.minimum(u, 1 - u) < 0.06) * 0.08
+    v += noise(g, 12) * 0.05 + (g.random((R, R)) - 0.5) * 0.14
+    for _ in range(int(30 * K * K)):                                 # stray fibres
+        x, y = g.integers(0, R), g.integers(0, R)
+        dx = g.choice([-1, 1])
+        for i in range(int(g.integers(2, 4) * K)):
+            v[(y + i) % R, (x + dx * i) % R] += 0.12
+    return ramp(use_ramp(f"wool:{col}", vanilla_ramp(f"{col}_wool")), v)
+
+
+def terracotta(seed, name):
+    """fired clay: soft blotches, faint layers, a few pits"""
+    g = np.random.default_rng(seed)
+    yy, _ = np.mgrid[0:R, 0:R].astype(float)
+    v = 0.5 + fbm(g, 3, 4) * 0.16 + noise(g, 14) * 0.06 + (g.random((R, R)) - 0.5) * 0.12
+    v += np.sin(yy / R * 2 * np.pi * 3 + noise(g, 2) * 2) * 0.03
+    v[g.random((R, R)) < 0.02] -= 0.22
+    return ramp(use_ramp(f"tc:{name}", flat_ramp(name, 0.12)), v)
+
+
+def quartz_base(g, veins=True):
+    v = 0.55 + noise(g, 4) * 0.05 + (g.random((R, R)) - 0.5) * 0.06
+    if veins:                                                        # faint marble veins
+        n = wrap_warp(noise(g, 3), noise(g, 6) * 5 * K, noise(g, 6) * 5 * K)
+        v[np.abs(n) < 0.06] -= 0.07
+        v[np.abs(n) < 0.025] -= 0.06
+    return v
+
+
+def quartz_ramp():
+    """vanilla quartz is 216..239: too close for joints and flutes to read at 8 tones, so the dark end goes deeper"""
+    return use_ramp("quartz", [np.array(c, float) for c in ((168, 160, 150), (201, 194, 185), (226, 221, 213), (237, 233, 226), (247, 244, 239))])
+
+
+def quartz_side(seed=31):
+    return ramp(quartz_ramp(), quartz_base(np.random.default_rng(seed)))
+
+
+def quartz_top(seed=32):
+    g = np.random.default_rng(seed)
+    v = quartz_base(g)
+    b = max(2, int(round(2 * K)))
+    inner = np.zeros((R, R), bool)
+    inner[b:-b, b:-b] = True
+    v += bevel(inner, 1.5 * K) * 0.4                                 # a raised panel inside a thin frame
+    v[~inner] -= 0.16
+    return ramp(quartz_ramp(), v)
+
+
+def quartz_bottom(seed=33):
+    g = np.random.default_rng(seed)
+    return ramp(quartz_ramp(), 0.6 + noise(g, 4) * 0.03 + (g.random((R, R)) - 0.5) * 0.04)
+
+
+def quartz_bricks(seed=34):
+    g = np.random.default_rng(seed)
+    rows, rh = 4, R // 4
+    mw = max(1, int(round(1.5 * K)))
+    joint = np.zeros((R, R), bool)
+    for r in range(rows):
+        joint[r * rh:r * rh + mw, :] = True
+        off = 0 if r % 2 == 0 else R // 4
+        for x in range(off, R + off, R // 2):
+            joint[r * rh:(r + 1) * rh, x % R:x % R + mw] = True
+    brick = ~joint
+    v = quartz_base(g, veins=False) + bevel(brick, 1.6 * K) * 0.3
+    lab, n = ndimage.label(brick)
+    for k in range(1, n + 1):
+        v[lab == k] += g.normal(0, 0.03)
+    v[joint] = 0.2 + (g.random(int(joint.sum())) - 0.5) * 0.06
+    return ramp(quartz_ramp(), v), joint.astype(int)
+
+
+def quartz_pillar_side(seed=35):
+    g = np.random.default_rng(seed)
+    _, xx = np.mgrid[0:R, 0:R].astype(float)
+    ph = (xx % (8 * K)) / (8 * K)
+    v = quartz_base(g, veins=False) + np.cos(ph * 2 * np.pi) * 0.10       # vertical flutes, lit from the left
+    v[ph > 0.82] -= 0.22                                                  # the groove between flutes
+    edge = np.minimum(xx, R - 1 - xx)
+    v[edge < 2 * K] -= 0.14
+    v[edge < K] -= 0.12
+    return ramp(quartz_ramp(), v)
+
+
+def quartz_pillar_top(seed=36):
+    g = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:R, 0:R].astype(float) + 0.5
+    d = np.maximum(np.abs(xx - R / 2), np.abs(yy - R / 2))
+    v = quartz_base(g, veins=False)
+    v[(d % (6 * K)) < 1.1 * K] -= 0.26                               # square rings like the vanilla pillar end
+    v[d > R / 2 - 1.2 * K] -= 0.2
+    return ramp(quartz_ramp(), v)
+
+
+# ─────────────────────────────── deepslate, five more woods, all leaves ───────────────────────────────
+TINTED_LEAVES = {"spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove"}      # the game colours these by biome
+
+
+def deepslate_side(seed=41):
+    g = np.random.default_rng(seed)
+    v = 0.5 + noise(g, 4, aniso=(1, 6)) * 0.18 + noise(g, 16, aniso=(1, 4)) * 0.08 + (g.random((R, R)) - 0.5) * 0.10
+    v[noise(g, 30, aniso=(1, 8)) > 0.55] -= 0.18                   # thin vertical cleavage lines
+    return ramp(use_ramp("deepslate", vanilla_ramp("deepslate")), v)
+
+
+def deepslate_top(seed=42):
+    g = np.random.default_rng(seed)
+    v = 0.5 + fbm(g, 4, 4) * 0.16 + (g.random((R, R)) - 0.5) * 0.10
+    v[g.random((R, R)) < 0.03] -= 0.2
+    return ramp(use_ramp("deepslate_top", vanilla_ramp("deepslate_top")), v)
+
+
+def cobbled_deepslate(seed=43):
+    g = np.random.default_rng(seed)
+    f1, f2, cell = voronoi(g, int(60 * K * K) + 6)
+    edge = f2 - f1
+    gap = edge < 1.8 * K
+    dome = np.clip(1 - f1 / (7.0 * K), 0, 1)
+    v = 0.5 + g.normal(0, 0.10, cell.max() + 1)[cell] + dome * 0.12
+    v += bump_light(ndimage.gaussian_filter(dome, 1.0, mode="wrap"), 3.0 * K) + (g.random((R, R)) - 0.5) * 0.08
+    v[gap] = 0.08 + (g.random(int(gap.sum())) - 0.5) * 0.05
+    return ramp(use_ramp("cobbled_deepslate", vanilla_ramp("cobbled_deepslate")), v), gap.astype(int)
+
+
+def polished_deepslate(seed=44):
+    g = np.random.default_rng(seed)
+    v = 0.6 + noise(g, 5) * 0.05 + (g.random((R, R)) - 0.5) * 0.06
+    b = max(1, int(round(K)))
+    inner = np.zeros((R, R), bool)
+    inner[b:-b, b:-b] = True
+    v += bevel(inner, 2 * K) * 0.25
+    v[~inner] = 0.2
+    return ramp(use_ramp("polished_deepslate", vanilla_ramp("polished_deepslate")), v)
+
+
+def deepslate_masonry(seed, tiles):
+    """bricks (4 courses, 2 per course) or tiles (a 4 x 4 grid), dark joints, each piece its own tone"""
+    g = np.random.default_rng(seed)
+    joint = np.zeros((R, R), bool)
+    mw = max(1, int(round(1.5 * K)))
+    rows, rh = 4, R // 4
+    for r in range(rows):
+        joint[r * rh:r * rh + mw, :] = True
+        if tiles:
+            for x in range(0, R, R // 4):
+                joint[:, x:x + mw] = True
+        else:
+            off = 0 if r % 2 == 0 else R // 4
+            for x in range(off, R + off, R // 2):
+                joint[r * rh:(r + 1) * rh, x % R:x % R + mw] = True
+    piece = ~joint
+    lab, n = ndimage.label(piece)
+    v = 0.55 + noise(g, 10) * 0.06 + (g.random((R, R)) - 0.5) * 0.10
+    for k in range(1, n + 1):
+        v[lab == k] += g.normal(0, 0.06)
+    v += bevel(piece, 1.8 * K) * 0.28
+    v[joint] = 0.06
+    name = "deepslate_tiles" if tiles else "deepslate_bricks"
+    return ramp(use_ramp(name, vanilla_ramp(name)), v), joint.astype(int)
+
+
+def leaves(seed, name):
+    """leaves with see-through gaps; the six biome-tinted kinds in grey, the others in their own vanilla colours"""
+    g = np.random.default_rng(seed)
+    sp = name.replace("_leaves", "")
+    px = vanilla_rgb(name)
+    pinks = px[px[:, 0] > px[:, 1] + 30]
+    greens = px[px[:, 1] >= px[:, 0]]
+    if sp in TINTED_LEAVES:
+        key = "leaf"
+    elif sp == "cherry":                                             # mostly blossom: the pinks only (with green bits)
+        key = use_ramp("leaves:cherry", ramp_of(pinks))
+    elif sp == "flowering_azalea":                                   # the leaves in greens only, blossoms added below
+        key = use_ramp("leaves:flowering_azalea", ramp_of(greens))
+    else:
+        key = use_ramp(f"leaves:{sp}", vanilla_ramp(name))
+    size = {"spruce": (3.0, 4.5, 0.9, 1.2), "birch": (3.5, 5.0, 2.2, 3.0), "jungle": (6.5, 9.0, 3.2, 4.4),
+            "acacia": (3.5, 5.0, 2.0, 2.8), "dark_oak": (5.5, 8.0, 3.0, 4.0), "mangrove": (4.5, 6.5, 2.0, 2.8)}.get(sp, (4.5, 7.0, 2.4, 3.6))
+    count = {"spruce": 150, "jungle": 40, "acacia": 55, "dark_oak": 55}.get(sp, 60)
+    v = np.full((R, R), 0.30) + noise(g, 6) * 0.05
+    alpha = np.zeros((R, R))
+    yy, xx = np.mgrid[0:R, 0:R]
+    for _ in range(int(count * K * K) + 12):
+        cx, cy = g.uniform(0, R), g.uniform(0, R)
+        a = g.uniform(0, np.pi)
+        rl, rw = g.uniform(*size[:2]) * K, g.uniform(*size[2:]) * K
+        dx = ((xx - cx + R / 2) % R - R / 2)
+        dy = ((yy - cy + R / 2) % R - R / 2)
+        u = (dx * np.cos(a) + dy * np.sin(a)) / rl
+        w = (-dx * np.sin(a) + dy * np.cos(a)) / rw
+        m = u * u + w * w < 1
+        v[m] = g.uniform(0.55, 0.85) - (dy[m] / (rl + 1e-9)) * 0.15
+        if sp != "spruce":
+            v[m & (np.abs(w) < 0.18)] -= 0.08                        # the midrib
+        alpha[m] = 255
+    alpha[(alpha == 0) & (noise(g, 10) > (-0.1 if sp == "acacia" else -0.25))] = 255   # darker foliage behind
+    img = ramp(key, v)
+    accents = np.zeros((R, R), int)
+    if sp in ("cherry", "flowering_azalea"):                         # accents: green leaves on cherry, blossoms on azalea
+        acc = greens if sp == "cherry" else pinks
+        acc = acc[np.argsort(acc @ LUMA)]
+        for _ in range(int((40 if sp == "cherry" else 28) * K * K)):
+            x, y = g.integers(0, R), g.integers(0, R)
+            r = 2.4 * K if sp == "cherry" else 3.2 * K
+            m = (((xx - x + R // 2) % R - R // 2) ** 2 + ((yy - y + R // 2) % R - R // 2) ** 2) <= r * r
+            img[m] = acc[int(g.uniform(0.3, 1.0) * (len(acc) - 1))]
+            alpha[m] = 255
+            accents[m] = 1
+    return np.dstack([img, alpha]), accents
+
+
+def build_deepslate_woods_leaves():
+    out = []
+    for i, sp in enumerate(("jungle", "acacia", "mangrove", "cherry", "pale_oak")):
+        wood = use_ramp(f"planks:{sp}", vanilla_ramp(f"{sp}_planks"))
+        bark = use_ramp(f"bark:{sp}", vanilla_ramp(f"{sp}_log"))
+        out.append(save(oak_planks(51 + i * 10, wood), f"{sp}_planks"))
+        out.append(save(log_side(52 + i * 10, bark), f"{sp}_log"))
+        out.append(save(log_top(53 + i * 10, wood, bark), f"{sp}_log_top"))
+    out.append(save(deepslate_side(), "deepslate"))
+    out.append(save(deepslate_top(), "deepslate_top"))
+    out.append(save(cobbled_deepslate(), "cobbled_deepslate"))
+    out.append(save(polished_deepslate(), "polished_deepslate"))
+    out.append(save(deepslate_masonry(45, False), "deepslate_bricks"))
+    out.append(save(deepslate_masonry(46, True), "deepslate_tiles"))
+    for i, sp in enumerate(("spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "azalea",
+                            "flowering_azalea", "pale_oak")):
+        out.append(save_rgba(leaves(70 + i, f"{sp}_leaves"), f"{sp}_leaves"))
+    return out
+
+
+def build_colours_and_quartz():
+    out = []
+    for i, col in enumerate(COLOURS):
+        out.append(save(concrete(100 + i, col), f"{col}_concrete"))
+        out.append(save(wool(200 + i, col), f"{col}_wool"))
+        out.append(save(terracotta(300 + i, f"{col}_terracotta"), f"{col}_terracotta"))
+    out.append(save(terracotta(399, "terracotta"), "terracotta"))
+    for name, fn in (("quartz_block_side", quartz_side), ("quartz_block_top", quartz_top), ("quartz_block_bottom", quartz_bottom),
+                     ("quartz_bricks", quartz_bricks), ("quartz_pillar_side", quartz_pillar_side), ("quartz_pillar_top", quartz_pillar_top)):
+        out.append(save(fn(), name))
+    return out
+
+
 def save_rgba(rgba, name):
+    """rgba, or (rgba, groups) like save()"""
+    rgba, groups = rgba if isinstance(rgba, tuple) else (rgba, None)
     p = os.path.join(OUT, "assets/minecraft/textures/block", name + ".png")
     os.makedirs(os.path.dirname(p), exist_ok=True)
     if PIXEL:
         rgba = rgba.astype(float).copy()
         solid = rgba[..., 3] > 0
         if solid.sum() > PIXEL:
-            rgba[..., :3] = pixelate(np.clip(rgba[..., :3], 0, 255), solid)
+            rgba[..., :3] = pixelate(np.clip(rgba[..., :3], 0, 255), solid, groups)
     Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8), "RGBA").save(p)
     return p
 
@@ -536,6 +865,8 @@ def build():
     out.append(save_rgba(over, "grass_block_side_overlay"))
     out.append(save_rgba(glass(), "glass"))
     out.append(save_rgba(oak_leaves(), "oak_leaves"))
+    out += build_colours_and_quartz()
+    out += build_deepslate_woods_leaves()
     desc = f"Natural blocks {R}x" + (f", {PIXEL} tones" if PIXEL else "")
     json.dump({"pack": {"description": desc, "min_format": PACK_FORMAT, "max_format": PACK_FORMAT}},
               open(os.path.join(OUT, "pack.mcmeta"), "w"))

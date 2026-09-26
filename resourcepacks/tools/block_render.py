@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 
 SHADE = {"up": 1.0, "down": 0.5, "north": 0.8, "south": 0.8, "east": 0.6, "west": 0.6}
 TINT = None           # colour for tinted faces (grass, leaves); None = a plains green
+NO_TINT = {"cherry_leaves", "azalea_leaves", "flowering_azalea_leaves", "pale_oak_leaves"}   # tintindex in the model, but the game gives them no colour
 
 
 def find_jar(version):
@@ -159,6 +160,7 @@ def project(p, s, ox, oy):
 
 def draw_block(img, assets, block, ox, oy, scale, vanilla=False):
     m = assets.model(block_model_for(assets, block))
+    no_tint = block in NO_TINT
     tex = m.get("textures", {})
     d = ImageDraw.Draw(img)
     polys = []
@@ -177,7 +179,7 @@ def draw_block(img, assets, block, ox, oy, scale, vanilla=False):
             u0, v0, u1, v1 = uv
             nu = max(1, round(abs(u1 - u0) / 16 * tw))
             nv = max(1, round(abs(v1 - v0) / 16 * th))
-            tint = fd.get("tintindex") is not None
+            tint = fd.get("tintindex") is not None and not no_tint
             depth = sum(p[0] + p[2] + p[1] * 0.01 for p in q) / 4
             for i in range(nu):
                 for j in range(nv):

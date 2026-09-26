@@ -37,8 +37,9 @@ The long version of the README's list, with a link to the page that explains eac
   - a live round minimap in the corner that turns with your view;
   - a HUD toolkit (speedometer, compass, timer, text) that shares one shader with the minimap.
   - [Minimap](../skill/clawdblock/reference/minimap.md) · [HUD](../skill/clawdblock/reference/hud.md)
-- **Block textures made by code:** a natural 32x set (woods, stone family, ground, grass, leaves, glass) at any
-  resolution, optional pixel-art shading, and a renderer that shows blocks in 3D before they go live.
+- **Block textures made by code:** 111 natural 32x textures (nine woods, stone and deepslate, concrete / wool /
+  terracotta in 16 colours, quartz, ground, all leaves) at any resolution, optional pixel-art shading, and a renderer
+  that shows blocks in 3D before they go live.
   [Textures](../skill/clawdblock/reference/textures.md) · [resourcepacks/textures](../resourcepacks/textures)
 
 ## Run a live server

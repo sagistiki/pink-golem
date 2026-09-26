@@ -157,6 +157,30 @@ __on_tick() -> (
 - An admin tag (`tag <name> add game_admin`) lets builders work inside the area.
 - Shape the area from one or two boxes (an L = two boxes) that cover nobody else's build.
 
+## Keys and screens without client mods
+
+The server only learns about a key press when the client sends a packet for it. A key nothing is bound to (M, say)
+never reaches the server, and no server-side trick can detect it. What you can use (checked in the 26.2 client):
+
+| Input | How the server sees it |
+|---|---|
+| W A S D, jump, sneak, sprint | the player-input packet → Key Bridge's `keys` scoreboard (`vehicles.md`), sneak also `p~'sneaking'` |
+| **F** (swap hands) | `__on_player_swaps_hands(p)`, cancellable: return `'cancel'` and the items stay put. Spectators' clients never send it |
+| Q (drop), hotbar scroll, use, attack | `__on_player_drops_item`, `__on_player_switches_slot`, `__on_player_uses_item`, `__on_player_attacks_entity` … |
+| G (Quick Actions) | opens the dialogs in the `#minecraft:quick_actions` tag **on the client only**: the server is not told |
+
+So a "press M for the map" feature is really "press F": cancel the swap, open the map, and tell players they can
+rebind *Swap Item With Off Hand* to M in Controls. A resource pack can rename that control (`key.swapOffhand` in a
+lang file), and a text component `{"keybind":"key.swapOffhand"}` shows each player the key they actually use.
+
+**Dialogs (1.21.6+)** are real screens the server can open: `dialog show <player> <dialog>` (an id or inline SNBT)
+with a title, text bodies (`plain_message`, `width` up to 1024, default 200), inputs and buttons that run commands;
+Esc closes them. The body is a scrollable area between a 33 px header and a 33 px footer and is clipped to it. Good for
+menus, shops and confirmations: no chest-GUI tricks needed.
+
+The 26.x client jar is not obfuscated: `unzip` a class and run `javap -p -constants` to read exact layout numbers and
+how an input is wired instead of guessing.
+
 ## Testing with the bot
 
 Your bot cannot click buttons, so test like this:

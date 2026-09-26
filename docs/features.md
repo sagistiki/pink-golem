@@ -13,7 +13,7 @@ The long version of the README's list, with a link to the page that explains eac
 - **Safety rails:** automatic undo for every build, protected zones for other people's builds, an overwrite guard,
   verification after every job, and an access check that walks every room from the entrance.
   [The safety rails](architecture.md#the-safety-rails)
-- **A building skill:** golden rules and a step-by-step recipe a small model can follow, plus 31 reference pages
+- **A building skill:** golden rules and a step-by-step recipe a small model can follow, plus 32 reference pages
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
   [SKILL.md](../skill/clawdblock/SKILL.md)
@@ -37,6 +37,9 @@ The long version of the README's list, with a link to the page that explains eac
   - a live round minimap in the corner that turns with your view;
   - a HUD toolkit (speedometer, compass, timer, text) that shares one shader with the minimap.
   - [Minimap](../skill/clawdblock/reference/minimap.md) · [HUD](../skill/clawdblock/reference/hud.md)
+- **Block textures made by code:** a natural 32x set (woods, stone family, ground, grass, leaves, glass) at any
+  resolution, optional pixel-art shading, and a renderer that shows blocks in 3D before they go live.
+  [Textures](../skill/clawdblock/reference/textures.md) · [resourcepacks/textures](../resourcepacks/textures)
 
 ## Run a live server
 
@@ -64,9 +67,9 @@ The long version of the README's list, with a link to the page that explains eac
 | [`clawdblock.py`](../clawdblock.py) | setup · start · stop · status · doctor · mods · apps · connect · new-world · backup (stdlib Python) |
 | [`install.sh`](../install.sh) / [`install.cmd`](../install.cmd) / [`install.ps1`](../install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](../mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
-| [`skill/clawdblock/`](../skill/clawdblock) | the skill: `SKILL.md`, 31 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
+| [`skill/clawdblock/`](../skill/clawdblock) | the skill: `SKILL.md`, 32 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
 | [`scarpet-apps/`](../scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks, cars, ring, watchdog (+ the `gamekit` and `hud` libraries) |
-| [`resourcepacks/`](../resourcepacks) | minimap, HUD toolkit, car models, and `tools/model_preview.py` (item and block models rendered to PNG without a game client) |
+| [`resourcepacks/`](../resourcepacks) | minimap, HUD toolkit, car models, generated block textures, and `tools/` (`model_preview.py` for item models, `block_render.py` for blocks, both to PNG without a game client) |
 | [`mods-src/keybridge/`](../mods-src/keybridge) | the Key Bridge mod's source and build script |
 | [`docs/`](.) | these pages |
 

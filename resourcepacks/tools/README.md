@@ -5,6 +5,18 @@ Helpers for people (and AIs) who make resource packs. Python 3, no dependencies.
 | Tool | What |
 |---|---|
 | [`model_preview.py`](model_preview.py) | renders item / block models (JSON elements with textures, element and face rotation, parent chains) to a PNG — check a model's shape, decals and which way it faces without starting the game |
+| [`block_render.py`](block_render.py) | renders blocks the way the inventory shows them, every texel crisp, with your pack's textures (optionally next to vanilla) — show a texture design before it goes into the game (needs Pillow) |
+
+## block_render.py
+
+```bash
+python3 resourcepacks/tools/block_render.py oak_planks stone_bricks grass_block --pack my_pack --out render.png --compare
+```
+
+Models and missing textures come from the client jar (found in the usual `.minecraft` folder; `--jar` / `--version`
+to change it); `--pack` is a folder or a .zip whose textures win. Biome-tinted faces get a plains green (`--tint`).
+`--compare` draws vanilla (left) and yours (right) for each block. Uses the blockstate's first variant, so stairs and
+slabs show one orientation. Workflow: [reference/textures.md](../../skill/clawdblock/reference/textures.md).
 
 ## model_preview.py
 

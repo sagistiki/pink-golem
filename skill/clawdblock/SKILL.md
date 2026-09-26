@@ -228,6 +228,8 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Drivable cars, boats, planes (physics, chase camera, getting in/out) | `reference/vehicles.md` |
 | Roller coasters and rides along a path (display track, physics, first-person camera, loops) | `reference/rides.md`, `blueprints/coaster/` |
 | A HUD / minimap / anything drawn on the screen without mods | `reference/hud.md` (speedometer, compass, timer, text), `reference/minimap.md` |
+| New block textures / a texture pack (render first, then push) | `reference/textures.md` |
+| Keys the server can see, dialog screens | `reference/game-logic.md` ("Keys and screens") |
 | Is it right? | `reference/verification.md` |
 | Something failed | `reference/troubleshooting.md` |
 | The server lags, the disk is filling up, backups | `reference/watchdog.md` |

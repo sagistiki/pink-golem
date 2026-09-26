@@ -123,6 +123,7 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 | `slice()` of an empty list | throws "/ by zero" | `if (l, slice(l, 0, min(5, length(l))), [])` |
 | `list + list` | adds element by element (fails on uneven sizes) | `for (b, a += _)` |
 | `...` spread | does not exist | pass the list, index it |
+| a lambda that uses a local of the function that made it | lambdas don't capture: the local is null inside | capture it with `_(outer(x), e) -> ...`, pass it as an argument, or keep it in a `global_` |
 | `query(e, 'tags')` | deprecated | `query(e, 'has_tag', 'x')` |
 | `query(e, 'owner')` | does not exist | `data get entity <uuid> Owner`, or `query(e, 'nbt', 'Owner')` |
 | `block()` right after `run('setblock ...')` in the same call | still returns the OLD block (same for `weather()`) | read it in a separate call |

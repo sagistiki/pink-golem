@@ -21,3 +21,5 @@ __pycache__/
 
 # mods built from mods-src/
 mods-src/*/build/
+# generated texture folders (the zips are kept)
+resourcepacks/textures/natural_*/

@@ -29,7 +29,7 @@ block, every room reachable from the door, no dark corners) and tells you where 
 | 🎮 **Make it playable** | minigames with rounds and records, races, a rideable Ferris wheel and roller coaster, drivable cars |
 | 🗺️ **Draw on screen, no mods** | a live minimap and a HUD (speedometer, compass, timers) from a resource pack |
 | 🩺 **Run a live server** | test apps with fake players, patch them without a reload, find what lags, back up safely |
-| 📚 **Know how** | a building skill with golden rules and 31 reference pages, for strong and small models alike |
+| 📚 **Know how** | a building skill with golden rules and 32 reference pages, for strong and small models alike |
 
 **[Everything, with links →](docs/features.md)**
 
@@ -89,7 +89,7 @@ flowchart LR
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC
     MCP -- "runs" --> GEN["Python generators<br/>mclib + parts + blueprints"]
-    SKILL["Skill<br/>SKILL.md + 31 reference pages"] -. "how to build well" .-> AI
+    SKILL["Skill<br/>SKILL.md + 32 reference pages"] -. "how to build well" .-> AI
 ```
 
 There's no protocol bot and no client mods. The MCP drives the server through RCON, gives the AI a visible body with

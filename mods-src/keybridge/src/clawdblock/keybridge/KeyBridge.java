@@ -10,23 +10,45 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPopPacket;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
+import net.minecraft.network.protocol.game.ClientboundSetCameraPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerScoreboard;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.dedicated.DedicatedServerProperties;
 import net.minecraft.server.dedicated.DedicatedServerSettings;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 
@@ -47,6 +69,20 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
  *    If server.properties already names the same url + sha1 when you push (deploy writes it first), the running
  *    server adopts it, so later joiners get the new pack during login (one download, no double reload).
  *
+ * 3. Flip camera (op level 2+) — an upside-down view for one player, e.g. in a roller-coaster loop:
+ *    /flipcam start <player> <x> <y> <z> <yaw> <pitch> [eye_height]
+ *    /flipcam move  <player> <x> <y> <z> <yaw> <pitch>        (call every tick)
+ *    /flipcam stop  <player> [camera_entity_uuid]
+ *    The player's client gets a fake, invisible, silent spider (packets only — it never exists on the server, so
+ *    Peaceful doesn't matter) and its camera is set to it. The client applies the post effect "minecraft:spider" to a
+ *    spider camera; a resource pack replaces that effect with a 180° image rotation = the world upside down.
+ *    x y z is the CAMERA (eye) point; the spider stands eye_height lower. eye_height defaults to the eye height of the
+ *    player's current camera entity (the client eases the camera height after a switch, so matching it avoids a
+ *    slide); the spider is scaled to it (0.65 × scale, scale 0.0625..16). Moves are compensated for the client's
+ *    3-step interpolation of mobs, so the view follows the given poses exactly with the usual one-tick latency.
+ *    stop sets the camera to the given entity, or to the camera the server thinks the player has. Disconnect,
+ *    death, respawn and a dimension change clean up by themselves; one fake per player.
+ *
  * No client install needed. Any failure is logged once and that part switches off; it never takes the server down.
  */
 public class KeyBridge implements ModInitializer {
@@ -62,6 +98,21 @@ public class KeyBridge implements ModInitializer {
     /** players whose join pack we removed (so /packpop can give it back) */
     private final Set<UUID> popped = new HashSet<>();
     private Pack latest = null;
+
+    /** One flip camera: the fake spider and what the client shows after its next tick (the model the moves correct). */
+    private static final class Flip {
+        ServerPlayer player;
+        Level level;
+        Spider spider;
+        int id;
+        float eye;
+        double x, y, z;       // feet position the client has
+        float yRot, xRot;     // body yaw / pitch the client has
+        float head;           // head yaw the client has (= camera yaw)
+    }
+    private final Map<UUID, Flip> flips = new HashMap<>();
+    private int nextFakeId = Integer.MAX_VALUE - 1000;   // far above real entity ids, counting down
+    private boolean flipBroken = false;
     private boolean keysBroken = false;
     private boolean packBroken = false;
 
@@ -95,6 +146,15 @@ public class KeyBridge implements ModInitializer {
             } catch (Throwable t) {
                 packBroken = true;
                 System.err.println("[KeyBridge] pack push on join disabled after an error: " + t);
+            }
+        }
+        if (!flipBroken && !flips.isEmpty()) {
+            try {
+                flipWatch(server);
+            } catch (Throwable t) {
+                flipBroken = true;
+                flips.clear();
+                System.err.println("[KeyBridge] flip camera disabled after an error: " + t);
             }
         }
     }
@@ -152,6 +212,43 @@ public class KeyBridge implements ModInitializer {
                         .executes(c -> push(c.getSource(), StringArgumentType.getString(c, "args")))));
         d.register(Commands.literal("packpop").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(c -> pop(c.getSource())));
+        d.register(Commands.literal("flipcam").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .executes(c -> flipStatus(c.getSource()))
+                .then(Commands.literal("start").then(Commands.argument("player", EntityArgument.player()).then(pose(
+                        Commands.argument("eye_height", FloatArgumentType.floatArg(0.0f, 16.0f))
+                                .executes(c -> guard(c, () -> flipStart(c, FloatArgumentType.getFloat(c, "eye_height")))),
+                        c -> guard(c, () -> flipStart(c, -1f))))))
+                .then(Commands.literal("move").then(Commands.argument("player", EntityArgument.player()).then(pose(
+                        null, c -> guard(c, () -> flipMove(c))))))
+                .then(Commands.literal("stop").then(Commands.argument("player", EntityArgument.player())
+                        .executes(c -> guard(c, () -> flipStop(c, null)))
+                        .then(Commands.argument("camera", UuidArgument.uuid())
+                                .executes(c -> guard(c, () -> flipStop(c, UuidArgument.getUuid(c, "camera"))))))));
+    }
+
+    private interface Body { int run() throws Exception; }
+
+    /** Never let a flip camera problem escape a command: report it instead. */
+    private static int guard(CommandContext<CommandSourceStack> c, Body b) {
+        try {
+            return b.run();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            c.getSource().sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        } catch (Throwable t) {
+            c.getSource().sendFailure(Component.literal("[KeyBridge] flipcam failed: " + t));
+            return 0;
+        }
+    }
+
+    /** <x> <y> <z> <yaw> <pitch> [then] */
+    private static RequiredArgumentBuilder<CommandSourceStack, Double> pose(
+            RequiredArgumentBuilder<CommandSourceStack, Float> then, com.mojang.brigadier.Command<CommandSourceStack> run) {
+        RequiredArgumentBuilder<CommandSourceStack, Float> pitch = Commands.argument("pitch", FloatArgumentType.floatArg()).executes(run);
+        if (then != null) pitch = pitch.then(then);
+        return Commands.argument("x", DoubleArgumentType.doubleArg()).then(Commands.argument("y", DoubleArgumentType.doubleArg())
+                .then(Commands.argument("z", DoubleArgumentType.doubleArg()).then(Commands.argument("yaw", FloatArgumentType.floatArg())
+                        .then(pitch))));
     }
 
     private int status(CommandSourceStack src) {
@@ -221,6 +318,128 @@ public class KeyBridge implements ModInitializer {
         final int sent = n;
         src.sendSuccess(() -> Component.literal("[KeyBridge] removed the pushed pack for " + sent + " player(s)"), true);
         return Math.max(sent, 1);
+    }
+
+    // ───────────────────────────── flip camera ─────────────────────────────
+    /** The spider's eye height at scale 1 (0.65); read when first needed, not while the mod loads. */
+    private static float spiderEye() { return EntityTypes.SPIDER.getDimensions().eyeHeight(); }
+
+    private int flipStart(CommandContext<CommandSourceStack> c, float eyeOverride) throws Exception {
+        ServerPlayer p = EntityArgument.getPlayer(c, "player");
+        double x = DoubleArgumentType.getDouble(c, "x"), y = DoubleArgumentType.getDouble(c, "y"), z = DoubleArgumentType.getDouble(c, "z");
+        float yaw = FloatArgumentType.getFloat(c, "yaw"), pitch = Mth.clamp(FloatArgumentType.getFloat(c, "pitch"), -90f, 90f);
+        Flip old = flips.remove(p.getUUID());
+        float want = eyeOverride >= 0 ? eyeOverride : p.getCamera().getEyeHeight();
+        float scale = Mth.clamp(want / spiderEye(), 0.0625f, 16f);
+        Flip f = new Flip();
+        f.player = p;
+        f.level = p.level();
+        f.id = nextFakeId--;
+        f.eye = spiderEye() * scale;
+        f.spider = new Spider(EntityTypes.SPIDER, p.level());   // never added to the level: only its data is used
+        f.spider.setId(f.id);
+        f.spider.setUUID(UUID.randomUUID());
+        f.spider.setInvisible(true);
+        f.spider.setSilent(true);
+        f.spider.setNoGravity(true);
+        AttributeInstance sc = f.spider.getAttribute(Attributes.SCALE);
+        if (sc != null) sc.setBaseValue(scale);
+        f.x = x; f.y = y - f.eye; f.z = z;
+        f.spider.snapTo(f.x, f.y, f.z, yaw, pitch);
+        f.spider.setYHeadRot(yaw);
+        p.connection.send(new ClientboundAddEntityPacket(f.id, f.spider.getUUID(), f.x, f.y, f.z, pitch, yaw, EntityTypes.SPIDER, 0, Vec3.ZERO, yaw));
+        p.connection.send(new ClientboundSetEntityDataPacket(f.id, f.spider.getEntityData().getNonDefaultValues()));
+        if (sc != null) p.connection.send(new ClientboundUpdateAttributesPacket(f.id, java.util.List.of(sc)));
+        p.connection.send(new ClientboundSetCameraPacket(f.spider));
+        // the add packet carries rotations as bytes: the client starts from those, the next move corrects it
+        f.xRot = Mth.unpackDegrees(Mth.packDegrees(pitch));
+        f.yRot = Mth.unpackDegrees(Mth.packDegrees(yaw));
+        f.head = f.yRot;
+        sendMove(f, x, y, z, yaw, pitch);
+        if (old != null && old.player == p) p.connection.send(new ClientboundRemoveEntitiesPacket(old.id));
+        flips.put(p.getUUID(), f);
+        final float eye = f.eye, sc2 = scale;
+        c.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
+                "[KeyBridge] flip camera on for %s (fake spider #%d, eye height %.3f = scale %.3f)%s",
+                p.getScoreboardName(), f.id, eye, sc2, old != null ? ", replaced the previous one" : "")), false);
+        return 1;
+    }
+
+    private int flipMove(CommandContext<CommandSourceStack> c) throws Exception {
+        ServerPlayer p = EntityArgument.getPlayer(c, "player");
+        Flip f = flips.get(p.getUUID());
+        if (f == null) {
+            c.getSource().sendFailure(Component.literal("[KeyBridge] no flip camera for " + p.getScoreboardName() + " — /flipcam start first"));
+            return 0;
+        }
+        sendMove(f, DoubleArgumentType.getDouble(c, "x"), DoubleArgumentType.getDouble(c, "y"), DoubleArgumentType.getDouble(c, "z"),
+                FloatArgumentType.getFloat(c, "yaw"), Mth.clamp(FloatArgumentType.getFloat(c, "pitch"), -90f, 90f));
+        return 1;   // silent: this runs every tick
+    }
+
+    /**
+     * The client moves a mob 1/3 of the way to the latest target each tick (3-step interpolation, restarted by every
+     * packet), which trails ~2 ticks behind a moving target. Sending target = have + 3 × (want − have) makes the client
+     * land exactly on "want" after its next tick; if a packet comes late, the error shrinks by 2/3 per tick.
+     */
+    private void sendMove(Flip f, double x, double eyeY, double z, float yaw, float pitch) {
+        double y = eyeY - f.eye;
+        double dx = x - f.x, dy = y - f.y, dz = z - f.z;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        Vec3 target;
+        if (dist * 3 > 60) {            // a jump: the client snaps beyond 64 blocks, so send the point itself
+            target = new Vec3(x, y, z);
+            if (dist > 64) { f.x = x; f.y = y; f.z = z; } else { f.x += dx / 3; f.y += dy / 3; f.z += dz / 3; }
+        } else {
+            target = new Vec3(f.x + 3 * dx, f.y + 3 * dy, f.z + 3 * dz);
+            f.x = x; f.y = y; f.z = z;
+        }
+        float tPitch = f.xRot + 3 * (pitch - f.xRot);
+        float tYaw = f.yRot + 3 * Mth.wrapDegrees(yaw - f.yRot);
+        f.xRot = pitch;
+        f.yRot = yaw;
+        byte tHead = Mth.packDegrees(f.head + 3 * Mth.wrapDegrees(yaw - f.head));
+        f.head = f.head + Mth.wrapDegrees(Mth.unpackDegrees(tHead) - f.head) / 3;   // head packets are bytes: model what the client gets
+        f.player.connection.send(ClientboundTeleportEntityPacket.teleport(f.id, new PositionMoveRotation(target, Vec3.ZERO, tYaw, tPitch), java.util.Set.of(), false));
+        f.player.connection.send(new ClientboundRotateHeadPacket(f.spider, tHead));
+    }
+
+    private int flipStop(CommandContext<CommandSourceStack> c, UUID camera) throws Exception {
+        ServerPlayer p = EntityArgument.getPlayer(c, "player");
+        Flip f = flips.remove(p.getUUID());
+        Entity target = camera != null ? p.level().getEntity(camera) : null;
+        String note = camera != null && target == null ? " (entity " + camera + " not found — used the player's own camera)" : "";
+        if (target == null) target = p.getCamera();
+        p.connection.send(new ClientboundSetCameraPacket(target));
+        if (f != null) p.connection.send(new ClientboundRemoveEntitiesPacket(f.id));
+        final String who = target == p ? "the player" : target.getType().toShortString() + " " + target.getUUID();
+        c.getSource().sendSuccess(() -> Component.literal("[KeyBridge] flip camera " + (f != null ? "off" : "was not on") + " for "
+                + p.getScoreboardName() + "; camera → " + who + note), false);
+        return f != null ? 1 : 0;
+    }
+
+    private int flipStatus(CommandSourceStack src) {
+        StringBuilder b = new StringBuilder("[KeyBridge] flip cameras: " + flips.size());
+        for (Flip f : flips.values()) b.append(String.format(java.util.Locale.ROOT, " | %s #%d at %.2f %.2f %.2f yaw %.1f pitch %.1f",
+                f.player.getScoreboardName(), f.id, f.x, f.y + f.eye, f.z, f.yRot, f.xRot));
+        b.append(" | usage: /flipcam start|move <player> <x> <y> <z> <yaw> <pitch> [eye_height], /flipcam stop <player> [camera_uuid]");
+        src.sendSuccess(() -> Component.literal(b.toString()), false);
+        return flips.size();
+    }
+
+    /** Disconnect, death, respawn (a new player object) or another dimension: the fake is gone or wrong — clean up. */
+    private void flipWatch(MinecraftServer server) {
+        var it = flips.entrySet().iterator();
+        while (it.hasNext()) {
+            Flip f = it.next().getValue();
+            ServerPlayer now = server.getPlayerList().getPlayer(f.player.getUUID());
+            if (now == null) { it.remove(); continue; }
+            if (now != f.player || now.level() != f.level || !now.isAlive()) {
+                now.connection.send(new ClientboundSetCameraPacket(now.getCamera()));
+                now.connection.send(new ClientboundRemoveEntitiesPacket(f.id));
+                it.remove();
+            }
+        }
     }
 
     /**

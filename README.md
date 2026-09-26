@@ -33,18 +33,6 @@ block, every room reachable from the door, no dark corners) and tells you where 
 
 **[Everything, with links →](docs/features.md)**
 
-## Case study: a roller coaster that really runs
-
-<p align="center"><img src="assets/screenshots/coaster.png" alt="The INFERNO roller coaster" width="100%"></p>
-
-A player asked for *"an amazing roller coaster, with a loop and a real coaster feeling"*. The result:
-- a 662-block steel track with a 68-block lift, a loop and a helix;
-- designed in Python with real physics before a single block was placed;
-- built from display entities;
-- ridden in first person, upside down through the loop.
-
-**[How it was built, bugs and all →](docs/case-study-roller-coaster.md)**
-
 ## Built by the included blueprints
 
 | | |
@@ -114,6 +102,18 @@ Carpet's fake players, and reads the world with scarpet. **[Architecture →](do
 - A big project is a conversation (survey, plan, preview, build in phases, check): minutes, not one click.
 - It's tested on Minecraft **26.2**; newer versions usually work once Carpet supports them ([upgrading](docs/upgrading.md)).
 - Small local models do best with the blueprints; free-form architecture needs a strong model.
+
+## Case study: a roller coaster that really runs
+
+<p align="center"><img src="assets/screenshots/coaster.png" alt="The INFERNO roller coaster" width="100%"></p>
+
+A player asked for *"an amazing roller coaster, with a loop and a real coaster feeling"*. The result:
+- a 662-block steel track with a 68-block lift, a loop and a helix;
+- designed in Python with real physics before a single block was placed;
+- built from display entities;
+- ridden in first person, upside down through the loop.
+
+**[How it was built, bugs and all →](docs/case-study-roller-coaster.md)**
 
 ## More
 

@@ -33,6 +33,13 @@ name, manual setup, and a first-session checklist.
 Every AI gets its own name, and with it its own body, undo stack and protected builds. Several AIs can then work
 on one server without fighting over one body.
 
+## See what it can do
+
+| Page | Read it when |
+|---|---|
+| [Features, layout and mods](features.md) | you want the full list of what ClawdBlock does, what's in each folder and which mods it uses |
+| [Case study: a roller coaster that really runs](case-study-roller-coaster.md) | you want to see a big project end to end: design, physics, a display-entity track, a custom train, the camera, testing on a live server |
+
 ## Build and extend
 
 | Page | Read it when |

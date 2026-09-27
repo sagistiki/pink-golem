@@ -432,6 +432,7 @@ global_PLAN_MAX = 2;           // plans in progress at once
 global_SPIRAL = []; global_RING = [];
 global_N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 global_WAIT_MS = 180000;       // a car nobody gets into leaves after 3 minutes
+global_CALL_MIN_MS = 60000;    // a caller who walked away cannot order another car for a minute
 global_LOCK_MS = 90000;        // for the first 90 s only the caller may get in
 
 _key(i, j) -> (i + 5000) * 10000 + j + 5000;
@@ -454,6 +455,22 @@ _call_player(p) -> (
   global_call_last:n = now;
   if ((p ~ 'dimension') != 'overworld' || (p ~ 'gamemode') == 'spectator', return(null));
   if (_seat_of(n), _msg(n, 'אתה כבר ברכב', 'yellow'); return(null));
+  // a car of yours that is still around: it tells you where it is; far away and less than a minute since the call = wait
+  oc = _owned_car(n);
+  if (oc, (
+    q = pos(p); dx = oc:'x' - q:0; dz = oc:'z' - q:2; dist = round(sqrt(dx * dx + dz * dz));
+    where = if (dist < 3, 'ממש לידך', str('%d מטר %s', dist, _compass(dx, dz)));
+    left = ceil((global_CALL_MIN_MS - (now - oc:'called')) / 1000);
+    if (oc:'driver' || oc:'pass', _msg(n, 'הרכב שלך בשימוש', 'yellow'); return(null));
+    if (dist < 60, (
+      _msg(n, str('הרכב שלך כאן: %s', where), 'aqua');
+      print(p, str('הרכב שלך נמצא %s.', where));
+      return(null)));
+    if (left > 0, (
+      _msg(n, str('הרכב שלך רחוק (%s). אפשר להזמין עוד רכב בעוד %d שניות', where, left), 'yellow');
+      return(null)));
+    _car_dismiss_any(oc)
+  ));
   cl = global_calls:n;
   if (cl, (
     if (!global_call_msg:n || now - global_call_msg:n > 4000, (global_call_msg:n = now; _msg(n, 'הרכב שלך כבר בדרך, רגע...', 'yellow')));
@@ -464,7 +481,7 @@ _call_player(p) -> (
   null
 );
 _call_begin(owner, x, z) -> (
-  cl = {'owner' -> owner, 'phase' -> 'seed', 'q' -> [x, z], 'sp' -> 0, 'car' -> null};
+  cl = {'owner' -> owner, 'at' -> unix_time(), 'phase' -> 'seed', 'q' -> [x, z], 'sp' -> 0, 'car' -> null};
   global_calls:owner = cl;
   put(global_plans, null, cl);
   _msg(owner, 'מזמין רכב...', 'aqua')
@@ -580,7 +597,7 @@ _spawn_ai(pl, pts) -> (
   for (range(n - 2, -1, -1), rem:_ = rem:(_ + 1) + sqrt((pts:(_ + 1):0 - pts:_:0) ^ 2 + (pts:(_ + 1):1 - pts:_:1) ^ 2));
   c:'ai' = {'owner' -> owner, 'path' -> pts, 'rem' -> rem, 'i' -> if (n > 1, 1, 0), 'state' -> 'appear', 'go' -> tick_time() + 26,
             'last' -> [p0:0, p0:1], 'lastt' -> tick_time(), 'stuck' -> 0, 'rev' -> 0, 'near' -> false, 'test' -> (owner ~ '^Test') != null};
-  c:'owner' = owner;
+  c:'owner' = owner; c:'called' = pl:'at';
   pl_call = global_calls:owner; if (pl_call, pl_call:'car' = id);
   _fade(c, 0.03, 0.03, 0); schedule(3, '_fade_up', id);
   run(str('particle minecraft:cloud %.1f %.1f %.1f 1.2 0.6 1.2 0.02 40', p0:0, global_PLANE + 1, p0:1));
@@ -676,6 +693,12 @@ _ai_arrived(c, partial) -> (
     print(p, str('הרכב שלך הגיע (%s%s) - %d מטר בכיוון %s. לחיצה ימנית עליו כדי להיכנס.', name, if (partial, ', כמה שיכל להתקרב', ''), dist, if (dist < 3, 'ממש לידך', _compass(dx, dz))))
   ))
 );
+_owned_car(n) -> first(values(global_cars), _:'owner' == n && !_:'gone' && !(_:'ai' && _:'ai':'state' == 'gone'));
+_car_dismiss_any(c) -> (
+  if (c:'ai', return(_ai_dismiss(c)));
+  c:'gone' = true; c:'temp' = false; delete(global_calls, c:'owner');
+  _fade(c, 1, 0.03, 20); schedule(22, '_car_remove', c:'id')
+);
 _ai_taken(c) -> (
   a = c:'ai'; delete(global_calls, a:'owner');
   c:'ai' = null; c:'temp' = true; c:'tsince' = unix_time()
@@ -695,7 +718,7 @@ _car_remove(id) -> (
 // a car that was called and driven, then left empty: it leaves 3 minutes after the last player was near it
 _temp_check(c) -> (
   near = first(player('all'), _distance(pos(_), [c:'x', c:'y', c:'z']) < 30) != null;
-  if (near, c:'tsince' = unix_time(), unix_time() - c:'tsince' > 180000, (delete(global_calls, c:'owner'); _fade(c, 1, 0.03, 20); schedule(22, '_car_remove', c:'id'); c:'temp' = false))
+  if (near, c:'tsince' = unix_time(), unix_time() - c:'tsince' > 180000, (_car_dismiss_any(c)))
 );
 
 // the CAR KEY (no client mod needed): a paper item with a pack model; right click with it = call a car. /cars key gives one.

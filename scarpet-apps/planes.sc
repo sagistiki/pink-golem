@@ -256,8 +256,10 @@ _fly(pl, k, t) -> (
   if (air, v = max(0, min(vmax * 1.15, v + sin(p) * 0.03)));           // a dive gains speed, a climb bleeds it
   if (v < 0.003, v = 0);
   // pitch
+  nobody = pl:'riders':0 == null;
   if (air,
-    if (up, p = max(-50, p - prate), down, p = min(45, p + prate),
+    if (nobody, p = min(28, p + 0.5),                                  // abandoned: it comes down
+      up, p = max(-50, p - prate), down, p = min(45, p + prate),
       v < stall * 0.8, p = min(22, p + 0.7),                            // stalled: the nose drops, the dive brings speed back
       p = p - p * 0.02),
     if (up && v > stall * 0.9, p = max(-14, p - prate),
@@ -279,8 +281,9 @@ _fly(pl, k, t) -> (
   g = _ground(nx, nz);
   if (ny <= g,
     if (y >= g - 1.2,
-      ny = g; if (air, _land(pl, vy, p, v)); air = false; if (p > 0, p = 0); vy = 0,
-      nx = x; nz = z; ny = y; v = 0; _crash(pl)),
+      ny = g; if (air && nobody, pl:'x' = nx; pl:'y' = g; pl:'z' = nz; _wreck(pl); return());
+      if (air, _land(pl, vy, p, v)); air = false; if (p > 0, p = 0); vy = 0,
+      nx = x; nz = z; ny = y; v = 0; if (nobody && air, pl:'y' = y; _wreck(pl); return()); _crash(pl)),
     if (!air && ny > g + 0.5, air = true));                             // rolled off an edge (a roof, the helipad)
   if (ny > global_CEIL, ny = global_CEIL; p = max(p, 0));
   pl:'x' = nx; pl:'y' = ny; pl:'z' = nz; pl:'h' = h; pl:'p' = p; pl:'r' = r; pl:'v' = v; pl:'vy' = vy; pl:'air' = air
@@ -292,6 +295,16 @@ _land(pl, vy, p, v) -> (
     pl:'x', pl:'y', pl:'z', if (hard, 0.7, 0.6), if (hard, 1.6, 0.5)));
   run(str('particle minecraft:cloud %.2f %.2f %.2f 1.5 0.2 1.5 0.02 %d', pl:'x', pl:'y' + 0.2, pl:'z', if (hard, 30, 10)));
   if (hard, pl:'v' = v * 0.5; for (pl:'riders', if (_, _msg(_, 'נחיתה קשה!', 'red'))))
+);
+// nobody aboard and it hit the ground: a fireball, then the aircraft is back on its stand (Sagi 27/9)
+_wreck(pl) -> (
+  x = pl:'x'; y = pl:'y'; z = pl:'z';
+  run(str('playsound minecraft:entity.generic.explode master @a[distance=..160] %.1f %.1f %.1f 6 0.8', x, y, z));
+  run(str('particle minecraft:explosion_emitter %.1f %.1f %.1f 1.5 0.5 1.5 0 3', x, y + 1, z));
+  run(str('particle minecraft:flame %.1f %.1f %.1f 2.0 0.6 2.0 0.08 60', x, y + 0.5, z));
+  run(str('particle minecraft:large_smoke %.1f %.1f %.1f 2.5 1.5 2.5 0.03 80', x, y + 1, z));
+  pl:'air' = false; pl:'v' = 0; pl:'vy' = 0;
+  if (pl:'home', _go_home(pl), pl:'p' = 0; pl:'r' = 0; _place(pl))
 );
 _crash(pl) -> (
   run(str('playsound minecraft:entity.generic.explode master @a %.1f %.1f %.1f 0.6 1.5', pl:'x', pl:'y', pl:'z'));
@@ -308,7 +321,8 @@ _hover(pl, k, t) -> (
   pl:'rpm' = pl:'rpm' + (if (pilot, 42, 0) - pl:'rpm') * 0.04; if (pl:'rpm' < 0.5, pl:'rpm' = 0);
   pl:'spin' = (pl:'spin' + pl:'rpm') % 360;
   ready = pl:'rpm' > 30;
-  if (up && ready, vy = min(0.30, vy + 0.03), down, vy = max(-0.30, vy - 0.03), vy = vy * 0.85);
+  if (!pilot && air, vy = max(-0.25, vy - 0.015),
+    up && ready, vy = min(0.30, vy + 0.03), down, vy = max(-0.30, vy - 0.03), vy = vy * 0.85);
   if (!air && !up, vy = 0);
   if (gas && ready, v = min(vmax, v + acc), brk && ready, v = max(-vmax * 0.4, v - acc), v = v * 0.96);
   if (!air, v = v * 0.85);
@@ -321,9 +335,10 @@ _hover(pl, k, t) -> (
   g = _ground(nx, nz);
   if (ny <= g,
     if (y >= g - 1.2,
-      ny = g; if (air && vy < -0.2, run(str('playsound minecraft:block.stone.break master @a %.1f %.1f %.1f 0.5 0.5', nx, ny, nz)));
+      ny = g; if (air && !pilot, pl:'x' = nx; pl:'y' = g; pl:'z' = nz; _wreck(pl); return());
+      if (air && vy < -0.2, run(str('playsound minecraft:block.stone.break master @a %.1f %.1f %.1f 0.5 0.5', nx, ny, nz)));
       air = false; vy = 0; v = v * 0.5,
-      nx = x; nz = z; ny = y; v = 0; vy = 0; _crash(pl)),
+      nx = x; nz = z; ny = y; v = 0; vy = 0; if (!pilot && air, pl:'y' = y; _wreck(pl); return()); _crash(pl)),
     if (ny > g + 0.05, air = true));
   if (ny > global_CEIL, ny = global_CEIL; vy = 0);
   pl:'x' = nx; pl:'y' = ny; pl:'z' = nz; pl:'h' = h; pl:'p' = p; pl:'r' = r; pl:'v' = v; pl:'vy' = vy; pl:'air' = air
@@ -356,11 +371,13 @@ _fx(pl, t) -> (
   T = global_T:(pl:'type'); x = pl:'x'; y = pl:'y'; z = pl:'z'; v = abs(pl:'v');
   if (pl:'heli',
     if (pl:'rpm' > 2 && t % 3 == 0,
-      run(str('playsound minecraft:entity.phantom.flutter master @a[distance=..80] %.1f %.1f %.1f %.2f %.2f', x, y + 2, z, 0.5, 0.45 + pl:'rpm' / 42 * 0.35)));
+      run(str('playsound minecraft:entity.phantom.flutter master @a[distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y + 2, z, 4, 0.45 + pl:'rpm' / 42 * 0.35)));
     if (pl:'air' && y - _ground(x, z) < 4 && t % 2 == 0,
       run(str('particle minecraft:cloud %.2f %.2f %.2f 2.0 0.1 2.0 0.01 4', x, _ground(x, z) + 0.2, z))),
-    if (v > 0.15 && t % 30 == 0,
-      run(str('playsound minecraft:item.elytra.flying master @a[distance=..140] %.1f %.1f %.1f %.2f %.2f', x, y + 1, z, 0.25 + v / T:2 * 0.35, 0.6 + v / T:2 * 0.6)));
+    if (v > 0.15 && t % 12 == 0,
+      run(str('playsound minecraft:item.elytra.flying master @a[distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y + 1, z, 3 + v / T:2 * 4, 0.55 + v / T:2 * 0.5)));
+    if (v > T:2 * 0.5 && t % 12 == 6,
+      run(str('playsound minecraft:entity.breeze.wind_burst master @a[distance=..130] %.1f %.1f %.1f %.2f 0.5', x, y + 1, z, 2 + v / T:2 * 3)));
     if (pl:'air' && v > T:2 * 0.5 && t % 2 == 0,
       h = pl:'h'; w = T:11 * 0.45; q = _quat(h, pl:'p', pl:'r');
       l = _qrot(q, [w, T:13, 3]); rr = _qrot(q, [-w, T:13, 3]);

@@ -98,4 +98,23 @@ Read this once; come back when something feels familiar. New lessons you learn g
 35. **"Here", "this chest", "the floating thing"** — players point with words. Every chat line now carries where the
     player stood and looked when they wrote it: read that before asking where they mean.
 
-See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`.
+## From building a cinema and a gallery
+
+36. **A seat's stair block used the direction it LOOKS as its `facing` state.** A stair's `facing` is the side its
+    backrest faces, not the way a seated player looks — the backrest ended up in front of the sitter instead of
+    behind them. A seat that looks north needs `facing=south`.
+37. **A poster and a wall plaque were positioned at the wall block's own coordinate.** A block at integer z=Z spans
+    z..z+1, so a display centred on z is inside solid stone and renders nothing. Put it on the FACE the room's
+    interior actually sees — one block further in the direction of that face (or the equivalent fractional offset
+    for an entity) — never the block's own coordinate (`displays.md` has the same rule for any display, not just
+    posters).
+38. **A resource-pack part was deployed without anyone looking at a preview, and one map came out completely
+    blank** (a texture path typo that never threw an error). A contact sheet or a rendered preview catches a
+    clipped card, a wrong palette or a dead frame in one glance, before it reaches a live player. Never ship a
+    resource-pack part nobody has visually checked.
+39. **One custom item-model button was reused for every trigger in a build**, from a lift call to a cinema
+    entrance to a gallery exhibit. Every button ended up looking and behaving exactly the same, and none of them
+    read as special anymore. Reserve a custom model for one signature feature; a plain vanilla button (polled for
+    its `powered` rising edge) is simpler, needs no pack at all, and is the right default for everything else.
+
+See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`.

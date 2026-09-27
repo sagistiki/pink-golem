@@ -1,0 +1,37 @@
+{
+ "_doc": [
+  "cinema.sc rooms. One entry per screening room; every number the app needs lives here (the .sc is generic).",
+  "Copy this whole cinema.data.example/ folder to server/world/scripts/cinema.data/ and edit the numbers for your",
+  "own room (they were built for a 7x7x11 test room near 0,-60,0 — see cinema-and-gallery.md Step 3 for how to",
+  "verify each position live before trusting it, and Step 8 for the full worked example this room is taken from).",
+  "YAW CONVENTION (verify it once on your own wall — pick a quad, view it from one known side, adjust, then reuse):",
+  "  yaw = the direction the VIEWERS stand in, as a Minecraft yaw: 0 = viewers south (+z), -90 = viewers east (+x),",
+  "  90 = viewers west (-x), 180 = viewers north (-z). The same value works for text_display (yaw 0 is readable",
+  "  from the south) and for the mannequin (Rotation yaw = the way it looks).",
+  "POSITIONS: entity pos = the quad's centre, 0.05 in front of the wall FACE, never inside the wall block (a wall",
+  "  block at integer z=Z spans Z..Z+1 — the face the room's interior sees is whichever side faces the room).",
+  "SEATS: [x, y_seat, z] where y_seat is the y of the seat block (e.g. a stair). The invisible Marker armor_stand",
+  "  is spawned at y_seat + seat_dy; a Marker stand's rider sits with feet at stand y - 0.6, so seat_dy 0.5 puts",
+  "  the feet at y_seat - 0.1 (measured live — see cinema-and-gallery.md, 'Seats').",
+  "LIGHTS: every `light` block inside the lights box is set to level `dim` during a film and back to `on` after.",
+  "sound.pos / sound.volume feed scarpet sound(music, pos, volume, 1, 'record'); volume > 1 only extends the range.",
+  "BUTTON: a plain vanilla button block. button.block = its cell, button.state = the block state the app places",
+  "  if the cell holds no button; button.label/label_pos = a small text_display above it. Pressing it (powered",
+  "  rising edge, polled every 2 ticks) opens the programme dialog for the nearest real player within 5 blocks,",
+  "  3 s cooldown per player. A ticket-seller NPC (click), if you add one, opens the same dialog."
+ ],
+ "demo": {
+  "name": "Demo Screening Room",
+  "box": {"min": [0, -60, 0], "max": [6, -53, 10]},
+  "screen": {"pos": [3.0, -56.5, 1.05], "yaw": 0, "scale": 7},
+  "subtitle": {"pos": [3.0, -59.2, 1.05], "yaw": 0, "scale": 1.1, "line_width": 220},
+  "seats": [[2, -60, 5], [4, -60, 5], [2, -60, 7], [4, -60, 7]],
+  "seat_yaw": 0,
+  "seat_dy": 0.5,
+  "button": {"block": [3, -60, 10], "state": "polished_blackstone_button[face=wall,facing=north]",
+             "label": "PRESS TO WATCH", "label_pos": [3.0, -58.0, 9.95], "yaw": 180},
+  "board": {"pos": [3.0, -57.0, 10.95], "yaw": 0, "scale": 0.7},
+  "lights": {"min": [0, -53, 0], "max": [6, -53, 10], "on": 15, "dim": 3},
+  "sound": {"pos": [3.0, -57.0, 5.0], "volume": 1}
+ }
+}

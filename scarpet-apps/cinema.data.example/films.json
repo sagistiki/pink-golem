@@ -1,0 +1,97 @@
+[
+ {
+  "id": "demo",
+  "title": "The Lighthouse",
+  "en": "The Lighthouse",
+  "year": "1926",
+  "fps": 4,
+  "frame_models": [
+   "cinema:demo_f0001",
+   "cinema:demo_f0002",
+   "cinema:demo_f0001",
+   "cinema:demo_f0002",
+   "cinema:demo_f0003",
+   "cinema:demo_f0004",
+   "cinema:demo_f0003",
+   "cinema:demo_f0004",
+   "cinema:demo_f0005",
+   "cinema:demo_f0006",
+   "cinema:demo_f0005",
+   "cinema:demo_f0006",
+   "cinema:demo_f0007",
+   "cinema:demo_f0008",
+   "cinema:demo_f0009",
+   "cinema:demo_f0010",
+   "cinema:demo_f0011",
+   "cinema:demo_f0012",
+   "cinema:demo_f0013",
+   "cinema:demo_f0014",
+   "cinema:demo_f0015",
+   "cinema:demo_f0016",
+   "cinema:demo_f0017",
+   "cinema:demo_f0018",
+   "cinema:demo_f0019",
+   "cinema:demo_f0020",
+   "cinema:demo_f0021",
+   "cinema:demo_f0022",
+   "cinema:demo_f0023",
+   "cinema:demo_f0024",
+   "cinema:demo_f0025",
+   "cinema:demo_f0026",
+   "cinema:demo_f0027",
+   "cinema:demo_f0028",
+   "cinema:demo_f0029",
+   "cinema:demo_f0030",
+   "cinema:demo_f0031",
+   "cinema:demo_f0032",
+   "cinema:demo_f0033",
+   "cinema:demo_f0034",
+   "cinema:demo_f0035",
+   "cinema:demo_f0036",
+   "cinema:demo_f0037",
+   "cinema:demo_f0038",
+   "cinema:demo_f0039",
+   "cinema:demo_f0040",
+   "cinema:demo_f0041",
+   "cinema:demo_f0042",
+   "cinema:demo_f0043",
+   "cinema:demo_f0044",
+   "cinema:demo_f0043",
+   "cinema:demo_f0044",
+   "cinema:demo_f0045",
+   "cinema:demo_f0046",
+   "cinema:demo_f0045",
+   "cinema:demo_f0046"
+  ],
+  "cards": [
+   {
+    "from": 0,
+    "to": 3,
+    "text": "SILENT PICTURES"
+   },
+   {
+    "from": 4,
+    "to": 7,
+    "text": "THE LIGHTHOUSE"
+   },
+   {
+    "from": 8,
+    "to": 11,
+    "text": "One keeper. One lamp. One visitor."
+   },
+   {
+    "from": 48,
+    "to": 51,
+    "text": "THE END"
+   },
+   {
+    "from": 52,
+    "to": 55,
+    "text": "SILENT PICTURES"
+   }
+  ],
+  "music": "cinema:demo_theme",
+  "music_s": 14.0,
+  "poster": "cinema:poster_demo"
+ }
+]

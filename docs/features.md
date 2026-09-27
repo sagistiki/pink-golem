@@ -36,6 +36,10 @@ The long version of the README's list, with a link to the page that explains eac
   - [Rides](../skill/pinkgolem/reference/rides.md) · [the case study](case-study-roller-coaster.md)
 - **Drivable cars:** drift physics, a chase camera, models from a resource pack.
   [Vehicles](../skill/pinkgolem/reference/vehicles.md)
+- **A cinema and an art gallery, with no client mods:** a silent-film screen made of swapped item-model frames (any
+  resolution, no map art, no shaders — the numbers behind why), seats, a dimming house, an original synthesised
+  score, and a data-driven picture gallery with spinning exhibits.
+  [Cinema and gallery](../skill/pinkgolem/reference/cinema-and-gallery.md) · [the case study](case-study-cinema.md)
 - **On-screen graphics with no client mods:**
   - a live round minimap in the corner that turns with your view;
   - a HUD toolkit (speedometer, compass, timer, text) that shares one shader with the minimap.
@@ -71,9 +75,9 @@ The long version of the README's list, with a link to the page that explains eac
 | [`pinkgolem.py`](../pinkgolem.py) | setup · start · stop · status · doctor · mods · apps · connect · new-world · backup (stdlib Python) |
 | [`install.sh`](../install.sh) / [`install.cmd`](../install.cmd) / [`install.ps1`](../install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](../mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
-| [`skill/pinkgolem/`](../skill/pinkgolem) | the skill: `SKILL.md`, 32 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
-| [`scarpet-apps/`](../scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks, cars, ring, watchdog (+ the `gamekit` and `hud` libraries) |
-| [`resourcepacks/`](../resourcepacks) | minimap, HUD toolkit, car models, generated block textures, and `tools/` (`model_preview.py` for item models, `block_render.py` for blocks, both to PNG without a game client) |
+| [`skill/pinkgolem/`](../skill/pinkgolem) | the skill: `SKILL.md`, 33 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
+| [`scarpet-apps/`](../scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks, cars, ring, watchdog, cinema, gallery (+ the `gamekit` and `hud` libraries) |
+| [`resourcepacks/`](../resourcepacks) | minimap, HUD toolkit, car models, cinema films, gallery art, generated block textures, and `tools/` (`model_preview.py` for item models, `block_render.py` for blocks, both to PNG without a game client) |
 | [`mods-src/keybridge/`](../mods-src/keybridge) | the Key Bridge mod's source and build script |
 | [`docs/`](.) | these pages |
 

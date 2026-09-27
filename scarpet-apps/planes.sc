@@ -58,6 +58,15 @@ _msg(n, t, c) -> run(str('title %s actionbar %s', n, encode_json({'text' -> t, '
 _keys(n) -> (f = global_fake_keys:n; if (f != null, return(f)); k = scoreboard('keys', n); if (k == null, 0, k));
 set_keys(n, bits) -> (global_fake_keys:n = bits; bits);
 _bit(k, b) -> bitwise_and(k, b) != 0;
+global_hold = {};
+// Shift has to be HELD for 3 s to get out (Sagi 27/9: a tap is not enough); a bar shows the progress
+_hold(n, k) -> (
+  if (global_hold == null, global_hold = {});
+  if (!_bit(k, 32), global_hold:n = 0; return(false));
+  c = global_hold:n; if (c == null, c = 0); c += 1; global_hold:n = c;
+  if (c % 5 == 0, f = floor(c / 6); _msg(n, str('%s %s יציאה', join('', map(range(10), if (_ < f, '▮', '▯'))), if (c >= 60, '✓', '')), 'yellow'));
+  if (c >= 60, global_hold:n = 0; true, false)
+);
 _wrap(a) -> ((a % 360) + 540) % 360 - 180;
 
 // ───────────── quaternions (JOML [x,y,z,w]; the display's local frame = world frame: x left, y up, z forward) ─────────────
@@ -136,9 +145,9 @@ board(n, id) -> (
   schedule(2, '_spectate', n, pl:'cam');
   name = global_T:(pl:'type'):0;
   if (slot == 0,
-    _msg(n, if (pl:'heli', str('%s · W/S קדימה-אחורה · רווח/Ctrl למעלה-למטה · A/D סיבוב · Shift = לצאת', name),
-                          str('%s · W גז · S בלם · רווח = אף למעלה · Ctrl = אף למטה · A/D פנייה · Shift = לצאת', name)), 'aqua'),
-    _msg(n, str('%s · נוסע %d · הטייס: %s · Shift = לצאת', name, slot, pl:'riders':0), 'yellow');
+    _msg(n, if (pl:'heli', str('%s · W/S קדימה-אחורה · רווח/Ctrl למעלה-למטה · A/D סיבוב · החזק Shift 3 שניות = לצאת', name),
+                          str('%s · W גז · S בלם · רווח = אף למעלה · Ctrl = אף למטה · A/D פנייה · החזק Shift 3 שניות = לצאת', name)), 'aqua'),
+    _msg(n, str('%s · נוסע %d · הטייס: %s · החזק Shift 3 שניות = לצאת', name, slot, pl:'riders':0), 'yellow');
     _msg(pl:'riders':0, str('%s עלה למטוס', n), 'light_purple'));
   run(str('playsound minecraft:block.iron_door.close master @a %.1f %.1f %.1f 0.8 1.2', pl:'x', pl:'y', pl:'z'));
   'ok'
@@ -223,8 +232,8 @@ __on_tick() -> (
     pilot = pl:'riders':0;
     if (pilot,
       k = _keys(pilot);
-      if (_bit(k, 32), _out(pl, 0); continue());
-      for (range(1, 4), n = pl:'riders':_; if (n && _bit(_keys(n), 32), _out(pl, _)));
+      if (_hold(pilot, k), _out(pl, 0); continue());
+      for (range(1, 4), n = pl:'riders':_; if (n && _hold(n, _keys(n)), _out(pl, _)));
       if (pl:'heli', _hover(pl, k, t), _fly(pl, k, t));
       pl:'idle' = 0,
       if (pl:'v' > 0.01 || pl:'air' || pl:'rpm' > 0.5 || pl:'vy' != 0,
@@ -299,7 +308,7 @@ _land(pl, vy, p, v) -> (
 // nobody aboard and it hit the ground: a fireball, then the aircraft is back on its stand (Sagi 27/9)
 _wreck(pl) -> (
   x = pl:'x'; y = pl:'y'; z = pl:'z';
-  run(str('playsound minecraft:entity.generic.explode master @a[distance=..160] %.1f %.1f %.1f 6 0.8', x, y, z));
+  run(str('playsound minecraft:entity.generic.explode master @a[x=%d,y=%d,z=%d,distance=..160] %.1f %.1f %.1f 6 0.8', x, y, z, x, y, z));
   run(str('particle minecraft:explosion_emitter %.1f %.1f %.1f 1.5 0.5 1.5 0 3', x, y + 1, z));
   run(str('particle minecraft:flame %.1f %.1f %.1f 2.0 0.6 2.0 0.08 60', x, y + 0.5, z));
   run(str('particle minecraft:large_smoke %.1f %.1f %.1f 2.5 1.5 2.5 0.03 80', x, y + 1, z));
@@ -378,13 +387,13 @@ _fx(pl, t) -> (
       if (pl:'heli', 0.7, 0.9), if (pl:'heli', 0.45 + pl:'rpm' / 42 * 0.35, 0.45 + v / T:2 * 0.6)))));
   if (pl:'heli',
     if (pl:'rpm' > 2 && t % 3 == 0,
-      run(str('playsound minecraft:entity.phantom.flutter master @a[distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y + 2, z, 4, 0.45 + pl:'rpm' / 42 * 0.35)));
+      run(str('playsound minecraft:entity.phantom.flutter master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y, z, x, y + 2, z, 4, 0.45 + pl:'rpm' / 42 * 0.35)));
     if (pl:'air' && y - _ground(x, z) < 4 && t % 2 == 0,
       run(str('particle minecraft:cloud %.2f %.2f %.2f 2.0 0.1 2.0 0.01 4', x, _ground(x, z) + 0.2, z))),
     if (v > 0.15 && t % 12 == 0,
-      run(str('playsound minecraft:item.elytra.flying master @a[distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y + 1, z, 3 + v / T:2 * 4, 0.55 + v / T:2 * 0.5)));
+      run(str('playsound minecraft:item.elytra.flying master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y, z, x, y + 1, z, 3 + v / T:2 * 4, 0.55 + v / T:2 * 0.5)));
     if (v > T:2 * 0.5 && t % 12 == 6,
-      run(str('playsound minecraft:entity.breeze.wind_burst master @a[distance=..130] %.1f %.1f %.1f %.2f 0.5', x, y + 1, z, 2 + v / T:2 * 3)));
+      run(str('playsound minecraft:entity.breeze.wind_burst master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f 0.5', x, y, z, x, y + 1, z, 2 + v / T:2 * 3)));
     if (pl:'air' && v > T:2 * 0.5 && t % 2 == 0,
       h = pl:'h'; w = T:11 * 0.45; q = _quat(h, pl:'p', pl:'r');
       l = _qrot(q, [w, T:13, 3]); rr = _qrot(q, [-w, T:13, 3]);

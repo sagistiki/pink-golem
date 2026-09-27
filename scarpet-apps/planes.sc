@@ -395,7 +395,7 @@ _fx(pl, t) -> (
     for (player('all'),
       n = _ ~ 'name'; q = pos(_);
       d = sqrt((q:0 - x) ^ 2 + (q:1 - y) ^ 2 + (q:2 - z) ^ 2);
-      vol = if (n ~ riders != null, 0.4, d > 160, 0, max(0.05, 0.45 * (1 - d / 160)));
+      vol = if (first(riders, _ == n) != null, 0.4, d > 160, 0, max(0.05, 0.45 * (1 - d / 160)));
       if (vol > 0, run(str('execute as %s at @s run playsound minecraft:%s master @s ~ ~ ~ %.2f %.2f', n, snd, vol, ptc)))));
   if (pl:'heli',
     if (pl:'air' && y - _ground(x, z) < 4 && t % 2 == 0,

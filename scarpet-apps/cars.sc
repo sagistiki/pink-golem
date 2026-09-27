@@ -20,7 +20,7 @@
 // Shift gets out through the right door). If the driver gets out, the passenger stays and the next one in drives.
 
 __config() -> {'stay_loaded' -> true, 'scope' -> 'global',
-  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'call' -> 'cmd_call', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
+  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'call' -> 'cmd_call', 'key' -> 'cmd_key', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
   'arguments' -> {'model' -> {'type' -> 'term', 'suggest' -> ['sedan', 'sports', 'suv', 'taxi', 'police']}, 'color' -> {'type' -> 'term', 'suggest' -> ['red', 'blue', 'white', 'black', 'yellow', 'pink']}}};
 // HUD (hud.scl + the server pack's HUD fonts): speedometer bottom-right, compass top-centre while driving (26/9)
 import('hud', 'hud_show', 'hud_hide', 'hud_speedo', 'hud_compass');
@@ -444,8 +444,9 @@ _ok_cell(bx, bz) -> (
   true
 );
 
-cmd_call() -> (
-  p = player(); if (!p, return(null));
+cmd_call() -> _call_player(player());
+_call_player(p) -> (
+  if (!p, return(null));
   n = p ~ 'name';
   if ((p ~ 'player_type') == 'fake' && !global_allow_fake, return(null));
   now = unix_time();
@@ -695,4 +696,17 @@ _car_remove(id) -> (
 _temp_check(c) -> (
   near = first(player('all'), _distance(pos(_), [c:'x', c:'y', c:'z']) < 30) != null;
   if (near, c:'tsince' = unix_time(), unix_time() - c:'tsince' > 180000, (delete(global_calls, c:'owner'); _fade(c, 1, 0.03, 20); schedule(22, '_car_remove', c:'id'); c:'temp' = false))
+);
+
+// the CAR KEY (no client mod needed): a paper item with a pack model; right click with it = call a car. /cars key gives one.
+__on_player_uses_item(p, item, hand) -> (
+  if (hand == 'mainhand' && item && item:0 == 'paper' && (str(item:2) ~ 'carkey') != null, _call_player(p))
+);
+cmd_key() -> (
+  p = player(); if (!p, return(null)); n = p ~ 'name';
+  has = false;
+  for (range(inventory_size(p)), s = inventory_get(p, _); if (s && s:0 == 'paper' && (str(s:2) ~ 'carkey') != null, has = true));
+  if (has, return('you already have a car key'));
+  run(str('give %s paper[item_model="bulbul:car_key",custom_data={carkey:1b},custom_name={text:"Car key",color:"light_purple",italic:false},lore=[{text:"Right click = call a car",color:"gray",italic:false}]] 1', n));
+  'you got a car key: right click it to call a car'
 );

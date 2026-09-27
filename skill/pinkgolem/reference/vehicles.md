@@ -189,6 +189,27 @@ Everything else (camera, seat, probes) uses the real heading `h` (0 = south, yaw
 | Speed shown in blocks/tick | meaningless to players | km/h = b/t × 72 |
 
 
+## Calling a car (a car that drives up to you)
+
+`/cars call` (a client mod can bind a key to it) sends a random car of the fleet to the caller. It costs little and never
+blocks the tick:
+
+- **Rate limits:** presses closer than 2.5 s are ignored silently, one call per player (a second press only says "already
+  on its way"), at most 4 cars on their way and 2 plans running server-wide.
+- **Planner (a slice of work per tick):** the nearest open ground to the player (spiral over 2-block cells; a cell is a 5x5 patch
+  with solid ground, two free blocks above and `top('motion', x, 0, z) <= car level`, so never a hall or a roof), then a breadth-first flood over those cells (8 neighbours, 110 blocks around the
+  player, 3500 cells) that remembers cells 55+ blocks away. The start is one of those (a road when there is one), the path
+  is the parent chain back to the seed, cut 2 cells short so the car stops about 4 blocks from the player, then smoothed with a
+  line-of-sight check over the known-open cells. No far cell = the farthest reachable one; a closed-in spot = the car comes as
+  close as the open ground allows.
+- **Driver:** the same `_drive(c, keys, t)` a player uses, fed with synthesised keys: steer towards the next waypoint (right = +heading),
+  gas or brake to a target speed that drops near the end and in corners, reverse with the wheel turned the other way when it has not moved 1 block in 1.5 s
+  (three times = it stops where it is). Not counting the first 26 ticks (the car grows out of nothing: a scale interpolation).
+- **Arrival:** two loud note-block honks 5 ticks apart (`playsound ... 5` = about 80 blocks), an action-bar line and a chat line with
+  the distance and compass direction. For 90 s only the caller can get in. An unused car leaves after 3 minutes; a driven one after 3 minutes with nobody near.
+- **Traps:** a called car must be ticked before any lot fleet exists (do not `return()` early when `global_spawned` is false), and a standing start looks
+  like "stuck" to a distance-in-30-ticks check, so start the stuck timer when the car starts moving.
+
 ## Planes and helicopters (planes.sc)
 
 [`scarpet-apps/planes.sc`](../../../scarpet-apps/planes.sc) + models in [`resourcepacks/planes/`](../../../resourcepacks/planes)

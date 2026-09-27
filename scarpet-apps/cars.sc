@@ -12,11 +12,15 @@
 // your skin sits at the wheel; "first" — you sit in the seat (F5 works as usual). /car view toggles it.
 // Shift = get out (you are put next to the driver's door). An empty car away from its parking spot goes home after
 // 3 minutes with nobody near. Test: set_keys('Name', bits) feeds keys to a fake player (no key bridge needed).
+// CALL (Sagi 27/9): C in the Bulbul Map mod (or /cars call) sends a random car of the fleet to you: it materialises far away (55-85
+// blocks, on a road when there is one), drives to you by itself (a flood-fill over open ground + line-of-sight smoothing, the
+// AI presses the same keys a driver would), stops a few blocks short of you, honks twice and tells you. No way through = it
+// comes as close as it can. One call per player, a few at a time on the server, presses are rate-limited. See "the call" below.
 // Two seats: the first one in drives, a second one sits next to the driver (same views; the chase camera is shared,
 // Shift gets out through the right door). If the driver gets out, the passenger stays and the next one in drives.
 
 __config() -> {'stay_loaded' -> true, 'scope' -> 'global',
-  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
+  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'call' -> 'cmd_call', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
   'arguments' -> {'model' -> {'type' -> 'term', 'suggest' -> ['sedan', 'sports', 'suv', 'taxi', 'police']}, 'color' -> {'type' -> 'term', 'suggest' -> ['red', 'blue', 'white', 'black', 'yellow', 'pink']}}};
 // HUD (hud.scl + the server pack's HUD fonts): speedometer bottom-right, compass top-centre while driving (26/9)
 import('hud', 'hud_show', 'hud_hide', 'hud_speedo', 'hud_compass');
@@ -47,6 +51,10 @@ global_next = 1;
 global_spawned = false;
 
 __on_start() -> (
+  run('kill @e[tag=car_ai]');
+  global_SPIRAL = []; for (range(-20, 21), i = _; for (range(-20, 21), put(global_SPIRAL, null, [i, _])));
+  global_SPIRAL = sort_key(global_SPIRAL, _:0 * _:0 + _:1 * _:1);
+  global_RING = []; for (range(-2, 3), i = _; for (range(-2, 3), if (i != 0 || _ != 0, put(global_RING, null, [i, _]))));
   v = read_file('views', 'json'); if (v, global_view = v);
   global_lot = read_file('lot', 'json');
   // several parking lots, each with its own fleet (Sagi 27/9: the Gabi Water car park too): cars.data/lot*.json
@@ -94,13 +102,14 @@ _spawn_lot(L) -> (
   L:'spawned' = true;
   global_spawned = true
 );
+global_ai_tag = false;
 global_lot = null; global_show = null; global_lots = []; global_lot_name = null;
 
 _new_car(model, color, q, yaw, home) -> (
   id = global_next; global_next += 1;
   m = global_M:model; if (!m, return(null));
   rgb = global_COL:color; if (rgb == null, rgb = number(color)); if (rgb == null, rgb = 15790320);
-  tags = str('"car","car_%d","%s"%s', id, global_gen, if (global_lot_name, str(',"carlot_%s"', global_lot_name), ''));
+  tags = str('"car","car_%d","%s"%s%s', id, global_gen, if (global_lot_name, str(',"carlot_%s"', global_lot_name), ''), if (global_ai_tag, ',"car_ai"', ''));
   body = spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"cars:%s","minecraft:dyed_color":%d}},teleport_duration:2,Rotation:[%.1ff,0f],view_range:4f,shadow_radius:1.4f,shadow_strength:0.6f,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
     tags, model, rgb, yaw + global_MODEL_YAW, m:1 / 2, m:1, m:1, m:1));
   hit = spawn('interaction', q, str('{Tags:[%s],width:%.2ff,height:1.6f,response:1b}', tags, m:9 * 2 + 0.2));
@@ -126,6 +135,7 @@ __on_player_interacts_with_entity(p, e, hand) -> (
   c = global_cars:id; n = p ~ 'name';
   if (!c || _seat_of(n), return());
   if (c:'driver' && c:'pass', _msg(n, 'הרכב מלא', 'red'); return());
+  if (c:'owner' && c:'owner' != n && c:'lock' && unix_time() < c:'lock' && !c:'driver', _msg(n, str('הרכב הוזמן על ידי %s', c:'owner'), 'yellow'); return());
   enter(n, id)
 );
 
@@ -137,6 +147,7 @@ enter(n, id) -> (
   p = player(n); c = global_cars:id; if (!p || !c || _seat_of(n), return('no'));
   r = if (!c:'driver', 'driver', !c:'pass', 'pass', return('full'));
   global_restore:n = {'mode' -> p ~ 'gamemode'}; write_file('restore', 'json', global_restore);
+  if (c:'ai', _ai_taken(c));
   c:r = n; c:'idle' = 0;
   mode = global_view:n; if (mode == null, mode = 'chase');
   _set_view(c, r, mode);
@@ -230,7 +241,7 @@ cmd_home() -> (p = player(); s = _seat_of(p ~ 'name'); if (s && s:1 == 'driver',
 cmd_here(model, color) -> (p = player(); q = pos(p); if (!global_M:model, return('models: ' + join(', ', keys(global_M)))); id = _new_car(model, color, q, query(p, 'yaw'), false); str('car %d', id));
 cmd_list() -> map(values(global_cars), str('%d %s %s %s %s', _:'id', _:'model', _:'color', if (_:'driver', _:'driver', '-'), if (_:'pass', _:'pass', '-')));
 
-__on_player_disconnects(p, r) -> (s = _seat_of(p ~ 'name'); if (s, _gone(s:0, s:1)));
+__on_player_disconnects(p, r) -> (n = p ~ 'name'; s = _seat_of(n); if (s, _gone(s:0, s:1)); cl = global_calls:n; if (cl && cl:'car', c = global_cars:(cl:'car'); if (c && c:'ai', _ai_dismiss(c))); if (cl && !cl:'car', cl:'phase' = 'done'; delete(global_calls, n)));
 __on_player_connects(p) -> (n = p ~ 'name'; if (has(global_restore, n), schedule(20, '_restore_player', n)));
 
 // ───────────── the loop ─────────────
@@ -240,10 +251,14 @@ __on_tick() -> (
   if (t % 20 == 0, for (global_lots, L = _; if (!L:'spawned',
     ctr = L:'data':'center';
     if (first(player('all'), _real(_) && (!ctr || abs(pos(_):0 - ctr:0) < 96 && abs(pos(_):2 - ctr:1) < 96)) != null, _spawn_lot(L)))));
-  if (!global_spawned, return());
+  if (!global_spawned && !length(global_cars) && !length(global_plans), return());     // (called cars also run before any lot was built)
   if (global_show && t % 20 == 0, e = entity_id(global_show); if (e, sh = global_lot:'show'; modify(e, 'location', sh:0, sh:1, sh:2, (t / 20 * 18) % 360, 0)));
+  for (global_plans, _plan_step(_));
+  global_plans = filter(global_plans, _:'phase' != 'done');
   for (values(global_cars),
     c = _;
+    if (c:'ai', _ai(c, t); continue());
+    if (c:'temp' && !c:'driver' && !c:'pass' && t % 40 == 0, _temp_check(c));
     if (c:'pass', _pass_tick(c));
     if (c:'driver',
       p = player(c:'driver');
@@ -405,3 +420,279 @@ _man_fix(u, h, yawcam, pitch) -> (
   modify(e, 'head_yaw', yawcam); modify(e, 'pitch', pitch)
 );
 _cam_target(c) -> (m = global_M:(c:'model'); h = c:'h'; [c:'x' + sin(h) * m:6, c:'y' + m:7, c:'z' - cos(h) * m:6]);
+
+// ───────────── the call: a car that drives up to you ─────────────
+global_PLANE = -60;            // the car level of the city (grass/road top is y -61)
+global_calls = {};             // owner -> the call {owner, phase, car}
+global_call_last = {};         // owner -> unix ms of the last press (rate limit)
+global_call_msg = {};          // owner -> unix ms of the last "already on its way" line
+global_plans = [];             // calls that are still being planned (a slice of work per tick)
+global_CALL_MAX = 4;           // cars on their way at once, server wide
+global_PLAN_MAX = 2;           // plans in progress at once
+global_SPIRAL = []; global_RING = [];
+global_N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+global_WAIT_MS = 180000;       // a car nobody gets into leaves after 3 minutes
+global_LOCK_MS = 90000;        // for the first 90 s only the caller may get in
+
+_key(i, j) -> (i + 5000) * 10000 + j + 5000;
+// a 5x5 patch of open ground under the open sky: the car fits (cell centre = block (2i, 2j))
+_ok_cell(bx, bz) -> (
+  y = global_PLANE;
+  if (!loaded(bx, y, bz), return(false));
+  if (!_solid(bx, y - 1, bz) || _solid(bx, y, bz) || _solid(bx, y + 1, bz) || top('motion', bx, 0, bz) > y, return(false));      // open sky: never into a hall or under a roof
+  for (global_RING, x = bx + _:0; z = bz + _:1; if (!_solid(x, y - 1, z) || _solid(x, y, z) || _solid(x, y + 1, z), return(false)));
+  true
+);
+
+cmd_call() -> (
+  p = player(); if (!p, return(null));
+  n = p ~ 'name';
+  if ((p ~ 'player_type') == 'fake' && !global_allow_fake, return(null));
+  now = unix_time();
+  if (global_call_last:n && now - global_call_last:n < 2500, return(null));            // key spam: ignored silently
+  global_call_last:n = now;
+  if ((p ~ 'dimension') != 'overworld' || (p ~ 'gamemode') == 'spectator', return(null));
+  if (_seat_of(n), _msg(n, 'אתה כבר ברכב', 'yellow'); return(null));
+  cl = global_calls:n;
+  if (cl, (
+    if (!global_call_msg:n || now - global_call_msg:n > 4000, (global_call_msg:n = now; _msg(n, 'הרכב שלך כבר בדרך, רגע...', 'yellow')));
+    return(null)));
+  if (length(global_calls) >= global_CALL_MAX || length(global_plans) >= global_PLAN_MAX, _msg(n, 'כל הרכבים בדרך, נסה שוב בעוד רגע', 'yellow'); return(null));
+  q = pos(p);
+  _call_begin(n, q:0, q:2);
+  null
+);
+_call_begin(owner, x, z) -> (
+  cl = {'owner' -> owner, 'phase' -> 'seed', 'q' -> [x, z], 'sp' -> 0, 'car' -> null};
+  global_calls:owner = cl;
+  put(global_plans, null, cl);
+  _msg(owner, 'מזמין רכב...', 'aqua')
+);
+// test without a player: script in cars run test_call('Nobody', x, z)
+test_call(owner, x, z) -> (_call_begin(owner, x, z); 'planning');
+
+_plan_fail(pl, text) -> (pl:'phase' = 'done'; delete(global_calls, pl:'owner'); _msg(pl:'owner', text, 'red'));
+_plan_step(pl) -> (
+  ph = pl:'phase';
+  if (ph == 'seed', _seed_step(pl), ph == 'flood', _flood_step(pl), ph == 'choose', _plan_choose(pl))
+);
+
+// 1) the nearest open ground to the player (spiral over cells, a slice per tick)
+_seed_step(pl) -> (
+  q = pl:'q'; ci = round(q:0 / 2); cj = round(q:1 / 2);
+  n = 0;
+  while (pl:'sp' < length(global_SPIRAL) && n < 60, 100000, (
+    o = global_SPIRAL:(pl:'sp'); pl:'sp' = pl:'sp' + 1; n = n + 1;
+    i = ci + o:0; j = cj + o:1;
+    if (_ok_cell(i * 2, j * 2), (
+      k = _key(i, j);
+      pl:'seed' = [i, j]; pl:'phase' = 'flood';
+      pl:'seen' = {k -> true}; pl:'par' = {}; pl:'cells' = {k -> [i, j]}; pl:'queue' = [[i, j]]; pl:'far' = []; pl:'head' = 0;
+      return()
+    ))
+  ));
+  if (pl:'sp' >= length(global_SPIRAL), _plan_fail(pl, 'אין מקום לרכב בקרבת מקום'))
+);
+
+// 2) flood the open ground around the seed (breadth first, 8 neighbours), noting cells 55+ blocks from the player
+_flood_step(pl) -> (
+  S = pl:'seen'; P = pl:'par'; C = pl:'cells'; Q = pl:'queue'; F = pl:'far';
+  qx = pl:'q':0; qz = pl:'q':1;
+  budget = 70;
+  while (pl:'head' < length(Q) && budget > 0 && length(F) < 40 && length(Q) < 3500, 100000, (
+    cur = Q:(pl:'head'); pl:'head' = pl:'head' + 1;
+    for (global_N8, (
+      ni = cur:0 + _:0; nj = cur:1 + _:1; k = _key(ni, nj);
+      if (S:k == null, (
+        bx = ni * 2; bz = nj * 2;
+        if (abs(bx - qx) > 110 || abs(bz - qz) > 110, S:k = false, (
+          budget = budget - 1;
+          ok = _ok_cell(bx, bz);
+          S:k = ok;
+          if (ok, (
+            P:k = _key(cur:0, cur:1); C:k = [ni, nj]; put(Q, null, [ni, nj]);
+            if ((bx - qx) ^ 2 + (bz - qz) ^ 2 >= 3025, put(F, null, [ni, nj]))
+          ))
+        ))
+      ))
+    ))
+  ));
+  if (pl:'head' >= length(Q) || length(F) >= 40 || length(Q) >= 3500, pl:'phase' = 'choose')
+);
+
+// 3) pick a start (a road cell far away when there is one), walk the parents back to the seed, smooth, spawn
+_plan_choose(pl) -> (
+  q = pl:'q'; C = pl:'cells'; P = pl:'par'; F = pl:'far'; seed = pl:'seed';
+  start = null;
+  if (length(F) > 0, (
+    for (range(10), f = F:(floor(rand(length(F)))); if (start == null && str(block(f:0 * 2, global_PLANE - 1, f:1 * 2)) ~ 'black_terracotta', start = f));
+    if (start == null, start = F:(floor(rand(length(F)))))
+  ), (
+    bd = -1;
+    for (values(C), d = (_:0 * 2 - q:0) ^ 2 + (_:1 * 2 - q:1) ^ 2; if (d > bd, (bd = d; start = _)))
+  ));
+  if (start == null, start = seed);
+  pts = []; cur = start; done = false; guard = 0;
+  while (!done && guard < 3000, 3000, (
+    put(pts, null, [cur:0 * 2 + 0.5, cur:1 * 2 + 0.5]);
+    if (cur:0 == seed:0 && cur:1 == seed:1, done = true, (
+      pk = P:(_key(cur:0, cur:1));
+      if (pk == null, done = true, cur = C:pk)
+    ));
+    guard = guard + 1
+  ));
+  // stop about 4 blocks short of the player, not on top of them
+  cut = 0; while (length(pts) > 3 && cut < 2, 5, (pts = slice(pts, 0, length(pts) - 1); cut = cut + 1));
+  pts = _smooth(pts, pl:'seen');
+  pl:'phase' = 'done';
+  _spawn_ai(pl, pts)
+);
+
+_los(a, b, S) -> (
+  dx = b:0 - a:0; dz = b:1 - a:1; n = ceil(sqrt(dx * dx + dz * dz));
+  for (range(1, n), f = _ / n; if (S:(_key(round((a:0 + dx * f - 0.5) / 2), round((a:1 + dz * f - 0.5) / 2))) != true, return(false)));
+  true
+);
+_smooth(pts, S) -> (
+  out = [pts:0]; i = 0; n = length(pts);
+  while (i < n - 1, 1000, (
+    j = n - 1;
+    while (j > i + 1 && !_los(pts:i, pts:j, S), 1000, j = j - 1);
+    put(out, null, pts:j); i = j
+  ));
+  out
+);
+
+_spawn_ai(pl, pts) -> (
+  owner = pl:'owner';
+  models = keys(global_M); model = models:(floor(rand(length(models))));
+  cols = keys(global_COL); color = cols:(floor(rand(length(cols))));
+  p0 = pts:0;
+  p1 = if (length(pts) > 1, pts:1, pl:'q');
+  h = atan2(-(p1:0 - p0:0), p1:1 - p0:1);
+  global_ai_tag = true;
+  id = _new_car(model, color, [p0:0, global_PLANE, p0:1], h, false);
+  global_ai_tag = false;
+  c = global_cars:id;
+  if (!c, delete(global_calls, owner); return());
+  n = length(pts); rem = []; for (range(n), put(rem, null, 0));
+  for (range(n - 2, -1, -1), rem:_ = rem:(_ + 1) + sqrt((pts:(_ + 1):0 - pts:_:0) ^ 2 + (pts:(_ + 1):1 - pts:_:1) ^ 2));
+  c:'ai' = {'owner' -> owner, 'path' -> pts, 'rem' -> rem, 'i' -> if (n > 1, 1, 0), 'state' -> 'appear', 'go' -> tick_time() + 26,
+            'last' -> [p0:0, p0:1], 'lastt' -> tick_time(), 'stuck' -> 0, 'rev' -> 0, 'near' -> false, 'test' -> (owner ~ '^Test') != null};
+  c:'owner' = owner;
+  pl_call = global_calls:owner; if (pl_call, pl_call:'car' = id);
+  _fade(c, 0.03, 0.03, 0); schedule(3, '_fade_up', id);
+  run(str('particle minecraft:cloud %.1f %.1f %.1f 1.2 0.6 1.2 0.02 40', p0:0, global_PLANE + 1, p0:1));
+  run(str('playsound minecraft:block.beacon.activate neutral @a %.1f %.1f %.1f 1.5 1.6', p0:0, global_PLANE + 1, p0:1))
+);
+
+// the car grows out of nothing (a fade)
+_fade(c, s0, s1, tk) -> (
+  e = entity_id(c:'body'); if (!e, return());
+  m = global_M:(c:'model'); s = s1;
+  run(str('data merge entity %s {start_interpolation:0,interpolation_duration:%d,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.3ff,%.3ff,%.3ff]}}', query(e, 'uuid'), tk, m:1 / 2 * s, m:1 * s, m:1 * s, m:1 * s))
+);
+_fade_up(id) -> (c = global_cars:id; if (c, _fade(c, 0.03, 1, 24)));
+
+// ── the driver: the same keys a player would press ──
+_ai(c, t) -> (
+  a = c:'ai';
+  st = a:'state';
+  if (st == 'gone', return());
+  if (!player(a:'owner') && !a:'test', _ai_dismiss(c); return());
+  x = c:'x'; z = c:'z'; h = c:'h';
+  vf = c:'vx' * -sin(h) + c:'vz' * cos(h);
+  if (st == 'appear', if (t >= a:'go', (a:'state' = 'drive'; a:'lastt' = t; a:'last' = [x, z])); return());
+  if (st == 'wait', (
+    if (abs(c:'vx') + abs(c:'vz') > 0.005 || c:'vy' != 0, _drive(c, 0, t));
+    if (unix_time() - a:'since' > global_WAIT_MS, _ai_dismiss(c));
+    return()
+  ));
+  path = a:'path'; i = a:'i'; last = i >= length(path) - 1;
+  tx = path:i:0; tz = path:i:1;
+  dx = tx - x; dz = tz - z; d = sqrt(dx * dx + dz * dz);
+  if (d < if (last, 1.8, 3.4), (
+    if (last, a:'state' = 'stopping', (a:'i' = i + 1; i = i + 1; last = i >= length(path) - 1; tx = path:i:0; tz = path:i:1; dx = tx - x; dz = tz - z; d = sqrt(dx * dx + dz * dz)))
+  ));
+  m = global_M:(c:'model');
+  dend = d + a:'rem':i;
+  if (a:'state' == 'stopping', (
+    if (abs(vf) < 0.07, (_ai_arrived(c, false); return()));
+    _drive(c, 2, t); _ai_sound(c, t); return()
+  ));
+  // the owner hears it coming: "close" once, at about 40 blocks of road
+  if (!a:'near' && dend < 40, (a:'near' = true; _msg(a:'owner', 'הרכב שלך מתקרב...', 'aqua')));
+  hd = atan2(-dx, dz);
+  err = ((hd - h) % 360 + 540) % 360 - 180;
+  vt = min(m:2 * 0.85, 0.3 + dend * 0.1);
+  if (abs(err) > 25, vt = min(vt, 0.55));
+  if (abs(err) > 60, vt = min(vt, 0.3));
+  k = 0;
+  if (a:'rev' > 0, (
+    a:'rev' = a:'rev' - 1;
+    k = 2 + if (err > 0, 4, 8)                                  // reverse, wheel the other way
+  ), (
+    if (err > 3, k = k + 8, err < -3, k = k + 4);
+    if (vf < vt - 0.04, k = k + 1, vf > vt + 0.10 && vf > 0.15, k = k + 2)
+  ));
+  // stuck? (it wants to move but has not gone 1 block in 1.5 s)
+  if (t - a:'lastt' >= 30, (
+    mv = sqrt((x - a:'last':0) ^ 2 + (z - a:'last':1) ^ 2);
+    a:'last' = [x, z]; a:'lastt' = t;
+    if (mv < 1.0 && a:'rev' == 0, (
+      a:'stuck' = a:'stuck' + 1;
+      if (a:'stuck' >= 3, a:'state' = 'stopping', a:'rev' = 14)
+    ), a:'stuck' = max(0, a:'stuck' - 1))
+  ));
+  _drive(c, k, t);
+  _ai_sound(c, t)
+);
+_ai_sound(c, t) -> (
+  s = sqrt(c:'vx' ^ 2 + c:'vz' ^ 2);
+  if (t % 5 == 0 && s > 0.05, run(str('playsound minecraft:entity.minecart.riding neutral @a %.1f %.1f %.1f %.2f %.2f', c:'x', c:'y' + 0.5, c:'z', 1.2 + s * 0.8, 0.5 + s * 1.1)))
+);
+
+// two quick honks, loud enough to hear from far away, then the message
+_honk(x, y, z) -> (
+  run(str('playsound minecraft:block.note_block.bit neutral @a %.1f %.1f %.1f 5 0.6', x, y, z));
+  run(str('playsound minecraft:block.note_block.pling neutral @a %.1f %.1f %.1f 5 0.5', x, y, z))
+);
+_honk_at(id) -> (c = global_cars:id; if (c, _honk(c:'x', c:'y' + 1, c:'z')));
+_compass(dx, dz) -> (
+  a = (atan2(dx, -dz) + 360) % 360;
+  ['צפון', 'צפון-מזרח', 'מזרח', 'דרום-מזרח', 'דרום', 'דרום-מערב', 'מערב', 'צפון-מערב']:(floor((a + 22.5) / 45) % 8)
+);
+_ai_arrived(c, partial) -> (
+  a = c:'ai'; a:'state' = 'wait'; a:'since' = unix_time();
+  c:'vx' = 0; c:'vz' = 0; c:'lock' = unix_time() + global_LOCK_MS;
+  _honk(c:'x', c:'y' + 1, c:'z'); schedule(5, '_honk_at', c:'id');
+  p = player(a:'owner');
+  if (p, (
+    q = pos(p); dx = c:'x' - q:0; dz = c:'z' - q:2;
+    dist = round(sqrt(dx * dx + dz * dz));
+    name = global_M:(c:'model'):0;
+    _msg(a:'owner', str('הרכב שלך הגיע: %s, %d מטר %s', name, dist, if (dist < 3, 'ממש לידך', _compass(dx, dz))), 'green');
+    print(p, str('הרכב שלך הגיע (%s%s) - %d מטר בכיוון %s. לחיצה ימנית עליו כדי להיכנס.', name, if (partial, ', כמה שיכל להתקרב', ''), dist, if (dist < 3, 'ממש לידך', _compass(dx, dz))))
+  ))
+);
+_ai_taken(c) -> (
+  a = c:'ai'; delete(global_calls, a:'owner');
+  c:'ai' = null; c:'temp' = true; c:'tsince' = unix_time()
+);
+_ai_dismiss(c) -> (
+  a = c:'ai'; if (!a || a:'state' == 'gone', return());
+  a:'state' = 'gone'; delete(global_calls, a:'owner');
+  _fade(c, 1, 0.03, 20);
+  run(str('particle minecraft:cloud %.1f %.1f %.1f 1 0.5 1 0.02 25', c:'x', c:'y' + 1, c:'z'));
+  schedule(22, '_car_remove', c:'id')
+);
+_car_remove(id) -> (
+  c = global_cars:id; if (!c, return());
+  for (['body', 'hit', 'seat', 'seat2', 'cam', 'man', 'pman'], u = c:_; if (u, e = entity_id(u); if (e, modify(e, 'remove'))));
+  delete(global_cars, id)
+);
+// a car that was called and driven, then left empty: it leaves 3 minutes after the last player was near it
+_temp_check(c) -> (
+  near = first(player('all'), _distance(pos(_), [c:'x', c:'y', c:'z']) < 30) != null;
+  if (near, c:'tsince' = unix_time(), unix_time() - c:'tsince' > 180000, (delete(global_calls, c:'owner'); _fade(c, 1, 0.03, 20); schedule(22, '_car_remove', c:'id'); c:'temp' = false))
+);

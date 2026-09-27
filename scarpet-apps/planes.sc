@@ -369,6 +369,13 @@ _place(pl) -> (
 
 _fx(pl, t) -> (
   T = global_T:(pl:'type'); x = pl:'x'; y = pl:'y'; z = pl:'z'; v = abs(pl:'v');
+  riders = filter(pl:'riders', _ != null);
+  // the people aboard hear the engine at their own ears from the moment they board (their body is at the camera,
+  // 13-20 blocks behind the aircraft, so a sound at the aircraft alone starts too late — Sagi 27/9)
+  if (riders && t % if (pl:'heli', 3, 12) == 0,
+    for (riders, run(str('execute as %s at @s run playsound minecraft:%s master @s ~ ~ ~ %.2f %.2f', _,
+      if (pl:'heli', 'entity.phantom.flutter', 'item.elytra.flying'),
+      if (pl:'heli', 0.7, 0.9), if (pl:'heli', 0.45 + pl:'rpm' / 42 * 0.35, 0.45 + v / T:2 * 0.6)))));
   if (pl:'heli',
     if (pl:'rpm' > 2 && t % 3 == 0,
       run(str('playsound minecraft:entity.phantom.flutter master @a[distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y + 2, z, 4, 0.45 + pl:'rpm' / 42 * 0.35)));

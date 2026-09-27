@@ -59,13 +59,13 @@ _keys(n) -> (f = global_fake_keys:n; if (f != null, return(f)); k = scoreboard('
 set_keys(n, bits) -> (global_fake_keys:n = bits; bits);
 _bit(k, b) -> bitwise_and(k, b) != 0;
 global_hold = {};
-// Shift has to be HELD for 3 s to get out (Sagi 27/9: a tap is not enough); a bar shows the progress
+// Shift has to be HELD for 1.5 s to get out (Sagi 27/9: a tap is not enough); a bar shows the progress
 _hold(n, k) -> (
   if (global_hold == null, global_hold = {});
   if (!_bit(k, 32), global_hold:n = 0; return(false));
   c = global_hold:n; if (c == null, c = 0); c += 1; global_hold:n = c;
-  if (c % 5 == 0, f = floor(c / 6); _msg(n, str('%s %s יציאה', join('', map(range(10), if (_ < f, '▮', '▯'))), if (c >= 60, '✓', '')), 'yellow'));
-  if (c >= 60, global_hold:n = 0; true, false)
+  if (c % 3 == 0, f = floor(c / 3); _msg(n, str('%s %s יציאה', join('', map(range(10), if (_ < f, '▮', '▯'))), if (c >= 30, '✓', '')), 'yellow'));
+  if (c >= 30, global_hold:n = 0; true, false)
 );
 _wrap(a) -> ((a % 360) + 540) % 360 - 180;
 
@@ -98,12 +98,12 @@ _new(type, color, q, yaw, home) -> (
   rgb = global_COL:color; if (rgb == null, rgb = number(color)); if (rgb == null, rgb = 15790320);
   tags = str('"plane","plane_%d","%s"', id, global_gen);
   s = T:1;
-  body = spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"planes:%s","minecraft:dyed_color":%d}},teleport_duration:2,interpolation_duration:2,view_range:6f,shadow_radius:%.1ff,shadow_strength:0.6f,transformation:{left_rotation:[%s],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
+  body = spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"planes:%s","minecraft:dyed_color":%d}},teleport_duration:1,interpolation_duration:1,view_range:6f,shadow_radius:%.1ff,shadow_strength:0.6f,transformation:{left_rotation:[%s],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
     tags, type, rgb, s * 0.4, _qs(_quat(yaw, 0, 0)), T:13, s, s, s));
   hit = spawn('interaction', q, str('{Tags:[%s],width:%.1ff,height:%.1ff,response:1b}', tags, T:11, T:12));
   rotor = null;
   if (T:10,
-    rotor = query(spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"planes:rotor"}},teleport_duration:2,interpolation_duration:2,view_range:6f,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
+    rotor = query(spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"planes:rotor"}},teleport_duration:1,interpolation_duration:1,view_range:6f,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
       tags, s, s, s)), 'uuid'));
   pl = {'id' -> id, 'type' -> type, 'color' -> color, 'heli' -> T:10,
         'body' -> query(body, 'uuid'), 'hit' -> query(hit, 'uuid'), 'rotor' -> rotor, 'cam' -> null,
@@ -145,9 +145,9 @@ board(n, id) -> (
   schedule(2, '_spectate', n, pl:'cam');
   name = global_T:(pl:'type'):0;
   if (slot == 0,
-    _msg(n, if (pl:'heli', str('%s · W/S קדימה-אחורה · רווח/Ctrl למעלה-למטה · A/D סיבוב · החזק Shift 3 שניות = לצאת', name),
-                          str('%s · W גז · S בלם · רווח = אף למעלה · Ctrl = אף למטה · A/D פנייה · החזק Shift 3 שניות = לצאת', name)), 'aqua'),
-    _msg(n, str('%s · נוסע %d · הטייס: %s · החזק Shift 3 שניות = לצאת', name, slot, pl:'riders':0), 'yellow');
+    _msg(n, if (pl:'heli', str('%s · W/S קדימה-אחורה · רווח/Ctrl למעלה-למטה · A/D סיבוב · החזק Shift 1.5 שניות = לצאת', name),
+                          str('%s · W גז · S בלם · רווח = אף למעלה · Ctrl = אף למטה · A/D פנייה · החזק Shift 1.5 שניות = לצאת', name)), 'aqua'),
+    _msg(n, str('%s · נוסע %d · הטייס: %s · החזק Shift 1.5 שניות = לצאת', name, slot, pl:'riders':0), 'yellow');
     _msg(pl:'riders':0, str('%s עלה למטוס', n), 'light_purple'));
   run(str('playsound minecraft:block.iron_door.close master @a %.1f %.1f %.1f 0.8 1.2', pl:'x', pl:'y', pl:'z'));
   'ok'
@@ -160,13 +160,15 @@ _cam(pl) -> (
   T = global_T:(pl:'type');
   pl:'ch' = pl:'h';
   cq = _cam_pos(pl);
-  cam = spawn('item_display', [cq:0, cq:1, cq:2], str('{Tags:["plane","plane_%d","%s"],teleport_duration:2,Rotation:[%.1ff,%.1ff]}', pl:'id', global_gen, cq:3, cq:4));
+  cam = spawn('item_display', [cq:0, cq:1, cq:2], str('{Tags:["plane","plane_%d","%s"],teleport_duration:1,Rotation:[%.1ff,%.1ff]}', pl:'id', global_gen, cq:3, cq:4));
   pl:'cam' = query(cam, 'uuid')
 );
 _cam_pos(pl) -> (
   T = global_T:(pl:'type'); d = T:8; hh = T:9; h = pl:'h'; ch = pl:'ch';
-  cx = pl:'x' + sin(ch) * d; cz = pl:'z' - cos(ch) * d; cy = pl:'y' + T:13 + hh;
-  tx = pl:'x' - sin(h) * 4; tz = pl:'z' + cos(h) * 4; ty = pl:'y' + T:13 + 0.5;    // look a little ahead of the aircraft
+  // the aircraft as the client draws it now = its position one tick ago (the display interpolates one tick behind)
+  ax = if (pl:'px' != null, pl:'px', pl:'x'); ay = if (pl:'py' != null, pl:'py', pl:'y'); az = if (pl:'pz' != null, pl:'pz', pl:'z');
+  cx = ax + sin(ch) * d; cz = az - cos(ch) * d; cy = ay + T:13 + hh;
+  tx = ax - sin(h) * 4; tz = az + cos(h) * 4; ty = ay + T:13 + 0.5;               // look a little ahead of the aircraft
   dx = tx - cx; dz = tz - cz; dy = ty - cy;
   [cx, cy, cz, atan2(-dx, dz), atan2(-dy, sqrt(dx * dx + dz * dz))]
 );
@@ -252,7 +254,7 @@ _maybe_home(pl) -> (
   pl:'idle' = pl:'idle' + 200;
   if (pl:'idle' >= 3600 && first(player('all'), sqrt((pos(_):0 - pl:'x') ^ 2 + (pos(_):2 - pl:'z') ^ 2) < 24) == null, _go_home(pl))
 );
-_go_home(pl) -> (hm = pl:'home'; if (!hm, return()); pl:'x' = hm:0; pl:'y' = hm:1; pl:'z' = hm:2; pl:'h' = hm:3; pl:'ch' = hm:3;
+_go_home(pl) -> (hm = pl:'home'; if (!hm, return()); pl:'x' = hm:0; pl:'y' = hm:1; pl:'z' = hm:2; pl:'h' = hm:3; pl:'ch' = hm:3; pl:'px' = null; pl:'py' = null; pl:'pz' = null;
   pl:'p' = 0; pl:'r' = 0; pl:'v' = 0; pl:'vy' = 0; pl:'air' = false; pl:'idle' = 0; pl:'rpm' = 0; _place(pl));
 
 // ───────────── fixed wing ─────────────
@@ -260,6 +262,7 @@ _fly(pl, k, t) -> (
   T = global_T:(pl:'type'); vmax = T:2; acc = T:3; turn = T:4; prate = T:5; bank = T:6; stall = T:7 * vmax;
   gas = _bit(k, 1); brk = _bit(k, 2); left = _bit(k, 4); right = _bit(k, 8); up = _bit(k, 16); down = _bit(k, 64);
   x = pl:'x'; y = pl:'y'; z = pl:'z'; h = pl:'h'; p = pl:'p'; r = pl:'r'; v = pl:'v'; air = pl:'air';
+  pl:'px' = x; pl:'py' = y; pl:'pz' = z;
   // throttle
   if (gas, v = min(vmax, v + acc * (1.1 - 0.6 * v / vmax)), brk, v = max(0, v - acc * if (air, 0.9, 1.6)), v = v * if (air, 0.997, 0.975));
   if (air, v = max(0, min(vmax * 1.15, v + sin(p) * 0.03)));           // a dive gains speed, a climb bleeds it
@@ -269,7 +272,7 @@ _fly(pl, k, t) -> (
   if (air,
     if (nobody, p = min(28, p + 0.5),                                  // abandoned: it comes down
       up, p = max(-50, p - prate), down, p = min(45, p + prate),
-      v < stall * 0.8, p = min(22, p + 0.7),                            // stalled: the nose drops, the dive brings speed back
+      v < stall * 0.7 && y - _ground(x, z) > 10, p = min(14, p + 0.4),  // stalled high up: the nose drops, the dive brings speed back
       p = p - p * 0.02),
     if (up && v > stall * 0.9, p = max(-14, p - prate),
       v >= vmax * 0.72 && !down, p = max(-10, p - 0.6),                // rotate by itself
@@ -299,7 +302,7 @@ _fly(pl, k, t) -> (
 );
 
 _land(pl, vy, p, v) -> (
-  hard = vy < -0.45 || p > 18;
+  hard = vy < -0.6 || p > 26;
   run(str('playsound minecraft:%s master @a %.1f %.1f %.1f %.2f %.2f', if (hard, 'entity.generic.explode', 'block.stone.break'),
     pl:'x', pl:'y', pl:'z', if (hard, 0.7, 0.6), if (hard, 1.6, 0.5)));
   run(str('particle minecraft:cloud %.2f %.2f %.2f 1.5 0.2 1.5 0.02 %d', pl:'x', pl:'y' + 0.2, pl:'z', if (hard, 30, 10)));
@@ -308,7 +311,7 @@ _land(pl, vy, p, v) -> (
 // nobody aboard and it hit the ground: a fireball, then the aircraft is back on its stand (Sagi 27/9)
 _wreck(pl) -> (
   x = pl:'x'; y = pl:'y'; z = pl:'z';
-  run(str('playsound minecraft:entity.generic.explode master @a[x=%d,y=%d,z=%d,distance=..160] %.1f %.1f %.1f 6 0.8', x, y, z, x, y, z));
+  run(str('playsound minecraft:entity.generic.explode master @a[x=%d,y=%d,z=%d,distance=..160] %.1f %.1f %.1f 2.5 0.8', x, y, z, x, y, z));
   run(str('particle minecraft:explosion_emitter %.1f %.1f %.1f 1.5 0.5 1.5 0 3', x, y + 1, z));
   run(str('particle minecraft:flame %.1f %.1f %.1f 2.0 0.6 2.0 0.08 60', x, y + 0.5, z));
   run(str('particle minecraft:large_smoke %.1f %.1f %.1f 2.5 1.5 2.5 0.03 80', x, y + 1, z));
@@ -325,6 +328,7 @@ _hover(pl, k, t) -> (
   T = global_T:(pl:'type'); vmax = T:2; acc = T:3; turn = T:4;
   gas = _bit(k, 1); brk = _bit(k, 2); left = _bit(k, 4); right = _bit(k, 8); up = _bit(k, 16); down = _bit(k, 64);
   x = pl:'x'; y = pl:'y'; z = pl:'z'; h = pl:'h'; p = pl:'p'; r = pl:'r'; v = pl:'v'; vy = pl:'vy'; air = pl:'air';
+  pl:'px' = x; pl:'py' = y; pl:'pz' = z;
   pilot = pl:'riders':0 != null;
   // rotor spins up with a pilot, winds down without
   pl:'rpm' = pl:'rpm' + (if (pilot, 42, 0) - pl:'rpm') * 0.04; if (pl:'rpm' < 0.5, pl:'rpm' = 0);
@@ -381,19 +385,19 @@ _fx(pl, t) -> (
   riders = filter(pl:'riders', _ != null);
   // the people aboard hear the engine at their own ears from the moment they board (their body is at the camera,
   // 13-20 blocks behind the aircraft, so a sound at the aircraft alone starts too late — Sagi 27/9)
-  if (riders && t % if (pl:'heli', 3, 12) == 0,
-    for (riders, run(str('execute as %s at @s run playsound minecraft:%s master @s ~ ~ ~ %.2f %.2f', _,
-      if (pl:'heli', 'entity.phantom.flutter', 'item.elytra.flying'),
-      if (pl:'heli', 0.7, 0.9), if (pl:'heli', 0.45 + pl:'rpm' / 42 * 0.35, 0.45 + v / T:2 * 0.6)))));
+  // everyone within 160 hears it at their own ears, quieter with distance (a low background hum far away — Sagi 27/9)
+  loud = if (pl:'heli', pl:'rpm' > 2, v > 0.15);
+  if (loud && t % if (pl:'heli', 3, 12) == 0,
+    snd = if (pl:'heli', 'entity.phantom.flutter', 'item.elytra.flying');
+    ptc = if (pl:'heli', 0.45 + pl:'rpm' / 42 * 0.35, 0.45 + v / T:2 * 0.6);
+    for (player('all'),
+      n = _ ~ 'name'; q = pos(_);
+      d = sqrt((q:0 - x) ^ 2 + (q:1 - y) ^ 2 + (q:2 - z) ^ 2);
+      vol = if (n ~ riders != null, 0.4, d > 160, 0, max(0.05, 0.45 * (1 - d / 160)));
+      if (vol > 0, run(str('execute as %s at @s run playsound minecraft:%s master @s ~ ~ ~ %.2f %.2f', n, snd, vol, ptc)))));
   if (pl:'heli',
-    if (pl:'rpm' > 2 && t % 3 == 0,
-      run(str('playsound minecraft:entity.phantom.flutter master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y, z, x, y + 2, z, 4, 0.45 + pl:'rpm' / 42 * 0.35)));
     if (pl:'air' && y - _ground(x, z) < 4 && t % 2 == 0,
       run(str('particle minecraft:cloud %.2f %.2f %.2f 2.0 0.1 2.0 0.01 4', x, _ground(x, z) + 0.2, z))),
-    if (v > 0.15 && t % 12 == 0,
-      run(str('playsound minecraft:item.elytra.flying master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f %.2f', x, y, z, x, y + 1, z, 3 + v / T:2 * 4, 0.55 + v / T:2 * 0.5)));
-    if (v > T:2 * 0.5 && t % 12 == 6,
-      run(str('playsound minecraft:entity.breeze.wind_burst master @a[x=%d,y=%d,z=%d,distance=..130] %.1f %.1f %.1f %.2f 0.5', x, y, z, x, y + 1, z, 2 + v / T:2 * 3)));
     if (pl:'air' && v > T:2 * 0.5 && t % 2 == 0,
       h = pl:'h'; w = T:11 * 0.45; q = _quat(h, pl:'p', pl:'r');
       l = _qrot(q, [w, T:13, 3]); rr = _qrot(q, [-w, T:13, 3]);

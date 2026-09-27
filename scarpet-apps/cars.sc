@@ -65,13 +65,13 @@ _keys(n) -> (f = global_fake_keys:n; if (f != null, return(f)); k = scoreboard('
 set_keys(n, bits) -> (global_fake_keys:n = bits; bits);
 _bit(k, b) -> bitwise_and(k, b) != 0;
 global_hold = {};
-// Shift has to be HELD for 3 s to get out (Sagi 27/9: a tap is not enough); a bar shows the progress
+// Shift has to be HELD for 1.5 s to get out (Sagi 27/9: a tap is not enough); a bar shows the progress
 _hold(n, k) -> (
   if (global_hold == null, global_hold = {});
   if (!_bit(k, 32), global_hold:n = 0; return(false));
   c = global_hold:n; if (c == null, c = 0); c += 1; global_hold:n = c;
-  if (c % 5 == 0, f = floor(c / 6); _msg(n, str('%s %s יציאה', join('', map(range(10), if (_ < f, '▮', '▯'))), if (c >= 60, '✓', '')), 'yellow'));
-  if (c >= 60, global_hold:n = 0; true, false)
+  if (c % 3 == 0, f = floor(c / 3); _msg(n, str('%s %s יציאה', join('', map(range(10), if (_ < f, '▮', '▯'))), if (c >= 30, '✓', '')), 'yellow'));
+  if (c >= 30, global_hold:n = 0; true, false)
 );
 
 // ───────────── spawning ─────────────
@@ -142,8 +142,8 @@ enter(n, id) -> (
   _set_view(c, r, mode);
   name = global_M:(c:'model'):0;
   if (r == 'driver',
-    _msg(n, str('%s · W/S גז-בלם · A/D הגה · רווח = בלם יד (דריפט) · Ctrl = טורבו · החזק Shift 3 שניות = לצאת · /cars view = מצלמה', name), 'yellow'),
-    _msg(n, str('%s · במושב ליד %s · החזק Shift 3 שניות = לצאת · /cars view = מצלמה', name, c:'driver'), 'yellow');
+    _msg(n, str('%s · W/S גז-בלם · A/D הגה · רווח = בלם יד (דריפט) · Ctrl = טורבו · החזק Shift 1.5 שניות = לצאת · /cars view = מצלמה', name), 'yellow'),
+    _msg(n, str('%s · במושב ליד %s · החזק Shift 1.5 שניות = לצאת · /cars view = מצלמה', name, c:'driver'), 'yellow');
     _msg(c:'driver', str('%s במושב שלידך', n), 'light_purple'));
   run(str('playsound minecraft:block.iron_door.close master @a %.1f %.1f %.1f 0.8 1.4', c:'x', c:'y', c:'z'));
   r

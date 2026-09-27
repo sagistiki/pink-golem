@@ -20,7 +20,7 @@
 // Shift gets out through the right door). If the driver gets out, the passenger stays and the next one in drives.
 
 __config() -> {'stay_loaded' -> true, 'scope' -> 'global',
-  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'call' -> 'cmd_call', 'key' -> 'cmd_key', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
+  'commands' -> {'view' -> 'cmd_view', 'home' -> 'cmd_home', 'call' -> 'cmd_call', 'honk' -> 'cmd_honk', 'key' -> 'cmd_key', 'here <model> <color>' -> ['cmd_here'], 'list' -> 'cmd_list'},
   'arguments' -> {'model' -> {'type' -> 'term', 'suggest' -> ['sedan', 'sports', 'suv', 'taxi', 'police']}, 'color' -> {'type' -> 'term', 'suggest' -> ['red', 'blue', 'white', 'black', 'yellow', 'pink']}}};
 // HUD (hud.scl + the server pack's HUD fonts): speedometer bottom-right, compass top-centre while driving (26/9)
 import('hud', 'hud_show', 'hud_hide', 'hud_speedo', 'hud_compass');
@@ -54,7 +54,7 @@ __on_start() -> (
   run('kill @e[tag=car_ai]');
   global_SPIRAL = []; for (range(-20, 21), i = _; for (range(-20, 21), put(global_SPIRAL, null, [i, _])));
   global_SPIRAL = sort_key(global_SPIRAL, _:0 * _:0 + _:1 * _:1);
-  global_RING = []; for (range(-2, 3), i = _; for (range(-2, 3), if (i != 0 || _ != 0, put(global_RING, null, [i, _]))));
+  global_RING = []; for (range(-3, 4), i = _; for (range(-3, 4), if (i != 0 || _ != 0, put(global_RING, null, [i, _]))));
   v = read_file('views', 'json'); if (v, global_view = v);
   global_lot = read_file('lot', 'json');
   // several parking lots, each with its own fleet (Sagi 27/9: the Gabi Water car park too): cars.data/lot*.json
@@ -300,6 +300,7 @@ _solid(x, y, z) -> (b = block(x, y, z); !air(b) && solid(b));
 // ───────────── physics ─────────────
 _drive(c, k, t) -> (
   m = global_M:(c:'model');
+  if (c:'ai', (m = map(m, _); m:8 = m:8 + 0.5; m:9 = m:9 + 0.45));      // a called car keeps a wider berth than the body
   h = c:'h'; vx = c:'vx'; vz = c:'vz';
   gas = _bit(k, 1); brk = _bit(k, 2); left = _bit(k, 4); right = _bit(k, 8); hand = _bit(k, 16); boost = _bit(k, 64);
   under = str(block(floor(c:'x'), floor(c:'y') - 1, floor(c:'z')));
@@ -343,7 +344,11 @@ _drive(c, k, t) -> (
     if (s2 > 0.3,
       run(str('playsound minecraft:entity.generic.explode master @a %.1f %.1f %.1f %.2f 1.8', x, y, z, min(1, s2)));
       run(str('particle minecraft:crit %.1f %.1f %.1f 0.6 0.4 0.6 0.2 20', x + fx * m:8, y + 0.8, z + fz * m:8)));
-    vx = -vx * 0.25; vz = -vz * 0.25; nx = x; nz = z);
+    if (c:'ai',
+      (vx = -vx * 0.5; vz = -vz * 0.5; c:'hit' = tick_time();          // a called car is knocked back half a block and then backs off
+       bx = x - fx * 0.5; bz = z - fz * 0.5;
+       if (!_blocked_at(c, m, bx, y, bz, h), (nx = bx; nz = bz), (nx = x; nz = z))),
+      (vx = -vx * 0.25; vz = -vz * 0.25; nx = x; nz = z)));
   // ground: fall off edges, land on the next floor
   gy = floor(y);
   if (!_solid(floor(nx), gy - 1, floor(nz)) && !_solid(floor(nx + fx * m:8 * 0.7), gy - 1, floor(nz + fz * m:8 * 0.7)) && !_solid(floor(nx - fx * m:8 * 0.7), gy - 1, floor(nz - fz * m:8 * 0.7)),
@@ -436,7 +441,7 @@ global_CALL_MIN_MS = 60000;    // a caller who walked away cannot order another 
 global_LOCK_MS = 90000;        // for the first 90 s only the caller may get in
 
 _key(i, j) -> (i + 5000) * 10000 + j + 5000;
-// a 5x5 patch of open ground under the open sky: the car fits (cell centre = block (2i, 2j))
+// a 7x7 patch of open ground under the open sky: the car fits with room to spare (cell centre = block (2i, 2j))
 _ok_cell(bx, bz) -> (
   y = global_PLANE;
   if (!loaded(bx, y, bz), return(false));
@@ -596,7 +601,7 @@ _spawn_ai(pl, pts) -> (
   n = length(pts); rem = []; for (range(n), put(rem, null, 0));
   for (range(n - 2, -1, -1), rem:_ = rem:(_ + 1) + sqrt((pts:(_ + 1):0 - pts:_:0) ^ 2 + (pts:(_ + 1):1 - pts:_:1) ^ 2));
   c:'ai' = {'owner' -> owner, 'path' -> pts, 'rem' -> rem, 'i' -> if (n > 1, 1, 0), 'state' -> 'appear', 'go' -> tick_time() + 26,
-            'last' -> [p0:0, p0:1], 'lastt' -> tick_time(), 'stuck' -> 0, 'rev' -> 0, 'near' -> false, 'test' -> (owner ~ '^Test') != null};
+            'last' -> [p0:0, p0:1], 'lastt' -> tick_time(), 'stuck' -> 0, 'bumps' -> 0, 'rev' -> 0, 'near' -> false, 'test' -> (owner ~ '^Test') != null};
   c:'owner' = owner; c:'called' = pl:'at';
   pl_call = global_calls:owner; if (pl_call, pl_call:'car' = id);
   _fade(c, 0.03, 0.03, 0); schedule(3, '_fade_up', id);
@@ -645,6 +650,10 @@ _ai(c, t) -> (
   vt = min(m:2 * 0.85, 0.3 + dend * 0.1);
   if (abs(err) > 25, vt = min(vt, 0.55));
   if (abs(err) > 60, vt = min(vt, 0.3));
+  if (c:'hit' && t - c:'hit' <= 1 && a:'rev' == 0, (
+    c:'hit' = null; a:'rev' = 22; a:'bumps' = a:'bumps' + 1;
+    if (a:'bumps' >= 8, a:'state' = 'stopping')
+  ));
   k = 0;
   if (a:'rev' > 0, (
     a:'rev' = a:'rev' - 1;
@@ -732,4 +741,20 @@ cmd_key() -> (
   if (has, return('you already have a car key'));
   run(str('give %s paper[item_model="bulbul:car_key",custom_data={carkey:1b},custom_name={text:"Car key",color:"light_purple",italic:false},lore=[{text:"Right click = call a car",color:"gray",italic:false}]] 1', n));
   'you got a car key: right click it to call a car'
+);
+
+// the HORN: E while you sit in a car (the Bulbul Map mod turns the inventory key into /cars honk while you are in one).
+// Two quick loud honks that everyone in the area hears; at most one horn every 1.2 s per player.
+global_horn_last = {};
+cmd_honk() -> (
+  p = player(); if (!p, return(null)); n = p ~ 'name';
+  s = _seat_of(n); if (!s, return(null));
+  now = unix_time();
+  if (global_horn_last:n && now - global_horn_last:n < 1200, return(null));
+  global_horn_last:n = now;
+  c = s:0;
+  run(str('playsound minecraft:block.note_block.bit neutral @a %.1f %.1f %.1f 8 0.6', c:'x', c:'y' + 1, c:'z'));
+  run(str('playsound minecraft:block.note_block.pling neutral @a %.1f %.1f %.1f 8 0.5', c:'x', c:'y' + 1, c:'z'));
+  schedule(4, '_honk_at', c:'id');
+  null
 );

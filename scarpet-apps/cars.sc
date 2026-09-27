@@ -249,8 +249,11 @@ __on_tick() -> (
       p = player(c:'driver');
       if (!p, _gone(c, 'driver'); continue());
       k = _keys(c:'driver');
-      if (c:'mode' == 'chase' && _hold(c:'driver', k), leave(c:'id'); continue());   // Shift HELD 3 s in chase view
-      if (c:'mode' == 'first' && !query(p, 'mount'), leave(c:'id'); continue());   // dismounted in first person
+      // a Shift TAP makes the game itself stop spectating (chase view) or stand you up out of the seat (first person): put it back at once,
+      // only a HELD Shift (1.5 s, in either view) gets you out
+      if (c:'mode' == 'chase' && _bit(k, 32), _spectate(c:'driver', c:'cam'));
+      if (_hold(c:'driver', k), leave(c:'id'); continue());
+      if (c:'mode' == 'first' && !query(p, 'mount'), run(str('ride %s mount %s', c:'driver', c:'seat')));
       _drive(c, k, t),
       if (abs(c:'vx') + abs(c:'vz') > 0.005 || c:'vy' != 0, _drive(c, 0, t),
         if (c:'home' && !c:'pass' && t % 200 == 0, _maybe_home(c)))
@@ -262,7 +265,10 @@ __on_tick() -> (
 _pass_tick(c) -> (
   n = c:'pass'; p = player(n);
   if (!p, _gone(c, 'pass'); return());
-  if ((c:'pmode' == 'chase' && _hold(n, _keys(n))) || (c:'pmode' == 'first' && !query(p, 'mount')), _out(c, 'pass'))
+  k = _keys(n);
+  if (c:'pmode' == 'chase' && _bit(k, 32), _spectate(n, c:'cam'));
+  if (_hold(n, k), _out(c, 'pass'),
+    c:'pmode' == 'first' && !query(p, 'mount'), run(str('ride %s mount %s', n, c:'seat2')))
 );
 
 _maybe_home(c) -> (

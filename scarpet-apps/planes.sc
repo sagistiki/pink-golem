@@ -232,6 +232,8 @@ __on_tick() -> (
     pl = _;
     for (range(4), n = pl:'riders':_; if (n && !player(n), _gone(pl, _)));
     pilot = pl:'riders':0;
+    // a Shift TAP makes the game stop spectating the camera: put it back at once; only a HELD Shift gets you out
+    for (range(4), n = pl:'riders':_; if (n && pl:'cam' && _bit(_keys(n), 32), _spectate(n, pl:'cam')));
     if (pilot,
       k = _keys(pilot);
       if (_hold(pilot, k), _out(pl, 0); continue());

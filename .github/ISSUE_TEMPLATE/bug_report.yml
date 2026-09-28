@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work the way the docs say
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you asked the AI (or ran), and what went wrong. Paste the tool's error if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: input
+    id: client
+    attributes:
+      label: AI client and model
+      placeholder: Claude Code (Opus), Gemini CLI, Codex, Ollama + qwen…
+  - type: input
+    id: os
+    attributes:
+      label: OS, Java and Node versions
+      placeholder: macOS 15, Java 25, Node 22
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The end of server/logs/latest.log and anything from `python3 pinkgolem.py doctor`, if relevant.
+      render: text

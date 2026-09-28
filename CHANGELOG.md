@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-28: Install as a Claude Code plugin, a demo GIF, a clearer README
+
+- Pink Golem is now a **Claude Code plugin and marketplace**: `/plugin marketplace add sagistiki/pink-golem`, then
+  `/plugin install pink-golem@pink-golem`. The plugin carries the skill and starts the MCP server from your Pink Golem
+  folder, which it asks for once (`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`).
+- A demo GIF at the top of the README (the cottage blueprint, phase by phase, from Pink Golem's own renderer) and a
+  "What makes it different" section.
+- `glama.json` names the maintainer for MCP directories; issue templates for bugs and ideas.
+
 ## 2026-09-28: A character studio: real clothes, a fitting wall, and an in-game skin easel
 
 - **Clothes from the pack, not dyed leather.** [`resourcepacks/wardrobe`](resourcepacks/wardrobe) draws 15 tops, 11

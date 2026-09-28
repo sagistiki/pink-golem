@@ -25,6 +25,20 @@ python3 pinkgolem.py connect claude-code
 It then asks whether to also make Pink Golem available **in every folder** (user scope). The default is no, which
 keeps Pink Golem tied to this folder. That is usually what you want.
 
+### Or: install it as a plugin
+
+Pink Golem is also a Claude Code plugin: the skill and the MCP server in one step, available in any folder. Run the
+installer first (the plugin starts the MCP server from your Pink Golem folder), then inside Claude Code:
+
+```text
+/plugin marketplace add sagistiki/pink-golem
+/plugin install pink-golem@pink-golem
+```
+
+It asks once for your Pink Golem folder (the one with `pinkgolem.json`). The tools show up as `minecraft_*` from the
+`pinkgolem` server, and the skill loads when you talk about building. Use either the plugin or `connect`, not both, or
+you get the same tools twice.
+
 ## What it writes
 
 **1. `.mcp.json` in the Pink Golem folder.** It merges this entry into the file (other servers already in it

@@ -1,0 +1,15 @@
+name: Idea or request
+description: A build, a tool, a blueprint or a skill page you'd like to see
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should the AI be able to do? A screenshot or an example of what you'd say to it helps.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help

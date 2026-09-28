@@ -1,0 +1,26 @@
+{
+  "name": "pink-golem",
+  "displayName": "Pink Golem",
+  "version": "1.0.0",
+  "description": "Give your AI a body, hands and eyes in a Minecraft world: an MCP server with 37 tools (build, see, walk, talk, test, undo) plus a deep building skill with golden rules and 32 reference pages.",
+  "author": { "name": "sagistiki", "url": "https://github.com/sagistiki" },
+  "homepage": "https://github.com/sagistiki/pink-golem",
+  "repository": "https://github.com/sagistiki/pink-golem",
+  "license": "MIT",
+  "keywords": ["minecraft", "mcp", "building", "agent", "fabric", "carpet", "scarpet", "game-dev", "skills"],
+  "skills": ["./skill"],
+  "userConfig": {
+    "pinkgolem_dir": {
+      "type": "directory",
+      "title": "Pink Golem folder",
+      "description": "The folder where you cloned Pink Golem and ran the installer (the one with pinkgolem.json and server/). Install it first: https://github.com/sagistiki/pink-golem#quick-start",
+      "required": true
+    }
+  },
+  "mcpServers": {
+    "pinkgolem": {
+      "command": "node",
+      "args": ["${user_config.pinkgolem_dir}/mcp-server/index.js"]
+    }
+  }
+}

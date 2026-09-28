@@ -21,6 +21,11 @@ You type *"build me a cottage next to the lake, with a garden"*. Your AI's chara
 calls in a crew of helper builders, and a furnished cottage rises phase by phase. Then it checks its own work (every
 block, every room reachable from the door, no dark corners) and tells you where the door is.
 
+<p align="center">
+  <img src="assets/demo-cottage.gif" alt="A cottage rising phase by phase, then turning around" width="72%"><br>
+  <sub>The included cottage blueprint, phase by phase: pictures from Pink Golem's own renderer, the same ones the AI uses to check its work.</sub>
+</p>
+
 ## What it can do
 
 | | |
@@ -73,6 +78,14 @@ python3 pinkgolem.py start      # the first start builds the world (~1 min)
 Join `localhost`, make yourself op (`op <your name>` in the server console), open your AI in the `pinkgolem` folder
 and say hi. Setup for each AI (Claude Code, Claude Desktop, Gemini CLI, Codex, local models): **[getting started →](docs/getting-started.md)**
 
+**Using Claude Code?** After the installer, add Pink Golem as a plugin (the skill and the tools in one step). It asks
+once for your Pink Golem folder:
+
+```text
+/plugin marketplace add sagistiki/pink-golem
+/plugin install pink-golem@pink-golem
+```
+
 ## Things to say
 
 - *"Spawn in and build me a cottage right next to me."*
@@ -80,6 +93,22 @@ and say hi. Setup for each AI (Claude Code, Claude Desktop, Gemini CLI, Codex, l
 - *"Find a free spot near the park and build a lookout tower. Bring the crew."*
 - *"Make the bar actually serve drinks when I press the button."*
 - *"Why is the server lagging?"*
+
+## What makes it different
+
+Most Minecraft MCP servers either drive a player bot that places blocks one by one, or write a structure file for you to
+import. Pink Golem works on the server side, like a building crew with a manual:
+
+- **Big builds, safely.** Thousands of blocks per job, a preflight that parses every command first, protected zones
+  and undo.
+- **It checks its own work.** Every block is verified, every room must be reachable from the door, dark corners are
+  flagged, and it can photograph the result.
+- **It knows how to build.** A skill with golden rules and 32 reference pages (roofs, stairs, interiors, water, rides),
+  written so small local models can follow it too.
+- **Beyond buildings.** Minigames with records, rideable rides, drivable cars, a live minimap and HUD, a cinema: all
+  without client mods.
+- **Safe with friends.** Players are owners or guests, and risky actions need an owner's approval, enforced in code.
+- **Any AI.** Claude, Gemini, Codex and local models, through the same tools.
 
 ## How it works
 
@@ -115,6 +144,8 @@ A player asked for *"an amazing roller coaster, with a loop and a real coaster f
 - ridden in first person, upside down through the loop.
 
 **[How it was built, bugs and all →](docs/case-study-roller-coaster.md)**
+
+If Pink Golem made you smile, a ⭐ on the repo helps other people find it.
 
 ## More
 

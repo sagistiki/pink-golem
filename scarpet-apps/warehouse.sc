@@ -75,7 +75,7 @@ _ensure() -> (
   _npc('wh_bar', L:'bartender', 'studio:entity/skin/neon_diva', '');
   for (L:'beams', (
     i = _i; w = _:2;
-    _one('wh_laser_' + i, 'block_display', _:0, str('teleport_duration:0,brightness:{sky:15,block:15},block_state:{Name:"minecraft:%s"},transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,0f],scale:[%.3ff,%.3ff,24f]}',
+    _one('wh_laser_' + i, 'block_display', _:0, str('teleport_duration:0,brightness:{sky:15,block:15},block_state:{Name:"minecraft:%s"},transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,0f],scale:[%.3ff,%.3ff,0.5f]}',
       _:1, -w / 2, -w / 2, w, w))
   ));
   W = L:'led_wall';
@@ -137,14 +137,22 @@ _show(t) -> (
       if (e, (
         tx = -64.5 + 8 * sin(ph * 37 + i * 60); tz = -107 + 6 * cos(ph * 29 + i * 45); ty = 31.2;
         q = _aim(tx - r:0, ty - r:1, tz - r:2);
-        modify(e, 'nbt_merge', str('{start_interpolation:0,interpolation_duration:16,transformation:{left_rotation:[%.4ff,%.4ff,%.4ff,%.4ff],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,0f],scale:[%.3ff,%.3ff,24f]}}', q:0, q:1, q:2, q:3, -w / 2, -w / 2, w, w))
+        // the beam ends exactly on its floor target: display entities pass through blocks, so a fixed 24-block beam
+        // used to poke through the club floor into the arcade below
+        len = sqrt((tx - r:0) ^ 2 + (ty - r:1) ^ 2 + (tz - r:2) ^ 2);
+        modify(e, 'nbt_merge', str('{start_interpolation:0,interpolation_duration:16,transformation:{left_rotation:[%.4ff,%.4ff,%.4ff,%.4ff],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,0f],scale:[%.3ff,%.3ff,%.3ff]}}', q:0, q:1, q:2, q:3, -w / 2, -w / 2, w, w, len))
       ))
     ))
   ));
   if (t % 6 == 0, for (L:'smoke', particle('white_smoke', _, 3, 1.4, 0.004)));
   if (t % 2 == 0, _ledbars(t))
 );
-_dark() -> for (global_L:'strobes', set(_, 'light', 'level', '0'));
+_dark() -> (
+  for (global_L:'strobes', set(_, 'light', 'level', '0'));
+  // an empty club folds its lasers away (a frozen beam could still reach through the floor)
+  for (global_L:'beams', (e = _ent('wh_laser_' + _i); w = _:2;
+    if (e, modify(e, 'nbt_merge', str('{start_interpolation:0,interpolation_duration:4,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[%.3ff,%.3ff,0f],scale:[%.3ff,%.3ff,0.5f]}}', -w / 2, -w / 2, w, w)))))
+);
 
 // the crowd moves on the kick: dancers bob (standing/crouching), swing their arms and turn a little; couples sway
 // together; seated people nod; a heart now and then

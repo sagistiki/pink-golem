@@ -34,7 +34,7 @@ block, every room reachable from the door, no dark corners) and tells you where 
 | 🎮 **Make it playable** | minigames with rounds and records, races, a rideable Ferris wheel and roller coaster, drivable cars |
 | 🗺️ **Draw on screen, no mods** | a live minimap and a HUD (speedometer, compass, timers) from a resource pack |
 | 🩺 **Run a live server** | test apps with fake players, patch them without a reload, find what lags, back up safely |
-| 📚 **Know how** | a building skill with golden rules and 32 reference pages, for strong and small models alike |
+| 📚 **Know how** | a building skill with golden rules and 35 reference pages, for strong and small models alike |
 | 🔒 **Safe with strangers** | players are owners or guests; guests can't unlock generators or admin commands, enforced in code ([SECURITY.md](SECURITY.md)) |
 
 **[Everything, with links →](docs/features.md)**
@@ -103,7 +103,7 @@ import. Pink Golem works on the server side, like a building crew with a manual:
   and undo.
 - **It checks its own work.** Every block is verified, every room must be reachable from the door, dark corners are
   flagged, and it can photograph the result.
-- **It knows how to build.** A skill with golden rules and 32 reference pages (roofs, stairs, interiors, water, rides),
+- **It knows how to build.** A skill with golden rules and 35 reference pages (roofs, stairs, interiors, water, rides),
   written so small local models can follow it too.
 - **Beyond buildings.** Minigames with records, rideable rides, drivable cars, a live minimap and HUD, a cinema: all
   without client mods.
@@ -119,7 +119,7 @@ flowchart LR
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC
     MCP -- "runs" --> GEN["Python generators<br/>mclib + parts + blueprints"]
-    SKILL["Skill<br/>SKILL.md + 32 reference pages"] -. "how to build well" .-> AI
+    SKILL["Skill<br/>SKILL.md + 35 reference pages"] -. "how to build well" .-> AI
 ```
 
 There's no protocol bot and no client mods. The MCP drives the server through RCON, gives the AI a visible body with

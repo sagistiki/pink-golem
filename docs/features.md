@@ -16,7 +16,7 @@ The long version of the README's list, with a link to the page that explains eac
 - **Safety rails:** automatic undo for every build, protected zones for other people's builds, an overwrite guard,
   verification after every job, and an access check that walks every room from the entrance.
   [The safety rails](architecture.md#the-safety-rails)
-- **A building skill:** golden rules and a step-by-step recipe a small model can follow, plus 32 reference pages
+- **A building skill:** golden rules and a step-by-step recipe a small model can follow, plus 35 reference pages
   (houses, roofs, stairs, furniture, interiors, styles, landscaping, water, towers, big projects, NPCs, game logic,
   redstone, verification, troubleshooting…) and hard-won lessons from real builds.
   [SKILL.md](../skill/pinkgolem/SKILL.md)
@@ -84,7 +84,7 @@ The long version of the README's list, with a link to the page that explains eac
 | [`pinkgolem.py`](../pinkgolem.py) | setup · start · stop · status · doctor · mods · apps · connect · new-world · backup (stdlib Python) |
 | [`install.sh`](../install.sh) / [`install.cmd`](../install.cmd) / [`install.ps1`](../install.ps1) | installers that check prerequisites and run setup |
 | [`mcp-server/`](../mcp-server) | the MCP server: `index.js` core, `lib/` shared helpers, `tools/` tool groups, renderer, pathfinder, simulator |
-| [`skill/pinkgolem/`](../skill/pinkgolem) | the skill: `SKILL.md`, 33 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
+| [`skill/pinkgolem/`](../skill/pinkgolem) | the skill: `SKILL.md`, 35 reference pages, `scripts/` (`mclib.py`, `parts.py`, `city.py`), `blueprints/`, `SYSTEM_PROMPT.md` for small models |
 | [`scarpet-apps/`](../scarpet-apps) | launchpad, race, tntrun, ferris, minimap, vendor, secret_door, welcome, fireworks, cars, ring, watchdog, cinema, gallery, hotel, residents, arcade, warehouse, protect, museum, skydeck (+ the `gamekit` and `hud` libraries) |
 | [`resourcepacks/`](../resourcepacks) | minimap, HUD toolkit, car models, cinema films, gallery art, studio skins, arcade models, club music, museum photos, generated block textures, and `tools/` (`model_preview.py` for item models, `block_render.py` for blocks, both to PNG without a game client) |
 | [`mods-src/keybridge/`](../mods-src/keybridge) | the Key Bridge mod's source and build script |

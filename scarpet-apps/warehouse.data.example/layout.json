@@ -1,0 +1,756 @@
+{
+ "_doc": "F8 club (warehouse.sc) coordinates, written by your build generator",
+ "box": {
+  "min": [
+   -79,
+   31,
+   -119
+  ],
+  "max": [
+   -51,
+   51,
+   -91
+  ]
+ },
+ "vestibule": {
+  "min": [
+   -69,
+   31,
+   -99
+  ],
+  "max": [
+   -59,
+   35,
+   -95
+  ]
+ },
+ "gate": [
+  {
+   "pos": [
+    -65,
+    31,
+    -100
+   ],
+   "hinge": "left",
+   "facing": "north"
+  },
+  {
+   "pos": [
+    -64,
+    31,
+    -100
+   ],
+   "hinge": "right",
+   "facing": "north"
+  }
+ ],
+ "bouncer": {
+  "pos": [
+   -61.5,
+   31,
+   -98.5
+  ],
+  "yaw": 90,
+  "name": "Bouncer"
+ },
+ "dj": {
+  "pos": [
+   -64.5,
+   33,
+   -117.4
+  ],
+  "yaw": 0,
+  "name": "DJ"
+ },
+ "bartender": {
+  "pos": [
+   -56.0,
+   41,
+   -91.6
+  ],
+  "yaw": 180,
+  "name": "Bartender"
+ },
+ "chandelier": [
+  -64.5,
+  44.5,
+  -106.5
+ ],
+ "strobes": [
+  [
+   -74,
+   50,
+   -112
+  ],
+  [
+   -74,
+   50,
+   -106
+  ],
+  [
+   -74,
+   50,
+   -101
+  ],
+  [
+   -69,
+   50,
+   -112
+  ],
+  [
+   -69,
+   50,
+   -106
+  ],
+  [
+   -69,
+   50,
+   -101
+  ],
+  [
+   -64,
+   50,
+   -112
+  ],
+  [
+   -64,
+   50,
+   -106
+  ],
+  [
+   -64,
+   50,
+   -101
+  ],
+  [
+   -59,
+   50,
+   -112
+  ],
+  [
+   -59,
+   50,
+   -106
+  ],
+  [
+   -59,
+   50,
+   -101
+  ]
+ ],
+ "lasers": [
+  [
+   -74.5,
+   50.5,
+   -112.5
+  ],
+  [
+   -55.5,
+   50.5,
+   -112.5
+  ],
+  [
+   -74.5,
+   50.5,
+   -100.5
+  ],
+  [
+   -55.5,
+   50.5,
+   -100.5
+  ],
+  [
+   -70.5,
+   34.5,
+   -114.5
+  ],
+  [
+   -58.5,
+   34.5,
+   -114.5
+  ]
+ ],
+ "smoke": [
+  [
+   -70.5,
+   31.2,
+   -110.5
+  ],
+  [
+   -59.5,
+   31.2,
+   -110.5
+  ],
+  [
+   -65.5,
+   31.2,
+   -103.5
+  ],
+  [
+   -65.5,
+   31.2,
+   -112.5
+  ]
+ ],
+ "beams": [
+  [
+   [
+    -74.5,
+    50.5,
+    -112.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -55.5,
+    50.5,
+    -112.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -74.5,
+    50.5,
+    -100.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -55.5,
+    50.5,
+    -100.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -70.5,
+    34.5,
+    -114.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -58.5,
+    34.5,
+    -114.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -75.5,
+    50.5,
+    -115.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -75.5,
+    50.5,
+    -97.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -69.5,
+    50.5,
+    -115.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -69.5,
+    50.5,
+    -97.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -63.5,
+    50.5,
+    -115.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -63.5,
+    50.5,
+    -97.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -57.5,
+    50.5,
+    -115.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -57.5,
+    50.5,
+    -97.5
+   ],
+   "white_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -51.5,
+    50.5,
+    -115.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -51.5,
+    50.5,
+    -97.5
+   ],
+   "red_stained_glass",
+   0.04
+  ],
+  [
+   [
+    -69.5,
+    50.5,
+    -107.5
+   ],
+   "light_blue_stained_glass",
+   0.16
+  ],
+  [
+   [
+    -57.5,
+    50.5,
+    -107.5
+   ],
+   "light_blue_stained_glass",
+   0.16
+  ]
+ ],
+ "led_wall": {
+  "pos": [
+   -64.5,
+   34.2,
+   -118.9
+  ],
+  "cols": 32,
+  "rows": 12,
+  "scale": 2.1
+ },
+ "strips": [
+  {
+   "pos": [
+    -55.0,
+    40.95,
+    -108.5
+   ],
+   "scale": [
+    0.12,
+    0.12,
+    21.0
+   ]
+  },
+  {
+   "pos": [
+    -67.0,
+    40.95,
+    -97.0
+   ],
+   "scale": [
+    24.0,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "pos": [
+    -65.0,
+    32.95,
+    -114.4
+   ],
+   "scale": [
+    16.0,
+    0.12,
+    0.12
+   ]
+  }
+ ],
+ "crowd": [
+  {
+   "kind": "dance",
+   "pos": [
+    -72.5,
+    31,
+    -111.5
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/pastel_pride",
+   "black": false
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -69.5,
+    31,
+    -109.0
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/neon_diva",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -66.5,
+    31,
+    -112.0
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/rainbow_skater",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -62.5,
+    31,
+    -111.2
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/bubblegum_punk",
+   "black": false
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -59.5,
+    31,
+    -109.5
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/cherry_blossom",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -57.2,
+    31,
+    -111.8
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/disco_cowboy",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -71.0,
+    31,
+    -104.5
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": false
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -67.8,
+    31,
+    -102.5
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -61.0,
+    31,
+    -103.0
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -58.0,
+    31,
+    -105.5
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": false
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -73.3,
+    31,
+    -107.0
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/pastel_pride",
+   "black": true
+  },
+  {
+   "kind": "dance",
+   "pos": [
+    -56.8,
+    31,
+    -102.4
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/neon_diva",
+   "black": true
+  },
+  {
+   "kind": "sit",
+   "pos": [
+    -50.5,
+    41,
+    -116.5
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/cherry_blossom",
+   "black": true
+  },
+  {
+   "kind": "sit",
+   "pos": [
+    -50.5,
+    41,
+    -115.5
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/disco_cowboy",
+   "black": true
+  },
+  {
+   "kind": "sit",
+   "pos": [
+    -50.5,
+    41,
+    -112.5
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "sit",
+   "pos": [
+    -50.5,
+    41,
+    -108.5
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "sit",
+   "pos": [
+    -50.5,
+    41,
+    -104.5
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "hug",
+   "pos": [
+    -65.6,
+    31,
+    -104.2
+   ],
+   "yaw": -90,
+   "skin": "studio:entity/skin/rainbow_skater",
+   "black": true,
+   "pair": 0
+  },
+  {
+   "kind": "hug",
+   "pos": [
+    -64.9,
+    31,
+    -104.2
+   ],
+   "yaw": 90,
+   "skin": "studio:entity/skin/bubblegum_punk",
+   "black": false,
+   "pair": 0
+  },
+  {
+   "kind": "hug",
+   "pos": [
+    -53.3,
+    41,
+    -100.6
+   ],
+   "yaw": 180,
+   "skin": "studio:entity/skin/cherry_blossom",
+   "black": true,
+   "pair": 1
+  },
+  {
+   "kind": "hug",
+   "pos": [
+    -53.3,
+    41,
+    -101.3
+   ],
+   "yaw": 0,
+   "skin": "studio:entity/skin/disco_cowboy",
+   "black": false,
+   "pair": 1
+  },
+  {
+   "kind": "bar",
+   "pos": [
+    -58.5,
+    41,
+    -94.6
+   ],
+   "yaw": 0,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  },
+  {
+   "kind": "bar",
+   "pos": [
+    -55.5,
+    41,
+    -94.6
+   ],
+   "yaw": 0,
+   "skin": "studio:entity/skin/soft_boy",
+   "black": true
+  }
+ ],
+ "ledbars": {
+  "cols": [
+   [
+    -73.5,
+    42.0,
+    -111.5
+   ],
+   [
+    -73.5,
+    42.0,
+    -107.5
+   ],
+   [
+    -73.5,
+    42.0,
+    -103.5
+   ],
+   [
+    -70.5,
+    42.0,
+    -111.5
+   ],
+   [
+    -70.5,
+    42.0,
+    -107.5
+   ],
+   [
+    -70.5,
+    42.0,
+    -103.5
+   ],
+   [
+    -59.5,
+    42.0,
+    -111.5
+   ],
+   [
+    -59.5,
+    42.0,
+    -107.5
+   ],
+   [
+    -59.5,
+    42.0,
+    -103.5
+   ],
+   [
+    -56.5,
+    42.0,
+    -111.5
+   ],
+   [
+    -56.5,
+    42.0,
+    -107.5
+   ],
+   [
+    -56.5,
+    42.0,
+    -103.5
+   ],
+   [
+    -67.5,
+    42.0,
+    -113.5
+   ],
+   [
+    -61.5,
+    42.0,
+    -113.5
+   ],
+   [
+    -67.5,
+    42.0,
+    -101.5
+   ],
+   [
+    -61.5,
+    42.0,
+    -101.5
+   ]
+  ],
+  "segs": 12,
+  "scale": [
+   0.55,
+   3.0,
+   1.0
+  ]
+ }
+}

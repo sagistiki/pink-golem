@@ -229,6 +229,7 @@ Details and message templates: `reference/behaving-naturally.md`.
 | Roller coasters and rides along a path (display track, physics, first-person camera, loops) | `reference/rides.md`, `blueprints/coaster/` |
 | A HUD / minimap / anything drawn on the screen without mods | `reference/hud.md` (speedometer, compass, timer, text), `reference/minimap.md` |
 | A cinema screen or a picture gallery (no client mods: swapped item-model frames, not map art) | `reference/cinema-and-gallery.md`, `resourcepacks/cinema/`, `resourcepacks/gallery/` |
+| A floor people use: hotel rooms, registration, an arcade, a club, a museum, a roof bar, build protection | `reference/tower-floors.md`, `scarpet-apps/<app>.data.example/` |
 | New block textures / a texture pack (render first, then push) | `reference/textures.md` |
 | Keys the server can see, dialog screens | `reference/game-logic.md` ("Keys and screens") |
 | Is it right? | `reference/verification.md` |

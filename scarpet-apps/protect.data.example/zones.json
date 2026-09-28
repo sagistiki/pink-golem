@@ -1,0 +1,22 @@
+{
+ "zones": [
+  {
+   "name": "Alex's tower",
+   "owner": "Alex",
+   "label": "Alex",
+   "msg": "only Alex can build or change things here",
+   "trusted": [],
+   "min": [
+    100,
+    -64,
+    -40
+   ],
+   "max": [
+    140,
+    320,
+    0
+   ],
+   "note": "whole height, with room around the build to grow"
+  }
+ ]
+}

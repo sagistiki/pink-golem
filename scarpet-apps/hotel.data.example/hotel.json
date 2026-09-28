@@ -1,0 +1,251 @@
+{
+ "_doc": [
+  "hotel.sc data. Every coordinate the app needs lives here (the .sc is generic, published open-source).",
+  "Coordinates: door = the LOWER door cell [x,-9,z] (facing into the corridor); the upper half is door.y+1 — the app",
+  "  reads facing/hinge live off the block itself (block()+block_state()) and never hardcodes them, so it survives the",
+  "  build agent re-running its generator.",
+  "box = the suite's interior (min/max inclusive), used for the 'anyone inside = door open, never locked in' rule and",
+  "  the check-in welcome message. spawn = the bed-side cell offered as 'Make it my respawn point' (spawnpoint).",
+  "plaque = a text_display beside the door on the CORRIDOR face (SPEC 4): west doors (wall x=-67) sit at x=-65.97,",
+  "  viewers face east so yaw=-90; east doors (wall x=-61) sit at x=-61.03, viewers face west so yaw=90. z = door.z+1.5",
+  "plaque = a text_display beside the door on the CORRIDOR face, one block EAST of the door (x = door.x + 1.5), y=-7.5:",
+  "  north suites (wall z=-111, corridor face z=-110.0) → z=-109.97, viewers south → yaw 0;",
+  "  south suites (wall z=-107, corridor face z=-107.0) → z=-107.03, viewers north → yaw 180. Suite name + free/taken, never the guest's name.",
+  "checkout_days: a guest not 'seen' (online) for this many days is auto-checked-out on start and every 20 minutes.",
+  "Layout: a pool on the west facade; 3 north + 3 south suites around an east-west corridor.",
+  "rooms[].facing = the iron door's facing (into the corridor); the app re-places a missing door from it.",
+  "lobby_spawn = where a player's respawn point goes when it sits in a suite that is no longer theirs (check-out, leaving, 7-day timeout, or on join)."
+ ],
+ "name": "The Hideaway",
+ "color": "#E8A33D",
+ "reception": {
+  "npc": {
+   "pos": [
+    -55.5,
+    -15,
+    -98.65
+   ],
+   "yaw": 0,
+   "name": "Reception",
+   "skin": "studio:entity/skin/soft_boy"
+  }
+ },
+ "rooms": [
+  {
+   "id": 1,
+   "name": "Rose Suite",
+   "door": [
+    -68,
+    -9,
+    -111
+   ],
+   "box": {
+    "min": [
+     -70,
+     -9,
+     -119
+    ],
+    "max": [
+     -65,
+     -7,
+     -112
+    ]
+   },
+   "spawn": [
+    -67.5,
+    -9,
+    -115.5
+   ],
+   "plaque": {
+    "pos": [
+     -66.5,
+     -7.5,
+     -109.97
+    ],
+    "yaw": 0
+   },
+   "facing": "south"
+  },
+  {
+   "id": 2,
+   "name": "Jasmine Suite",
+   "door": [
+    -61,
+    -9,
+    -111
+   ],
+   "box": {
+    "min": [
+     -63,
+     -9,
+     -119
+    ],
+    "max": [
+     -58,
+     -7,
+     -112
+    ]
+   },
+   "spawn": [
+    -60.5,
+    -9,
+    -115.5
+   ],
+   "plaque": {
+    "pos": [
+     -59.5,
+     -7.5,
+     -109.97
+    ],
+    "yaw": 0
+   },
+   "facing": "south"
+  },
+  {
+   "id": 3,
+   "name": "Lilac Suite",
+   "door": [
+    -54,
+    -9,
+    -111
+   ],
+   "box": {
+    "min": [
+     -56,
+     -9,
+     -119
+    ],
+    "max": [
+     -51,
+     -7,
+     -112
+    ]
+   },
+   "spawn": [
+    -53.5,
+    -9,
+    -115.5
+   ],
+   "plaque": {
+    "pos": [
+     -52.5,
+     -7.5,
+     -109.97
+    ],
+    "yaw": 0
+   },
+   "facing": "south"
+  },
+  {
+   "id": 4,
+   "name": "Anemone Suite",
+   "door": [
+    -68,
+    -9,
+    -107
+   ],
+   "box": {
+    "min": [
+     -70,
+     -9,
+     -106
+    ],
+    "max": [
+     -65,
+     -7,
+     -99
+    ]
+   },
+   "spawn": [
+    -67.5,
+    -9,
+    -102.5
+   ],
+   "plaque": {
+    "pos": [
+     -66.5,
+     -7.5,
+     -107.03
+    ],
+    "yaw": 180
+   },
+   "facing": "north"
+  },
+  {
+   "id": 5,
+   "name": "Cyclamen Suite",
+   "door": [
+    -61,
+    -9,
+    -107
+   ],
+   "box": {
+    "min": [
+     -63,
+     -9,
+     -106
+    ],
+    "max": [
+     -58,
+     -7,
+     -99
+    ]
+   },
+   "spawn": [
+    -60.5,
+    -9,
+    -102.5
+   ],
+   "plaque": {
+    "pos": [
+     -59.5,
+     -7.5,
+     -107.03
+    ],
+    "yaw": 180
+   },
+   "facing": "north"
+  },
+  {
+   "id": 6,
+   "name": "Narcissus Suite",
+   "door": [
+    -54,
+    -9,
+    -107
+   ],
+   "box": {
+    "min": [
+     -56,
+     -9,
+     -106
+    ],
+    "max": [
+     -51,
+     -7,
+     -99
+    ]
+   },
+   "spawn": [
+    -53.5,
+    -9,
+    -102.5
+   ],
+   "plaque": {
+    "pos": [
+     -52.5,
+     -7.5,
+     -107.03
+    ],
+    "yaw": 180
+   },
+   "facing": "north"
+  }
+ ],
+ "checkout_days": 7,
+ "lobby_spawn": [
+  -64,
+  -15,
+  -101
+ ]
+}

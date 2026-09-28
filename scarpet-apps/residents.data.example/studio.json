@@ -1,0 +1,302 @@
+{
+ "_doc": [
+  "residents.sc studio: 7 skin mannequins (feet on the plinth tops, facing the runway; plaque = the text in front),",
+  "the wardrobe hitbox, the card clerk, the card-display quad (item_display yaw = direction the viewers stand in:",
+  "0 south, 90 west, -90 east, 180 north — the lobby-map convention). skin ids = SkinRestorer collection names.",
+  "skins[].url = a textures.minecraft.net address from MineSkin (uploaded once once; SkinRestorer's web provider re-signs it instantly). Applied with: skin set web classic <url> <player>."
+ ],
+ "skins": [
+  {
+   "id": "pastel_pride",
+   "name": "Pastel Pride",
+   "en": "Pastel Pride",
+   "pos": [
+    -63.5,
+    -25,
+    -118.0
+   ],
+   "yaw": 0,
+   "plaque": {
+    "pos": [
+     -63.5,
+     -25.55,
+     -116.95
+    ],
+    "yaw": 0
+   },
+   "url": "https://textures.minecraft.net/texture/bac65b655ec0634f02d3f4d65fa2b7f300c6a2def687901dcdb03d6507a4604e"
+  },
+  {
+   "id": "neon_diva",
+   "name": "Neon Diva",
+   "en": "Neon Diva",
+   "pos": [
+    -70.0,
+    -25,
+    -115.0
+   ],
+   "yaw": -90,
+   "plaque": {
+    "pos": [
+     -68.95,
+     -25.55,
+     -115.0
+    ],
+    "yaw": -90
+   },
+   "url": "https://textures.minecraft.net/texture/f5285ad9deec8231e43d8b9a3735d33817cd796cb112dc40b5f67d39970e63d0"
+  },
+  {
+   "id": "rainbow_skater",
+   "name": "Rainbow Skater",
+   "en": "Rainbow Skater",
+   "pos": [
+    -70.0,
+    -25,
+    -109.0
+   ],
+   "yaw": -90,
+   "plaque": {
+    "pos": [
+     -68.95,
+     -25.55,
+     -109.0
+    ],
+    "yaw": -90
+   },
+   "url": "https://textures.minecraft.net/texture/57ca3fab5697d28f36d5933473897948ae007dfa2254c0772115d5fd2e8555e0"
+  },
+  {
+   "id": "bubblegum_punk",
+   "name": "Bubblegum Punk",
+   "en": "Bubblegum Punk",
+   "pos": [
+    -70.0,
+    -25,
+    -103.0
+   ],
+   "yaw": -90,
+   "plaque": {
+    "pos": [
+     -68.95,
+     -25.55,
+     -103.0
+    ],
+    "yaw": -90
+   },
+   "url": "https://textures.minecraft.net/texture/c475bc8b8db52517ff05b2bd5d79d998d78f7779d343f559e9afc76641fcb5f2"
+  },
+  {
+   "id": "cherry_blossom",
+   "name": "Cherry Blossom",
+   "en": "Cherry Blossom",
+   "pos": [
+    -57.0,
+    -25,
+    -115.0
+   ],
+   "yaw": 90,
+   "plaque": {
+    "pos": [
+     -58.05,
+     -25.55,
+     -115.0
+    ],
+    "yaw": 90
+   },
+   "url": "https://textures.minecraft.net/texture/9fcb82e05b6c71b3767b769a76c77b5e7e76a9301d26f4b0dd1b9d7851f88cfa"
+  },
+  {
+   "id": "disco_cowboy",
+   "name": "Disco Cowboy",
+   "en": "Disco Cowboy",
+   "pos": [
+    -57.0,
+    -25,
+    -109.0
+   ],
+   "yaw": 90,
+   "plaque": {
+    "pos": [
+     -58.05,
+     -25.55,
+     -109.0
+    ],
+    "yaw": 90
+   },
+   "url": "https://textures.minecraft.net/texture/2872695bdb5e3951ec52a606b524caa830001a56ce3e4526d41a76bb3d8ce353"
+  },
+  {
+   "id": "soft_boy",
+   "name": "Cozy Soft Boy",
+   "en": "Cozy Soft Boy",
+   "pos": [
+    -57.0,
+    -25,
+    -103.0
+   ],
+   "yaw": 90,
+   "plaque": {
+    "pos": [
+     -58.05,
+     -25.55,
+     -103.0
+    ],
+    "yaw": 90
+   },
+   "url": "https://textures.minecraft.net/texture/ec16adbedd17d94cd91320dc5dedaf90735fdceeacb7412dbb50f371fdc97488"
+  }
+ ],
+ "wardrobe": {
+  "pos": [
+   -77.5,
+   -26,
+   -95.0
+  ],
+  "w": 1.4,
+  "h": 2.4,
+  "label": [
+   -77.5,
+   -23.2,
+   -95.0
+  ]
+ },
+ "clerk": {
+  "pos": [
+   -54.5,
+   -26,
+   -97.65
+  ],
+  "yaw": 0,
+  "name": "Residents office",
+  "skin": "studio:entity/skin/soft_boy"
+ },
+ "card_display": {
+  "pos": [
+   -52.05,
+   -23.5,
+   -96.5
+  ],
+  "yaw": 90,
+  "scale": [
+   3.2,
+   2.0,
+   1.0
+  ],
+  "model": "studio:card_display"
+ },
+ "outfits": [
+  {
+   "id": "pastel",
+   "name": "Pastel pink",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=16230596,trim={material:\"minecraft:quartz\",pattern:\"minecraft:wayfinder\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=16230596,trim={material:\"minecraft:quartz\",pattern:\"minecraft:wayfinder\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=16230596,trim={material:\"minecraft:quartz\",pattern:\"minecraft:wayfinder\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=16230596,trim={material:\"minecraft:quartz\",pattern:\"minecraft:wayfinder\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "rainbow",
+   "name": "Rainbow",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=15022389,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=16485376,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=4431943,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=9315498,custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "night",
+   "name": "Sparkle night",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=2825023,trim={material:\"minecraft:amethyst\",pattern:\"minecraft:silence\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=2825023,trim={material:\"minecraft:amethyst\",pattern:\"minecraft:silence\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=2825023,trim={material:\"minecraft:amethyst\",pattern:\"minecraft:silence\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=2825023,trim={material:\"minecraft:amethyst\",pattern:\"minecraft:silence\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "dream",
+   "name": "Dreamy purple",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=12157951,trim={material:\"minecraft:quartz\",pattern:\"minecraft:spire\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=12157951,trim={material:\"minecraft:quartz\",pattern:\"minecraft:spire\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=12157951,trim={material:\"minecraft:quartz\",pattern:\"minecraft:spire\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=12157951,trim={material:\"minecraft:quartz\",pattern:\"minecraft:spire\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "mint",
+   "name": "Mint",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=10478537,trim={material:\"minecraft:emerald\",pattern:\"minecraft:wild\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=10478537,trim={material:\"minecraft:emerald\",pattern:\"minecraft:wild\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=10478537,trim={material:\"minecraft:emerald\",pattern:\"minecraft:wild\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=10478537,trim={material:\"minecraft:emerald\",pattern:\"minecraft:wild\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "goldpink",
+   "name": "Gold & pink",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=16740270,trim={material:\"minecraft:gold\",pattern:\"minecraft:eye\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=16740270,trim={material:\"minecraft:gold\",pattern:\"minecraft:eye\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=16740270,trim={material:\"minecraft:gold\",pattern:\"minecraft:eye\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=16740270,trim={material:\"minecraft:gold\",pattern:\"minecraft:eye\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "trans",
+   "name": "Trans flag",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=6016762,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=16099768,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=16777215,custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=6016762,custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "white",
+   "name": "Classic white",
+   "pieces": {
+    "head": "leather_helmet[dyed_color=16777215,trim={material:\"minecraft:diamond\",pattern:\"minecraft:sentry\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "chest": "leather_chestplate[dyed_color=16777215,trim={material:\"minecraft:diamond\",pattern:\"minecraft:sentry\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "legs": "leather_leggings[dyed_color=16777215,trim={material:\"minecraft:diamond\",pattern:\"minecraft:sentry\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]",
+    "feet": "leather_boots[dyed_color=16777215,trim={material:\"minecraft:diamond\",pattern:\"minecraft:sentry\"},custom_data={studio_outfit:1b},enchantment_glint_override=false]"
+   }
+  },
+  {
+   "id": "hat_tulip",
+   "name": "Hat: pink tulip",
+   "pieces": {
+    "head": "pink_tulip[custom_data={studio_outfit:1b}]"
+   },
+   "hat": true
+  },
+  {
+   "id": "hat_azalea",
+   "name": "Hat: flowering azalea",
+   "pieces": {
+    "head": "flowering_azalea[custom_data={studio_outfit:1b}]"
+   },
+   "hat": true
+  },
+  {
+   "id": "hat_cherry",
+   "name": "Hat: cherry leaves",
+   "pieces": {
+    "head": "cherry_leaves[custom_data={studio_outfit:1b}]"
+   },
+   "hat": true
+  },
+  {
+   "id": "hat_cake",
+   "name": "Hat: cake",
+   "pieces": {
+    "head": "cake[custom_data={studio_outfit:1b}]"
+   },
+   "hat": true
+  }
+ ]
+}

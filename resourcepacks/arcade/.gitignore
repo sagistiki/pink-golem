@@ -1,0 +1,7 @@
+build/
+__pycache__/
+previews/
+*_preview*.png
+*_sheet.png
+skins/
+skins.json

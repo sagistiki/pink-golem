@@ -1,0 +1,46 @@
+{
+ "_doc": [
+  "residents.sc settings. lobby = the block box an unregistered player may stand in (inclusive block coords);",
+  "return = where they are put back when the position is nonsense (wrong height). role = the one fixed look of",
+  "registered regular players (a scoreboard team colour, no symbol, adventure mode). Ops, exempt names/patterns and",
+  "Carpet fake players are never held. seed = players registered automatically on first start."
+ ],
+ "lobby": {
+  "min": [
+   -79,
+   -61,
+   -119
+  ],
+  "max": [
+   -51,
+   -51,
+   -91
+  ],
+  "return": [
+   -57.5,
+   -60,
+   -98.5
+  ],
+  "yaw": 90
+ },
+ "role": {
+  "name": "Traveler",
+  "team": "role_traveler",
+  "color": "gold"
+ },
+ "exempt_names": [
+  "YourBuilderBot"
+ ],
+ "exempt_patterns": [
+  "_Builder$"
+ ],
+ "rules": [
+  "Do not break or take from other people's builds.",
+  "Ask before you change something that is not yours.",
+  "Build tidily: no pits and holes in the ground.",
+  "Be kind in chat.",
+  "Something broken or unclear? Ask an admin."
+ ],
+ "studio_hint": "the character studio",
+ "seed": []
+}

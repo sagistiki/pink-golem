@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-09-28: A tower of floors: hotel, registration, arcade, club, museum, roof bar, build protection
+
+Seven new scarpet apps, each with an example data folder (`scarpet-apps/<app>.data.example/`) and no client mod:
+
+- `hotel.sc`: a check-in dialog, suites that belong to one guest, iron doors that open only for their guest (and
+  always for anyone inside), "free/taken" plaques, check-out on logout, respawn points that follow the booking.
+- `residents.sc`: registration without a password. An invisible barrier (a position check) holds new players in
+  the lobby until they register in a dialog. Also a role colour, a resident card, a skin studio and a wardrobe.
+- `arcade.sc`: 3-lane bowling with physics and real scoring, hold-to-charge throwing, a claw machine,
+  whack-a-mole, a dance-arrows game, tickets, a prize counter, per-player high scores.
+- `warehouse.sc`: a techno club with a bouncer, a per-player music loop on an 8-tick beat grid, strobes,
+  quaternion lasers, an LED wall and LED bars made of `text_display`s, a posed crowd, a bar.
+- `protect.sc`: build protection. In a zone only the owner and trusted players can break, place, pour or edit,
+  using Carpet's cancellable events.
+- `museum.sc`: a timeline of framed photos, spinning exhibits, and a guide who tells each story and teleports you there.
+- `skydeck.sc`: a roof bar, telescopes with an 8-second locked camera view, copper-bulb lights at dusk, a fireworks button.
+
+New resource-pack generators: [`resourcepacks/studio`](resourcepacks/studio) (7 original skins + a resident card),
+[`resourcepacks/arcade`](resourcepacks/arcade) (pins, ball, moles, claw, plushies),
+[`resourcepacks/club`](resourcepacks/club) (an original 150 BPM hard-techno loop, synthesised with numpy),
+[`resourcepacks/museum`](resourcepacks/museum) (frames your own landmark renders).
+
+- New reference page: [`skill/pinkgolem/reference/tower-floors.md`](skill/pinkgolem/reference/tower-floors.md).
+- New case study: [`docs/case-study-tower.md`](docs/case-study-tower.md).
+- Nine new lessons in `lessons.md` (#40-48).
+
 ## 2026-09-28: A cinema and an art gallery, with no client mods
 
 New scarpet apps `cinema.sc` and `gallery.sc`: a screening room (seats, a vanilla button, a subtitle strip, house

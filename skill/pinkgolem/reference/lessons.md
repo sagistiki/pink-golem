@@ -117,4 +117,28 @@ Read this once; come back when something feels familiar. New lessons you learn g
     read as special anymore. Reserve a custom model for one signature feature; a plain vanilla button (polled for
     its `powered` rising edge) is simpler, needs no pack at all, and is the right default for everything else.
 
-See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`.
+## From building a tower of floors (hotel, registration, arcade, club, museum, roof)
+
+40. **Hotel doors moved to another block after a few toggles.** Each door half was toggled with scarpet `set()`, and
+    the game "repaired" the half-door by placing it elsewhere. Set both halves with `setblock` and the full state
+    (`half`, `facing`, `hinge`, `open`), and keep `facing`/`hinge` in the data file.
+41. **A throw fired before the player chose a power.** Holding right-click on a plain item repeats the use event.
+    Give the item a `consumable` component with a long `consume_seconds`: the use event marks the start, and
+    `__on_player_releases_item` fires once on release.
+42. **An "invulnerable" mannequin was killed by a creative-mode player.** `Invulnerable:1b` does not stop creative
+    hits. Cancel the hit in `__on_player_attacks_entity` by returning `'cancel'`.
+43. **A zone message and an admin-floor guard fired on players riding the lift past the floor.** Every area rule must
+    exclude the lift shaft column and anyone mounted.
+44. **A nametag showed through three floors.** Hide it (`CustomNameVisible:0b`) and use a small `text_display` with
+    `view_range:0.2f` next to the head.
+45. **Music and lights drifted apart.** Choose a tempo whose beat is a whole number of ticks (150 BPM = 8 ticks), make
+    the loop a whole number of bars (51.2 s = 1024 ticks), and trigger both sound and lights from the same `tick % 8`.
+46. **Build protection:** `player_placing_block` fires *before* a block goes in and can be cancelled.
+    `player_places_block` fires after and cannot. Buckets need `player_uses_item`, because they aim by raycast.
+    WorldEdit, `/fill` and TNT go around all of it, so keep a block logger.
+47. **A museum photo of a roller coaster showed an empty field.** The track was display entities, which a block
+    renderer does not draw. Photograph the station building, or take a real in-game screenshot.
+48. **A lit redstone lamp set with `setblock` turned itself off.** For lights an app switches on and off, use
+    `waxed_copper_bulb[lit=true|false]`: a copper bulb keeps its state without redstone.
+
+See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`, `tower-floors.md`.

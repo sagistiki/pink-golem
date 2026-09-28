@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml"><img alt="check" src="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml/badge.svg"></a>
   <img alt="Minecraft 26.2" src="https://img.shields.io/badge/Minecraft-26.2-62B47A">
   <img alt="Fabric + Carpet" src="https://img.shields.io/badge/Fabric-Carpet-DBB064">
   <img alt="MCP" src="https://img.shields.io/badge/MCP-37_tools-7C5CFF">
@@ -40,6 +41,11 @@ block, every room reachable from the door, no dark corners) and tells you where 
 **[Everything, with links →](docs/features.md)**
 
 ## Built by the included blueprints
+
+<p align="center">
+  <img src="assets/demo-town.gif" alt="A small town rising building by building: a park, a pride-coloured drop tower, a villa, a cottage and a lookout tower, then a slice down through it that shows every interior" width="80%"><br>
+  <sub>Five blueprints, one town, 4,520 commands: a park, a 60-block drop tower, a villa, a cottage and a lookout tower. At the end, a slice down through it shows what's inside.</sub>
+</p>
 
 | | |
 |---|---|
@@ -150,7 +156,8 @@ If Pink Golem made you smile, a ⭐ on the repo helps other people find it.
 ## More
 
 [All docs](docs/README.md) · [Features, layout and mods](docs/features.md) · [Contributing](docs/contributing.md) ·
-[Writing blueprints](docs/writing-blueprints.md) · [Lessons learned the hard way](skill/pinkgolem/reference/lessons.md)
+[Writing blueprints](docs/writing-blueprints.md) · [Lessons learned the hard way](skill/pinkgolem/reference/lessons.md) ·
+[Privacy and network connections](PRIVACY.md) · [Security](SECURITY.md)
 
 **Credits:**
 - Idea, design and direction by [@sagistiki](https://github.com/sagistiki).

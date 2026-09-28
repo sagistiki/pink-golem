@@ -1,0 +1,52 @@
+# Runs on every push and pull request. Everything here works without a Minecraft server:
+# the tool layer loads against a fake server, the docs' counts match the code, the trust rules hold,
+# all Python compiles on the oldest supported version, every blueprint generates, and the plugin manifest is valid.
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+
+      - name: MCP server (tools load, doc counts, trust rules)
+        working-directory: mcp-server
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Python compiles on 3.9
+        run: git ls-files '*.py' | xargs python -m py_compile
+
+      - name: Installer CLI starts
+        run: python pinkgolem.py --help > /dev/null
+
+      - name: Every blueprint generates
+        run: |
+          for b in skill/pinkgolem/blueprints/*.py; do
+            out=$(mktemp -d)
+            PINKGOLEM_JOBS="$out" python "$b" --at 0,-60,0 > /dev/null
+            n=$(ls "$out" | wc -l)
+            echo "$b: $n job file(s)"
+            [ "$n" -gt 0 ] || { echo "::error file=$b::wrote no job files"; exit 1; }
+          done
+
+      - name: Claude Code plugin manifest
+        run: npx -y @anthropic-ai/claude-code plugin validate .

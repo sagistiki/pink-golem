@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-29: An automatic check on GitHub, a privacy page, a town GIF
+
+- **GitHub checks every push and pull request** ([`.github/workflows/check.yml`](.github/workflows/check.yml)), with no
+  Minecraft server: the tool layer loads, the trust rules hold, all Python compiles on 3.9, every blueprint generates,
+  and the Claude Code plugin manifest is valid. A badge at the top of the README shows the result.
+- `npm run check` now also fails when a doc or the plugin manifest gives the wrong number of **reference pages** (it
+  already checked the tool count), and it reads the README's badge too.
+- **[PRIVACY.md](PRIVACY.md)**: every network connection Pink Golem makes, what it stores and where, and what your AI
+  provider sees. No telemetry, no accounts, no servers of its own.
+- The contributing guide lists all the tool groups, the real tool-list cost (~12,000 tokens), the automatic checks and
+  the release steps; a pull request template.
+- A second demo GIF: five blueprints build one town, then a slice down through it shows every interior.
+
 ## 2026-09-28: Install as a Claude Code plugin, a demo GIF, a clearer README
 
 - Pink Golem is now a **Claude Code plugin and marketplace**: `/plugin marketplace add sagistiki/pink-golem`, then

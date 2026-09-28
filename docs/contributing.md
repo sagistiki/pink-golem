@@ -19,7 +19,7 @@ pull request looks like. [architecture.md](architecture.md) gives the background
 ## Add a tool
 
 Tools live in **groups** in `mcp-server/tools/`: `connection.js`, `chat.js`, `build.js`, `look.js`, `survey.js`,
-`rails.js`, `body.js`, `memory.js`. Each group exports a `tools` array (the schemas) and a `handlers(K, ctx)` function that returns one
+`rails.js`, `body.js`, `memory.js`, `health.js`, `dev.js`, `pack.js`. Each group exports a `tools` array (the schemas) and a `handlers(K, ctx)` function that returns one
 async handler per tool name. `K` is the shared helper object built from `lib/*.js`.
 
 Add the schema to the group that fits:
@@ -56,7 +56,10 @@ Things to know:
 
 **Write the description for a model**, since every AI reads every description in every session. Say what the tool
 does, when to use it, the key arguments and the main pitfall, in a few sentences. The whole tool list already costs
-about 7,000 tokens, which matters for small local models.
+about 12,000 tokens, which matters for small local models.
+
+A new tool changes the tool count that the README and the docs mention. `npm run check` lists every line that
+still says the old number.
 
 ## Add a lib helper
 
@@ -164,10 +167,15 @@ and prevents the next one.
 
 | What | Command | Needs a server? |
 |---|---|---|
-| The tool layer loads (syntax, wiring, every tool has a handler) | `cd mcp-server && npm run check` | no |
+| The tool layer loads (syntax, wiring, every tool has a handler), the docs' tool and reference-page counts are right, the trust rules hold | `cd mcp-server && npm run check` | no |
+| All Python compiles on the oldest supported version | `git ls-files '*.py' \| xargs python3.9 -m py_compile` | no |
+| The Claude Code plugin manifest is valid | `npx -y @anthropic-ai/claude-code plugin validate .` | no |
 | Everything is installed and talking | `python3 pinkgolem.py doctor` (it also runs the load check) | partly |
 | A generator runs | `python3 skill/pinkgolem/blueprints/<name>.py --at 0,-61,0 --facing east` | no |
 | Tools against a live world | `node test/run.mjs '<list of calls>'` | yes |
+
+GitHub runs every "no" row above, and every blueprint, on each push and pull request
+([`.github/workflows/check.yml`](../.github/workflows/check.yml)). The badge at the top of the README shows the result.
 
 `test/run.mjs` drives the MCP server like an AI client would. Every call runs in **one** process, so background
 jobs survive between calls:
@@ -196,6 +204,16 @@ far from real builds.
 - [ ] English only, no private data (names, servers, paths, passwords, private chat in screenshots).
 - [ ] No new dependencies; the code matches its neighbours.
 - [ ] One topic per pull request, with a short description of why.
+
+## Releasing (maintainers)
+
+1. `CHANGELOG.md`: a new entry at the top, in plain words, for every change a user would notice.
+2. The version in `.claude-plugin/plugin.json` and `mcp-server/package.json`. Claude Code offers a plugin update
+   only when this version goes up.
+3. `npm run check`, then push. Wait for the check to go green.
+4. `gh release create vX.Y.Z --notes-file …` with absolute links (relative links break on the release page).
+5. If the tool count or the one-line description changed: the GitHub repo description and the directory listings
+   that copied it.
 
 ## See also
 

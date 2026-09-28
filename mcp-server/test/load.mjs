@@ -17,18 +17,23 @@ console.log(`${t.TOOLS.length} tools: ${t.TOOLS.map((x) => x.name.replace("minec
 const r = await t.handle("minecraft_notes", { action: "read" });
 console.log("notes:", r.content[0].text.slice(0, 80));
 
-// Every "N tools" in the docs must match the real number (the README once said 37 while client pages said 33).
+// Every "N tools" / "N reference pages" in the docs and the plugin manifests must match the real number (the README
+// once said 37 tools while client pages said 33, and 32 reference pages while the skill had 35).
 import fs from "node:fs";
 const docs = [path.join(root, "README.md"), ...fs.readdirSync(path.join(root, "docs"), { recursive: true })
-  .filter((f) => f.endsWith(".md")).map((f) => path.join(root, "docs", f))];
+  .filter((f) => f.endsWith(".md")).map((f) => path.join(root, "docs", f)),
+  ...["plugin.json", "marketplace.json"].map((f) => path.join(root, ".claude-plugin", f)).filter((f) => fs.existsSync(f))];
+const pages = fs.readdirSync(path.join(root, "skill", "pinkgolem", "reference")).filter((f) => f.endsWith(".md")).length;
+const counts = [["tools", /\b(\d+)(?:\*{0,2} (?:MCP )?|_)tools\b/g, t.TOOLS.length], ["reference pages", /\b(\d+) reference pages\b/g, pages]];
 const wrong = [];
 for (const f of docs)
   fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
-    for (const m of line.matchAll(/\b(\d+)\*{0,2} (?:MCP )?tools\b/g))
-      if (+m[1] !== t.TOOLS.length) wrong.push(`${path.relative(root, f)}:${i + 1} says ${m[1]} tools`);
+    for (const [what, re, real] of counts)
+      for (const m of line.matchAll(re))
+        if (+m[1] !== real) wrong.push(`${path.relative(root, f)}:${i + 1} says ${m[1]} ${what} (really ${real})`);
   });
 if (wrong.length) {
-  console.error(`tool count: the server has ${t.TOOLS.length} tools, but\n  ${wrong.join("\n  ")}`);
+  console.error(`doc counts are out of date:\n  ${wrong.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`tool count: every doc says ${t.TOOLS.length}`);
+console.log(`doc counts: every doc says ${t.TOOLS.length} tools and ${pages} reference pages`);

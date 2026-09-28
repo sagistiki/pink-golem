@@ -16,6 +16,7 @@ New here? Read **[Getting started](getting-started.md)**, then the page for your
 | [Playing with friends](exposing-to-friends.md) | others should join: LAN, port forwarding, tunnel services, whitelist, security |
 | [Troubleshooting](troubleshooting.md) | something doesn't work: Java, ports, RCON, Carpet, the MCP not showing up, lag, logs, backups, a fresh world |
 | [Upgrading](upgrading.md) | a new Minecraft version is out, or you want newer mods |
+| [Privacy](../PRIVACY.md) · [Security](../SECURITY.md) | you want to know every network connection Pink Golem makes, what it stores, and who can make the AI do what |
 
 ## Connect your AI
 

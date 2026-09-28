@@ -36,7 +36,12 @@ _admin(p) -> (p ~ 'permission_level') >= 2;
 _bar(p, text, color) -> run(str('title %s actionbar %s', p ~ 'name', encode_json({'text' -> text, 'color' -> color})));
 _ent(tag) -> entity_id(global_ents:tag);
 _in(q, b) -> q:0 >= b:'min':0 && q:0 < b:'max':0 + 1 && q:1 >= b:'min':1 - 0.5 && q:1 < b:'max':1 + 1 && q:2 >= b:'min':2 && q:2 < b:'max':2 + 1;
-_inside(p) -> _in(pos(p), global_L:'box') && !_in(pos(p), global_L:'vestibule');
+// inside = in the hall: not in the vestibule, not in an excluded box (the lift shaft), not riding anything (the lift car
+// seats riders on armor stands) — so passing the club in the lift never starts the music
+_inside(p) -> (
+  q = pos(p);
+  _in(q, global_L:'box') && !_in(q, global_L:'vestibule') && !query(p, 'mount') && first(global_L:'exclude' || [], _in(q, _)) == null
+);
 _one(tag, type, at, nbt) -> (
   e = _ent(tag); if (e, return(e));
   l = entity_selector(str('@e[type=%s,tag=%s]', type, tag));
@@ -302,7 +307,7 @@ __on_tick() -> (
   t = tick_time(); L = global_L; if (!L:'box', return());
   if (t % 4 == 0, _gate_poll(t));
   _music(t);
-  on = first(player('all'), _real(_) && _in(pos(_), L:'box')) != null;
+  on = first(player('all'), _real(_) && _inside(_)) != null;
   if (on, _show(t), global_active, _dark());
   global_active = on;
   if (t % 100 == 41 && on, _ensure())

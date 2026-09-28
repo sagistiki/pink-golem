@@ -752,5 +752,20 @@
    3.0,
    1.0
   ]
- }
+ },
+ "exclude": [
+  {
+   "min": [
+    -66,
+    30,
+    -94
+   ],
+   "max": [
+    -62,
+    52,
+    -90
+   ],
+   "note": "the lift shaft: riders passing the club never count as inside"
+  }
+ ]
 }

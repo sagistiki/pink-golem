@@ -1,6 +1,6 @@
 # Key Bridge — a tiny server-side Fabric mod for scarpet apps
 
-Three things scarpet can't do on its own, in ~500 lines of Java. Players need **no** client mod.
+Four things scarpet can't do on its own, in ~700 lines of Java. Players need **no** client mod.
 
 ## 1. Movement keys → scoreboard
 
@@ -71,6 +71,29 @@ Resource pack: add `mods-src/keybridge/flipcam/flipcam.zip` to `resource_pack.pa
 included by default) and deploy with `minecraft_pack`. Side effect: anyone spectating a real spider in spectator mode
 also sees the flipped view. While the camera is not the player's own, the client doesn't send its own movement
 (vanilla behaviour for any camera entity) — fine for a rider.
+
+## 4. Skin baking — a painted skin becomes a real player skin
+
+Scarpet can't write a PNG or make an HTTP request, so the skin easel app
+([`scarpet-apps/skinpaint.sc`](../../scarpet-apps/skinpaint.sc), pack part
+[`resourcepacks/skinpaint/`](../../resourcepacks/skinpaint)) hands the pixels to the mod:
+
+| command (op level 2) | what it does |
+|---|---|
+| `/skinbake <id>` | reads `world/scripts/skinpaint.data/bake/<id>.json` (`{"img": [4096 ARGB numbers, row-major 64x64, 0 = transparent], "variant": "classic", "name": "…"}`), writes `png/<id>.png`, uploads it to MineSkin on a worker thread and answers on the server thread with `script in skinpaint run _baked('<id>','<url>','<value>','<signature>')`, or `_bake_failed('<id>','<why>')` |
+
+- **MineSkin v2** (`POST https://api.mineskin.org/v2/generate`, multipart: `file`, `variant`, `visibility=unlisted`,
+  `name`) signs the texture with a real Minecraft account and returns `skin.texture.url.skin` (a
+  `textures.minecraft.net` url) and `skin.texture.data.value` / `.signature`. It works **without an API key**
+  (about 10 per minute, 60 per hour, 6 s apart); the mod waits for MineSkin's "next request" time, retries a 429
+  twice, and bakes one skin at a time. For higher limits put a key in `config/keybridge-mineskin.txt`.
+- The app puts the result on the player with SkinRestorer (`skin set web classic <url> <player>`, re-signed
+  instantly for everyone) and on gallery mannequins with the signed `value` + `signature`.
+- At `SERVER_STARTED` the mod writes `skinpaint.data/keybridge.json` (`{"version":"1.3.0","skinbake":true}`) so the
+  app knows saving works. Scarpet apps load **before** `SERVER_STARTED`, so the app reads this marker lazily (when
+  someone opens the save dialog), not in `__on_start`.
+- `SkinBake.java` has no Minecraft imports; `main()` bakes one file from the command line for testing
+  (`java -cp <gson.jar>:<classes> pinkgolem.keybridge.SkinBake <skinpaint.data dir> <id>`).
 
 ## Build and install
 

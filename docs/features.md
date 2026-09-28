@@ -44,6 +44,11 @@ The long version of the README's list, with a link to the page that explains eac
   physics, a techno club synced to its own music, a history museum with a guide, a roof bar with telescopes, and
   build protection for players' own builds.
   [Tower floors](../skill/pinkgolem/reference/tower-floors.md) · [the case study](case-study-tower.md)
+- **A character studio:** a fitting wall where a mannequin wears the look you build row by row (real clothes from
+  the pack: tops, skirts, shoes, wigs, 3D hats, wings), and a skin easel: paint your own 64x64 skin on a wall of
+  pixels with a paint-program toolbar, save it, and it becomes your real skin for everyone, plus a gallery of the
+  skins people made (with a cursor and a 3x magnifier for precision), a fashion show where signed-up looks walk the
+  runway, and original lounge music. [The case study](case-study-character-studio.md)
 - **On-screen graphics with no client mods:**
   - a live round minimap in the corner that turns with your view;
   - a HUD toolkit (speedometer, compass, timer, text) that shares one shader with the minimap.

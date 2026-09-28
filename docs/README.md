@@ -40,6 +40,7 @@ on one server without fighting over one body.
 | [Features, layout and mods](features.md) | you want the full list of what Pink Golem does, what's in each folder and which mods it uses |
 | [Case study: a roller coaster that really runs](case-study-roller-coaster.md) | you want to see a big project end to end: design, physics, a display-entity track, a custom train, the camera, testing on a live server |
 | [Case study: a tower of floors people actually use](case-study-tower.md) | you want to see how a hotel, registration, an arcade, a club, a museum and a roof bar were built floor by floor with a live owner, and what each correction taught |
+| [Case study: a character studio: real clothes and a wall where you paint your own skin](case-study-character-studio.md) | you want to see how clothes come from equipment assets, how a text-display pixel canvas, a paint toolbar and one ray per click make an in-game paint program, and how a painting becomes a signed player skin |
 | [Case study: a cinema and an art gallery, with no client mods](case-study-cinema.md) | you want to see how a screen (item-model frames vs. map art vs. a block wall), an original synthesised score, and RTL-safe text all come together, plus the bugs found building it |
 
 ## Build and extend

@@ -9,7 +9,7 @@ no client mod. This page is written so a small or local model can follow it lite
 | App | What it does | Needs |
 |---|---|---|
 | `hotel.sc` | check-in dialog, suites that belong to one guest, iron doors that open only for their guest, plaques "free/taken", auto check-out on logout | nothing |
-| `residents.sc` | registration without a password: an invisible barrier holds new players in the lobby until they register in a dialog; a role colour, a resident card, a skin studio and a wardrobe | `resourcepacks/studio` (mannequin skins); SkinRestorer for players' skins (optional) |
+| `residents.sc` | registration without a password: an invisible barrier holds new players in the lobby until they register in a dialog; a role colour, a resident card, a skin studio, a fitting wall with real clothes, and a clerk who resets your look | `resourcepacks/studio` (mannequin skins), `resourcepacks/wardrobe` (clothes); SkinRestorer for players' skins (optional) |
 | `arcade.sc` | 3-lane bowling with physics and real scoring, a claw machine, whack-a-mole, a dance-arrows game, tickets, a prize counter, high scores | `resourcepacks/arcade`; Key Bridge for the dance game |
 | `warehouse.sc` | a techno club: a bouncer, a beat-synced music loop per player, strobes, lasers, an LED wall, LED bars, a crowd, a bar | `resourcepacks/club`, `resourcepacks/studio` |
 | `protect.sc` | build protection: in a zone, only its owner (and players they trust) can break, place, pour or edit | nothing |
@@ -34,8 +34,8 @@ Copy these into any new app of the same kind. Each one is a bug that happened at
 4. **Excluded areas are part of every rule.** A barrier, a guard or a zone message must skip the lift shaft and any
    player who is riding something (`query(p, 'mount')`). Otherwise the rule fires on a player passing through in the lift.
 5. **Mannequins as NPCs:** `immovable:1b, hide_description:1b, Invulnerable:1b, CustomNameVisible:0b`. Show the name with
-   a small `text_display` with `view_range:0.2f`, so it can only be read up close. A floating nametag shows through
-   walls. `Invulnerable` does not stop a creative-mode player: cancel the hit in `__on_player_attacks_entity`.
+   a small `text_display` instead: `view_range:0.2f` for a name read up close, about `0.7f` (≈ 45 blocks) for a plaque
+   read across a room. A text display is hidden behind blocks; a floating nametag shows through walls. `Invulnerable` does not stop a creative-mode player: cancel the hit in `__on_player_attacks_entity`.
 6. **Dialogs:** `type: minecraft:multi_action`, `after_action: 'none'`, `pause: false`, and an `exit_action` that runs
    the app's own `close` command, which runs `dialog clear <name>`. Each button runs a slash command of the app.
    Inputs (`minecraft:text`, `minecraft:boolean`) reach the command through a `dynamic/run_command` template.
@@ -66,7 +66,8 @@ Data: `hotel.data/hotel.json`, from `hotel.data.example/`:
 ## residents.sc: registration without a password
 
 Data: `residents.data/config.json` (`lobby` box, `return` point, `role`, `exempt_names`, `exempt_patterns`,
-`rules`, `seed`) and `studio.json` (skins, wardrobe outfits, the card clerk).
+`rules`, `seed`), `studio.json` (skins, wardrobe outfits, the card clerk, the fitting wall) and `wardrobe.json` (the
+clothes catalogue, written by `resourcepacks/wardrobe/gen_wardrobe_pack.py`).
 1. **The barrier is a position check, not blocks.** Once a tick, any unregistered player outside the `lobby` box is
    put back inside, clamped to the nearest point. If they are at the wrong height, they go to `return`. This works
    however they got out: walking, a lift, an ender pearl or `/tp`.
@@ -80,6 +81,41 @@ Data: `residents.data/config.json` (`lobby` box, `return` point, `role`, `exempt
    SkinRestorer a `textures.minecraft.net` address (`skin set web classic <url> <player>`). Two traps:
    - In `skin set`, the variant (`classic`) comes before the URL.
    - MineSkin cannot fetch some file hosts. Upload the PNG to MineSkin once and keep the address it returns.
+6. **The fitting wall: real clothes, no client mod.** A mannequin wears the current pick; each clothes row (hats and
+   wigs, wings, tops, trousers and skirts, shoes) has a ◀ and a ▶ vanilla button, and three more buttons wear the
+   look, pick a random one, or take it off. Right-clicking the dummy also offers to wear the look.
+   - `equippable={slot:"chest",asset_id:"ns:x"}` draws `assets/ns/equipment/x.json`, whose layers are `humanoid`
+     (a 64x32 texture in the old armour layout: head, chest, feet), `humanoid_leggings` (legs) and `wings` (the elytra
+     model). Transparent pixels are not drawn.
+   - One chest asset can hold `humanoid` AND `wings` layers, so a top and wings share the chest slot. Without a
+     `glider` component nobody glides.
+   - A head item with `equippable` but no `asset_id` is drawn as its item model on the head: a 3D hat. The head spans
+     model units 1.6 to 14.4 on every axis (1 head pixel = 1.6), the model's north is the face, and x is mirrored.
+   - Mannequins render like players, so a mannequin previews everything. `item replace entity <uuid> armor.<slot>`
+     dresses it, but `query(e, 'holds', slot)` is null on a mannequin: re-dress it in full every time.
+   - Every piece carries `custom_data={studio_outfit:1b}`. The app only replaces or removes pieces with that tag, so
+     a player's real armour stays on.
+   - Text components in a list inherit the first element's style. Start a coloured list with `''`.
+7. **The clerk resets a look:** studio pieces off and `skin reset <player>` (SkinRestorer), behind a confirm dialog
+   and a 10 s cooldown.
+
+## runway.sc: a fashion show on the studio floor
+
+`scarpet-apps/runway.sc` + `runway.data.example/` + the music in `resourcepacks/studio_music` (`lounge:runway.show`,
+`lounge:runway.pose`). A host podium with two vanilla buttons: **sign up** and **start**.
+
+1. **Sign up = a snapshot of the look you wear now:** the four armour slots (`inventory_get(p, 36..39)`, stored as NBT
+   strings) and the skin you wear now, read from the shared file `skins_now` (`read_file('skins_now', 'shared_json')`;
+   residents.sc and skinpaint.sc write it whenever they put a skin on someone: a signed MineSkin texture or a pack
+   texture). Apps can't read each other's data folders; `shared_json` is the way to share.
+2. **The show:** each look walks the runway on a model mannequin (`data modify entity <uuid> profile set value …`,
+   `data modify entity <uuid> equipment.<slot> set value <nbt>`), moved with `modify(e, 'pos', …)` every tick from
+   backstage to the audience, then a pose (a spin, a crouch, flashes, the cheer sound), then back. A finale lines up to
+   five of them. Titles and music go only to real players inside the studio floor box; the line-up clears afterwards.
+3. **Nobody signed up = a house show:** three random looks from the wardrobe catalogue on the studio skins, so the
+   button always does something.
+4. **An unrecorded skin:** a mannequin profile `{name:"<player>"}` is not resolved by an offline-mode server; the
+   sign-up dialog tells players to put their skin on again (so it is recorded) before signing up.
 
 ## arcade.sc: games with physics and a score
 

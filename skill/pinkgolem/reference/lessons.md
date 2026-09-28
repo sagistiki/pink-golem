@@ -140,5 +140,25 @@ Read this once; come back when something feels familiar. New lessons you learn g
     renderer does not draw. Photograph the station building, or take a real in-game screenshot.
 48. **A lit redstone lamp set with `setblock` turned itself off.** For lights an app switches on and off, use
     `waxed_copper_bulb[lit=true|false]`: a copper bulb keeps its state without redstone.
+49. **Players painted with red error spam.** `query(p, 'active_item')` does not exist in Carpet for 26.2. Track a
+    held right-click with `__on_player_uses_item` / `__on_player_releases_item` and check
+    `query(p, 'holds', 'mainhand')` each tick.
+50. **"Saving needs a restart" after the restart.** Scarpet apps load before Fabric's `SERVER_STARTED`, so a file a
+    mod writes at start is not there yet in `__on_start`. Read such markers lazily, when they are needed.
+51. **A toolbar and every mannequin after it never spawned.** An entity tag with `:` (`tool:brush`) breaks
+    `@e[tag=..]`, and the error stopped the whole spawn pass. Keep tags to `[a-z0-9_]`.
+52. **A live one-function patch broke the function.** Patches are joined into one line, so a `//` comment in the
+    middle of an expression swallowed the rest. Put comments on their own line above.
+53. **The easel vanished from across the room.** `view_range` scales the entity render distance: 0.3 is about 19
+    blocks. UI that must read across a room needs 1.0. A `text_display` is hidden behind blocks, unlike a nametag
+    (lesson 44), so a longer range does not leak through floors.
+54. **Pixels any colour, cheaply:** a 10x10 white glyph with ascent 7 fills one text-display line exactly (lines are
+    10 font px apart at 0.025 block/px), a -1 space glyph cancels the automatic +1 advance, and the component colour
+    tints it. One `text_display` per band of the picture, `shadow` off.
+55. **Music for someone moving far (a 150-block lift ride) faded away.** A played sound stays where it started. Pass
+    `minVolume` (`playsound <s> record @s ~ ~ ~ 0.55 1 0.55`): beyond its range the listener keeps hearing it at that
+    level. For short rides, slice a track into equal segments and play each rider the next one.
+56. **"Some colours don't work" on a pixel canvas** was painting under a template's second layer. Paint what the
+    player sees by default, and show a cursor on the aimed pixel; add a magnifier when pixels are small.
 
 See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`, `tower-floors.md`.

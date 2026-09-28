@@ -18,6 +18,7 @@ import com.mojang.brigadier.context.CommandContext;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -48,6 +49,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
@@ -83,6 +85,13 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
  *    stop sets the camera to the given entity, or to the camera the server thinks the player has. Disconnect,
  *    death, respawn and a dimension change clean up by themselves; one fake per player.
  *
+ * 4. Skin easel (op level 2+, called by the scarpet app skinpaint.sc):
+ *    /skinbake <id>   reads world/scripts/skinpaint.data/bake/<id>.json (4096 ARGB pixels), writes png/<id>.png,
+ *                     uploads it to MineSkin (SkinBake, off the server thread) and answers on the server thread with
+ *                     `script in skinpaint run _baked('<id>','<url>','<value>','<signature>')` or `_bake_failed('<id>','<why>')`.
+ *    On start it writes skinpaint.data/keybridge.json {"version","skinbake":true} so the app knows it can save.
+ *    Optional MineSkin API key (higher limits): config/keybridge-mineskin.txt.
+ *
  * No client install needed. Any failure is logged once and that part switches off; it never takes the server down.
  */
 public class KeyBridge implements ModInitializer {
@@ -115,6 +124,7 @@ public class KeyBridge implements ModInitializer {
     private boolean flipBroken = false;
     private boolean keysBroken = false;
     private boolean packBroken = false;
+    private SkinBake baker = null;
 
     @Override
     public void onInitialize() {
@@ -122,6 +132,11 @@ public class KeyBridge implements ModInitializer {
             ServerTickEvents.START_SERVER_TICK.register(this::safeTick);
         } catch (Throwable t) {
             System.err.println("[KeyBridge] keys disabled: " + t);
+        }
+        try {
+            ServerLifecycleEvents.SERVER_STARTED.register(this::skinMarker);
+        } catch (Throwable t) {
+            System.err.println("[KeyBridge] skin easel marker disabled: " + t);
         }
         try {
             CommandRegistrationCallback.EVENT.register((dispatcher, context, selection) -> register(dispatcher));
@@ -205,11 +220,61 @@ public class KeyBridge implements ModInitializer {
         p.connection.send(new ClientboundResourcePackPushPacket(PUSH_ID, latest.url(), latest.hash(), latest.required(), latest.prompt()));
     }
 
+    // ───────────────────────────── skin easel ─────────────────────────────
+    private static Path skinDir(MinecraftServer server) {
+        return server.getWorldPath(LevelResource.ROOT).normalize().resolve("scripts").resolve("skinpaint.data");
+    }
+
+    private void skinMarker(MinecraftServer server) {
+        try {
+            Path dir = skinDir(server);
+            java.nio.file.Files.createDirectories(dir);
+            java.nio.file.Files.writeString(dir.resolve("keybridge.json"), "{\"version\":\"1.3.0\",\"skinbake\":true}");
+        } catch (Throwable t) {
+            System.err.println("[KeyBridge] could not write the skin easel marker: " + t);
+        }
+    }
+
+    private static String scarpetSafe(String s) {
+        return s == null ? "" : s.replaceAll("[^A-Za-z0-9+/=:._ -]", "");
+    }
+
+    private int skinBake(CommandSourceStack src, String id) {
+        if (!SkinBake.validId(id)) {
+            src.sendFailure(Component.literal("[KeyBridge] skinbake: bad id"));
+            return 0;
+        }
+        MinecraftServer server = src.getServer();
+        if (baker == null) {
+            String key = "";
+            try {
+                Path kf = server.getServerDirectory().resolve("config").resolve("keybridge-mineskin.txt");
+                if (java.nio.file.Files.exists(kf)) key = java.nio.file.Files.readString(kf).trim();
+            } catch (Throwable ignored) {
+            }
+            baker = new SkinBake(key);
+        }
+        baker.bake(skinDir(server), id, r -> server.execute(() -> {
+            String cmd = r.ok()
+                    ? "script in skinpaint run _baked('" + id + "','" + scarpetSafe(r.url()) + "','" + scarpetSafe(r.value()) + "','" + scarpetSafe(r.signature()) + "')"
+                    : "script in skinpaint run _bake_failed('" + id + "','" + scarpetSafe(r.error()) + "')";
+            try {
+                server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), cmd);
+            } catch (Throwable t) {
+                System.err.println("[KeyBridge] skinbake callback failed: " + t);
+            }
+        }));
+        src.sendSuccess(() -> Component.literal("[KeyBridge] baking " + id), false);
+        return 1;
+    }
+
     private void register(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("packpush").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(c -> status(c.getSource()))
                 .then(Commands.argument("args", StringArgumentType.greedyString())
                         .executes(c -> push(c.getSource(), StringArgumentType.getString(c, "args")))));
+        d.register(Commands.literal("skinbake").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.argument("id", StringArgumentType.word()).executes(c -> skinBake(c.getSource(), StringArgumentType.getString(c, "id")))));
         d.register(Commands.literal("packpop").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .executes(c -> pop(c.getSource())));
         d.register(Commands.literal("flipcam").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))

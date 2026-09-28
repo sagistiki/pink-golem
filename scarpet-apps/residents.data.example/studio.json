@@ -1,9 +1,11 @@
 {
  "_doc": [
-  "residents.sc studio: 7 skin mannequins (feet on the plinth tops, facing the runway; plaque = the text in front),",
-  "the wardrobe hitbox, the card clerk, the card-display quad (item_display yaw = direction the viewers stand in:",
-  "0 south, 90 west, -90 east, 180 north — the lobby-map convention). skin ids = SkinRestorer collection names.",
-  "skins[].url = a textures.minecraft.net address from MineSkin (uploaded once once; SkinRestorer's web provider re-signs it instantly). Applied with: skin set web classic <url> <player>."
+  "residents.sc studio (EXAMPLE coordinates from one real build: replace them with your own). 7 skin mannequins (feet on",
+  "the plinth tops, facing the runway; plaque = the text in front), the card clerk, the card-display quad (item_display",
+  "yaw = direction the viewers stand in: 0 south, 90 west, -90 east, 180 north — the lobby-map convention), the fitting",
+  "wall. skin ids = SkinRestorer collection names.",
+  "skins[].url = a textures.minecraft.net address from MineSkin (uploaded once; SkinRestorer's web provider re-signs it instantly). Applied with: skin set web classic <url> <player>.",
+  "Optional 'wardrobe': {pos, w, h, label} = an interaction hitbox that opens the dyed-leather outfit dialog (outfits[])."
  ],
  "skins": [
   {
@@ -147,27 +149,13 @@
    "url": "https://textures.minecraft.net/texture/ec16adbedd17d94cd91320dc5dedaf90735fdceeacb7412dbb50f371fdc97488"
   }
  ],
- "wardrobe": {
-  "pos": [
-   -77.5,
-   -26,
-   -95.0
-  ],
-  "w": 1.4,
-  "h": 2.4,
-  "label": [
-   -77.5,
-   -23.2,
-   -95.0
-  ]
- },
  "clerk": {
   "pos": [
    -54.5,
    -26,
-   -97.65
+   -95.6
   ],
-  "yaw": 0,
+  "yaw": 180,
   "name": "Residents office",
   "skin": "studio:entity/skin/soft_boy"
  },
@@ -298,5 +286,66 @@
    },
    "hat": true
   }
- ]
+ ],
+ "fitting": {
+  "_doc": "fitting wall (EXAMPLE coordinates): a wall along z at x=-79 facing east (yaw -90 = the glyphs face +x). Vanilla button blocks at x=button_x: one row per wardrobe.json row at y=rows_y[key], ◀ prev at z=prev_z (the viewer's left), ▶ next at z=next_z; actions (wear / random / off) are more buttons. face_x = just in front of the wall (where the ◀ ▶ glyphs float), label_x/label_z = the row captions, title = the heading. model = the mannequin that wears the selection (skin wardrobe:entity/dummy from resourcepacks/wardrobe). The catalogue is wardrobe.json (resourcepacks/wardrobe/gen_wardrobe_pack.py).",
+  "model": {
+   "pos": [
+    -77.5,
+    -25,
+    -94.5
+   ],
+   "yaw": -90,
+   "skin": "wardrobe:entity/dummy",
+   "name": "Fitting dummy"
+  },
+  "yaw": -90,
+  "button_x": -78,
+  "face_x": -77.855,
+  "label_x": -77.97,
+  "prev_z": -93,
+  "next_z": -97,
+  "label_z": -91.5,
+  "rows_y": {
+   "head": -22,
+   "wings": -23,
+   "top": -24,
+   "legs": -25,
+   "feet": -26
+  },
+  "actions": [
+   {
+    "id": "wear",
+    "pos": [
+     -78,
+     -24,
+     -98
+    ],
+    "text": "✓ Wear"
+   },
+   {
+    "id": "random",
+    "pos": [
+     -78,
+     -25,
+     -98
+    ],
+    "text": "↻ Surprise"
+   },
+   {
+    "id": "off",
+    "pos": [
+     -78,
+     -26,
+     -98
+    ],
+    "text": "✕ Take off"
+   }
+  ],
+  "title": [
+   -77.97,
+   -21.35,
+   -94.5
+  ]
+ }
 }

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-28: A character studio: real clothes, a fitting wall, and an in-game skin easel
+
+- **Clothes from the pack, not dyed leather.** [`resourcepacks/wardrobe`](resourcepacks/wardrobe) draws 15 tops, 11
+  bottoms, 8 shoes, 4 wigs, 15 3D hats and 5 wings in code as 26.x equipment assets (a top and wings share one chest
+  item) and head item models.
+- **Fitting wall** in `residents.sc`: a turning mannequin, a row of vanilla ◀ ▶ buttons per slot, and wear /
+  surprise / take off buttons. The clerk can also reset your look.
+- **Skin easel**, a new app [`scarpet-apps/skinpaint.sc`](scarpet-apps/skinpaint.sc) with
+  [`resourcepacks/skinpaint`](resourcepacks/skinpaint):
+  - you paint a real 64x64 skin (5 views, 2 layers) on a wall of `text_display` pixels;
+  - the tools are on the wall: a colour strip, a paint toolbar, a stage at eye height;
+  - saving gives you the skin for everyone;
+  - a gallery shows saved skins, with creators' hide / show / delete.
+- **Key Bridge 1.3**: `/skinbake` makes the PNG, uploads it to MineSkin off the server thread, and answers the app.
+- **Easel precision**: an automatic layer (paint what you see), a cursor on the aimed pixel, a 3x magnifier.
+- **Fashion show** [`scarpet-apps/runway.sc`](scarpet-apps/runway.sc): sign up with your look and skin, models walk the
+  runway, a finale, a house show when nobody signed up.
+- **Original music** [`resourcepacks/studio_music`](resourcepacks/studio_music): a lofi for lifts (segments +
+  `minVolume`) and a runway track.
+- New case study: [`docs/case-study-character-studio.md`](docs/case-study-character-studio.md). Lessons 49-56.
+
 ## 2026-09-28: A tower of floors: hotel, registration, arcade, club, museum, roof bar, build protection
 
 Seven new scarpet apps, each with an example data folder (`scarpet-apps/<app>.data.example/`) and no client mod:

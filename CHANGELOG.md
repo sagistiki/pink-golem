@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-30: The skin easel's cursor
+
+- **Fix:** `scarpet-apps/skinpaint.sc` set the cursor's `text_opacity` to `150b`, which is not a valid NBT byte (a byte
+  ends at 127), so creating the cursor failed with "Incorrect NBT tag" whenever it had to be made again (after a
+  restart or a cleanup). It is now `-106b`, the same 150 as an unsigned byte.
+
 ## 2026-09-29: An automatic check on GitHub, a privacy page, a town GIF
 
 - **GitHub checks every push and pull request** ([`.github/workflows/check.yml`](.github/workflows/check.yml)), with no

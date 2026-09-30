@@ -52,7 +52,7 @@ component per run of equal colour, rebuilt only when a pixel in that band change
 - Give the brush with `item replace entity <p> hotbar.8 with …` and select that slot; stash what was there and give it
   back on release (a plain `/give` gives nothing to a full inventory).
 - Tooltips: while the brush is held, the action bar names what the ray points at (only when it changes).
-- **A cursor:** one `text_display` with the pixel glyph, `text_opacity:150`, a hair in front of the canvas, moved
+- **A cursor:** one `text_display` with the pixel glyph, `text_opacity:-106b` (150 as an unsigned byte; `150b` is not a valid NBT byte and fails with "Incorrect NBT tag"), a hair in front of the canvas, moved
   every 2 ticks onto the aimed cell in the brush colour (only when the cell changes). Without it players can't tell
   whether the ray lands one pixel off.
 - **Magnifier:** pixels of 0.19 block are hard to hit from 3-4 blocks. A zoom window (up to 16 x 10 cells of one view)

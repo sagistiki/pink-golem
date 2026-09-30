@@ -599,7 +599,7 @@ _ui_ensure() -> (
   _textx('sp_zoom', [global_L:'plane_x' + 0.004, global_L:'y_top', global_L:'views':0:'z_left'], -90, '', global_L:'scale' * global_ZOOM, 0, false);
   _textx('sp_tb_zm', _tb_pos(3, 7, 1, 1, hs), -90, _sw([]), hs, 0, false);
   if (!_ent('sp_cursor'), (_textx('sp_cursor', [global_L:'plane_x' + 0.012, global_L:'y_top', global_L:'views':0:'z_left'], -90, '', global_L:'scale', 0, false);
-    e = _ent('sp_cursor'); if (e, modify(e, 'nbt_merge', '{text_opacity:150b,interpolation_duration:0}'))));
+    e = _ent('sp_cursor'); if (e, modify(e, 'nbt_merge', '{text_opacity:-106b,interpolation_duration:0}'))));
   for (TB:'tools', (
     t = _;
     _one('sp_tbi_' + replace(t:'action', ':', '_'), 'item_display', [global_L:'plane_x' + 0.015, TB:'y_top' - (t:'row' + 0.5) * TB:'cell', TB:'z_left' - (t:'col' + 0.5) * TB:'cell'],

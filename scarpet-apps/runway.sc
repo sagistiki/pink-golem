@@ -184,7 +184,7 @@ _show_tick() -> (
     if (t == 1, (e = _model_spawn(m, R:'z_back', 0, 'rw_walk'); S:'e' = if (e, query(e, 'uuid'), null); _announce(m)));
     if (!e, return(_next(S)));
     z = min(R:'z_front', R:'z_back' + t * R:'speed');
-    modify(e, 'pos', R:'x', R:'y', z);
+    _mv(e, R:'x', R:'y', z);
     if (z >= R:'z_front', (S:'phase' = 'pose'; S:'t' = 0; _flash([R:'x', R:'y', z])))
   ), ph == 'pose', (
     if (!e, return(_next(S)));
@@ -197,10 +197,13 @@ _show_tick() -> (
   ), ph == 'walk_out', (
     if (!e, return(_next(S)));
     z = max(R:'z_back', R:'z_front' - t * R:'speed');
-    modify(e, 'pos', R:'x', R:'y', z);
+    _mv(e, R:'x', R:'y', z);
     if (z <= R:'z_back', (modify(e, 'remove'); _next(S)))
   ))
 );
+// vanilla tp, not modify(), for mannequins: Carpet's own position packet fights the tracker's 2-tick deltas → walking
+// models jump
+_mv(e, x, y, z) -> run(str('tp %s %.4f %.4f %.4f', query(e, 'uuid'), x, y, z));
 _next(S) -> (
   S:'i' = S:'i' + 1; S:'t' = 0; S:'e' = null;
   S:'phase' = if (S:'i' >= length(S:'list'), 'finale', 'walk_in')

@@ -60,7 +60,7 @@ str('%s at %d %d %d', b, x, y, z)                      // printf-style formattin
 | `query(e, 'nbt', 'Path')` | one NBT value; wrap in `str()` (a UUID read raw came back as zeros) |
 | `query(e, 'mount')`, `e~'type'`, `e~'gamemode'`, `e~'dimension'`, `e~'motion'` | vehicle, type, mode ... |
 | `modify(e, 'swing')` | arm swing (players, mannequins) |
-| `modify(e, 'pos', [x,y,z])`, `modify(e, 'yaw', 90)`, `modify(e, 'remove')` | move, turn, delete |
+| `modify(e, 'pos', [x,y,z])`, `modify(e, 'yaw', 90)`, `modify(e, 'remove')` | move, turn, delete (moving things: see the traps below) |
 | `spawn('text_display', [x,y,z], '{...snbt...}')` | summons and returns the entity |
 | `run('command')` | runs a command as the server console |
 | `schedule(ticks, '_fn', args...)` | calls a function later (apps) |
@@ -121,6 +121,8 @@ Reading the ground: in a flat world the ground block is at y=-61 (players stand 
 | an app importing a module with its own name | "Cannot import …, too deep or too loopy" | name the library differently from every app |
 | Carpet fake players in tests | dying resets health to 20 and disconnects; `/kill` only disconnects (no death); in spectator they fall out of the world unless flying; the name may come back in another case (`Kit_A` → `Kit_a`) | `statistic(p, 'custom', 'deaths')`, `/damage`, `modify(p, 'flying', true)`, always `p ~ 'name'` |
 | `slice()` of an empty list | throws "/ by zero" | `if (l, slice(l, 0, min(5, length(l))), [])` |
+| moving a seat / NPC every tick with `modify(e, 'pos'\|'location', …)` when it is an armor stand, mannequin, mob or interaction | Carpet sends its own position packet, but the vanilla tracker still sends a delta from the spot IT last sent (every 2-3 ticks for these types): the client adds it on top → the entity (and whoever rides it) jumps ahead and snaps back | seats that move = invisible `item_display` with `teleport_duration` (displays sync every tick; the passenger offset is the same as a marker armor stand: feet = seat − 0.6). A humanoid that must stand (every passenger is drawn sitting) = `run('tp <uuid> x y z yaw 0')` each tick, a tick or two ahead |
+| a ONE-OFF `modify(e, 'pos', …)` of any entity (a mole pops, a marker snaps, a pet goes to bed) | same clash: it is drawn one move too far until the next full resync (20-60 s) | `run(str('tp %s %.4f %.4f %.4f', query(e, 'uuid'), x, y, z))` — note the move shows in `pos()` only on the next call |
 | `list + list` | adds element by element (fails on uneven sizes) | `for (b, a += _)` |
 | `...` spread | does not exist | pass the list, index it |
 | a lambda that uses a local of the function that made it | lambdas don't capture: the local is null inside | capture it with `_(outer(x), e) -> ...`, pass it as an argument, or keep it in a `global_` |

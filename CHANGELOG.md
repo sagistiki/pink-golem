@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-30: Rides that move smoothly
+
+- **Fix: riders jumped on moving seats.** Carpet's `modify(e, 'pos'|'location', …)` sends its own position packet, but the
+  vanilla tracker still sends a delta from the spot it last sent (every 3 ticks for an armor stand, 2 for a mannequin),
+  and the client adds that delta on top. So anything moved every tick that was not a display ran ahead and snapped back.
+  - The seats in `cars.sc`, the Ferris wheel cabins (`ferris.sc`) and the arcade dance pad are now invisible
+    `item_display`s, which sync every tick and interpolate like the body they sit in. Seat heights are unchanged; the
+    Ferris wheel seat moved up 1.975 because a full-size armor stand carried its passengers that much higher.
+  - Walking runway models and one-off moves use vanilla `tp` instead: pins, moles, prizes, the dance seat and the
+    skin-easel markers. A one-off `modify` left the entity drawn one move too far until a full resync, 20-60 s later.
+- The scarpet reference lists both traps with the fix ([`skill/pinkgolem/reference/scarpet.md`](skill/pinkgolem/reference/scarpet.md)).
+
 ## 2026-09-30: The skin easel's cursor
 
 - **Fix:** `scarpet-apps/skinpaint.sc` set the cursor's `text_opacity` to `150b`, which is not a valid NBT byte (a byte

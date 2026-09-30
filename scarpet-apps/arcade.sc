@@ -52,6 +52,9 @@ _real(p) -> p && ((p ~ 'player_type') != 'fake' || global_allow_fake);
 _admin(p) -> (p ~ 'permission_level') >= 2;
 _snd(q, s, v, pt) -> run(str('playsound %s master @a %.2f %.2f %.2f %.2f %.2f', s, q:0, q:1, q:2, v, pt));
 _ent(tag) -> entity_id(global_ents:tag);
+// one-off moves (a pin falls, a mole pops, a prize drops, the dance seat snaps) use vanilla tp, not modify(): Carpet's own
+// position packet + the tracker's delta from the old spot left the entity drawn one move too far
+_mv(e, x, y, z) -> run(str('tp %s %.4f %.4f %.4f', query(e, 'uuid'), x, y, z));
 _tf(s) -> str('transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.3ff,%.3ff,%.3ff]}', s, s, s);
 _tfq(q, s) -> str('{transformation:{left_rotation:[%.4ff,%.4ff,%.4ff,%.4ff],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.3ff,%.3ff,%.3ff]},start_interpolation:0,interpolation_duration:3}', q:0, q:1, q:2, q:3, s, s, s);
 _item(model) -> str('item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"%s"}}', model);
@@ -146,9 +149,9 @@ _pin_render(st, i) -> (
   e = _one(_pin_tag(st, i), 'item_display', [pn:'x', global_pin_y, pn:'z'],
     str('teleport_duration:1,brightness:{sky:15,block:14},%s,%s', _item('arcade:pin'), _tf(0.75)));
   if (!e, return());
-  if (pn:'gone', modify(e, 'pos', pn:'x', 18.2, pn:'z'),
-      pn:'up', modify(e, 'pos', pn:'x', global_pin_y, pn:'z'),
-      modify(e, 'pos', pn:'x', 19.12, pn:'z'))
+  if (pn:'gone', _mv(e, pn:'x', 18.2, pn:'z'),
+      pn:'up', _mv(e, pn:'x', global_pin_y, pn:'z'),
+      _mv(e, pn:'x', 19.12, pn:'z'))
 );
 _pin_upright(st, i) -> (e = _ent(_pin_tag(st, i)); if (e, modify(e, 'nbt_merge', _tfq([0, 0, 0, 1], 0.75))));
 _pin_fall(st, i, dx, dz) -> (
@@ -482,7 +485,7 @@ _claw_tick() -> (
   ), ph == 'carry', (
     f = min(1, c:'t' / 20); c:'x' = c:'sx' + (C:'chute':0 - c:'sx') * f; c:'z' = c:'sz' + (C:'chute':2 - c:'sz') * f;
     if (c:'t' == 10 && c:'held' >= 0 && rand(1) < 0.12, (
-      pe = _ent('arc_prize_' + c:'held'); if (pe, modify(pe, 'pos', c:'x', C:'floor_y', c:'z'));
+      pe = _ent('arc_prize_' + c:'held'); if (pe, _mv(pe, c:'x', C:'floor_y', c:'z'));
       c:'held' = -1; if (p, _bar(p, 'Oh no! It slipped…', '#FFD23E'))));
     if (c:'t' >= 20, (c:'phase' = 'drop'; c:'t' = 0))
   ), ph == 'drop', (
@@ -492,7 +495,7 @@ _claw_tick() -> (
       z = first(values(global_prizes), (_:2 ~ m) != null);
       if (p && z, (run(str('give %s %s 1', c:'player', z:2)); _bar(p, '🎉 You got ' + z:0 + '!', '#FF3EA5');
         _snd(pos(p), 'minecraft:ui.toast.challenge_complete', 0.8, 1.3)));
-      c:'lost':k = true; pe = _ent('arc_prize_' + k); if (pe, modify(pe, 'pos', c:'x', 17.6, c:'z'));
+      c:'lost':k = true; pe = _ent('arc_prize_' + k); if (pe, _mv(pe, c:'x', 17.6, c:'z'));
       schedule(200, '_claw_restock', k)
     ), p, _bar(p, 'So close! Try again ✦', '#FFD23E'));
     c:'on' = false; c:'held' = -1
@@ -505,7 +508,7 @@ _claw_tick() -> (
 _claw_restock(k) -> (
   global_claw:'lost':k = false; B = global_L:'claw':'box';
   pe = _ent('arc_prize_' + k);
-  if (pe, modify(pe, 'pos', B:'x1' + 1.5 + (k % 3), global_L:'claw':'floor_y', B:'z1' + 1.5 + floor(k / 3)))
+  if (pe, _mv(pe, B:'x1' + 1.5 + (k % 3), global_L:'claw':'floor_y', B:'z1' + 1.5 + floor(k / 3)))
 );
 _claw_button(which, p) -> (
   c = global_claw; C = global_L:'claw'; B = C:'box'; n = p ~ 'name';
@@ -534,7 +537,7 @@ _whack_ents() -> (
     _one('arc_hole_' + i, 'interaction', [h:0, 18.95, h:2], 'width:0.9f,height:0.9f,response:1b')
   ))
 );
-_mole(i, up) -> (h = global_L:'whack':'holes':i; e = _ent('arc_mole_' + i); if (e, modify(e, 'pos', h:0, if (up, 19.3, 18.6), h:2)));
+_mole(i, up) -> (h = global_L:'whack':'holes':i; e = _ent('arc_mole_' + i); if (e, _mv(e, h:0, if (up, 19.3, 18.6), h:2)));
 _whack_start(p) -> (
   if (global_whack:'on', return(_bar(p, 'Someone is playing: one moment', 'yellow')));
   global_whack = {'on' -> true, 'player' -> p ~ 'name', 't' -> 0, 'score' -> 0, 'up' -> map(range(9), 0), 'next' -> 20};
@@ -606,7 +609,7 @@ _rhythm_start(p) -> (
   global_rhythm:'last' = reduce(global_rhythm:'notes', max(_a, _:'t'), 0);
   c0 = global_L:'rhythm':'pad':'center';
   for (entity_selector('@e[tag=arc_ddr_seat]'), modify(_, 'remove'));
-  seat = spawn('armor_stand', [c0:0 + 0.5, 19.6, c0:2 + 0.5], '{Tags:["arcade","arc_ddr_seat"],Marker:1b,Invisible:1b,NoGravity:1b,Invulnerable:1b,Silent:1b,Rotation:[180f,0f]}');
+  seat = spawn('item_display', [c0:0 + 0.5, 19.6, c0:2 + 0.5], '{Tags:["arcade","arc_ddr_seat"],teleport_duration:1,Rotation:[180f,0f]}');
   global_rhythm:'seat' = query(seat, 'uuid'); global_rhythm:'dir' = null; global_rhythm:'shift' = 0;
   run(str('ride %s mount %s', p ~ 'name', global_rhythm:'seat'));
   _bar(p, '💃 W ↑ · S ↓ · A ← · D → on the beat, when the arrow reaches the line · hold Shift = quit', '#FF3EA5')
@@ -637,7 +640,7 @@ _rhythm_tick() -> (
   seat = entity_id(r:'seat');
   if (seat && on != r:'dir', (
     q = if (on, R:'pad':on, R:'pad':'center');
-    modify(seat, 'pos', q:0 + 0.5, 19.6, q:2 + 0.5);
+    _mv(seat, q:0 + 0.5, 19.6, q:2 + 0.5);
     r:'dir' = on
   ));
   if (p && seat && !query(p, 'mount'), run(str('ride %s mount %s', r:'player', r:'seat')));   // a Shift tap can't knock you off

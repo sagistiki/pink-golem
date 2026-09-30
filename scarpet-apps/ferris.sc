@@ -7,8 +7,10 @@
 // How it works: the wheel (two red rims, white spokes, yellow cross-bars, a gold hub, 24 chasing lights) is made of
 // block displays that all stand at the axle; each one's `transformation` places and turns it on the wheel. Every 10
 // ticks the app merges the next angle with interpolation_duration:10, so every client animates the turn smoothly.
-// The 8 cabins stay level: each is an invisible armor stand ("seat") that the app moves along the circle every tick,
-// with 12 small gondola displays riding on it (a passenger display rides at seat + 1.975, a player's feet at + 1.375).
+// The 8 cabins stay level: each is an invisible item_display ("seat") that the app moves along the circle every tick,
+// with 12 small gondola displays riding on it (a passenger display rides at the seat, a player's feet at seat - 0.6).
+// A display, not an armor stand: Carpet's modify() sends its own position packet, which fights the tracker's 3-tick
+// deltas on an armor stand (the cabin jumps); displays sync every tick.
 // A player is put in a cabin with  ride <player> mount <seat uuid>  and stays mounted while the seat moves.
 //
 // It runs like a fairground wheel: turn one cabin (5 s, eased), stop (4 s). At every stop the cabin at the bottom lets
@@ -30,7 +32,7 @@ global_STEP = 45;               // 360 / N
 global_MOVE = 100;              // ticks to turn one cabin
 global_STOP = 80;               // ticks stopped at each cabin
 global_UPD = 10;                // ticks between wheel updates (= the interpolation)
-global_DROP = 4.3;              // cross-bar → seat; tuned so the cabin roof clears the cross-bar
+global_DROP = 2.325;              // cross-bar → seat (an item_display: syncs every tick, an armor stand moved every tick jumped); rider feet = seat - 0.6, gondola displays ride at the seat
 global_colors = ['red', 'orange', 'yellow', 'lime', 'light_blue', 'blue', 'purple', 'magenta'];
 global_allow_fake = false;
 
@@ -88,7 +90,7 @@ _derive(w) -> (
 global_gen = str('fw_g%d', floor(rand(1000000000)));
 __on_start() -> (
   global_ready = false;
-  for (['block_display', 'armor_stand'], entity_load_handler(_, _(e, new) -> if (!new, schedule(0, '_stale', query(e, 'uuid')))));
+  for (['block_display', 'armor_stand', 'item_display'], entity_load_handler(_, _(e, new) -> if (!new, schedule(0, '_stale', query(e, 'uuid')))));
   w = read_file('wheel', 'json');
   if (w, _derive(w), logger('warn', '[ferris] no wheel yet — run: script in ferris run setup(x, y, z)'))
 );
@@ -132,7 +134,7 @@ _spawn() -> (
   // cabins: a seat each, with the gondola riding on it
   for (range(global_N),
     col = global_colors:(_ % 8);
-    s = spawn('armor_stand', global_C, str('{Tags:["fw","fw_seat","%s"],Invisible:1b,NoGravity:1b,Invulnerable:1b,Silent:1b,DisabledSlots:4144959}', global_gen));
+    s = spawn('item_display', global_C, str('{Tags:["fw","fw_seat","%s"],teleport_duration:1}', global_gen));
     global_seats += query(s, 'uuid');
     y0 = -0.72;                                                    // just under the rider's feet
     for ([[col + '_concrete', -0.9, y0, -0.9, 1.8, 0.12, 1.8],     // floor

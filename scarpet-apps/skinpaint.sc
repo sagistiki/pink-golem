@@ -60,6 +60,9 @@ _admin(p) -> (p ~ 'permission_level') >= 2;
 _real(p) -> p && ((p ~ 'player_type') != 'fake' || global_allow_fake);
 _d2(a, b) -> (a:0 - b:0) ^ 2 + (a:1 - b:1) ^ 2 + (a:2 - b:2) ^ 2;
 _ent(tag) -> entity_id(global_ents:tag);
+// one-off moves use vanilla tp, not modify(): Carpet's own position packet + the tracker's delta from the old spot drew
+// the marker one move too far
+_mv(e, x, y, z) -> run(str('tp %s %.4f %.4f %.4f', query(e, 'uuid'), x, y, z));
 _today() -> (d = convert_date(unix_time()); str('%02d/%02d/%d', d:2, d:1, d:0));
 _nick(p) -> p ~ 'name';
 _hex(c) -> str('#%06X', bitwise_and(c, 16777215));
@@ -157,7 +160,7 @@ _zoom_draw() -> (
   Zw = global_S:'zoom';
   if (!Zw, return(modify(e, 'nbt_merge', '{text:""}')));
   g = _zoom_geom(); s = global_L:'scale' * global_ZOOM;
-  modify(e, 'pos', global_L:'plane_x' + 0.004, g:'top' - Zw:'h' * g:'P' + 0.025 * s, g:'zl' - Zw:'w' * g:'P' / 2);
+  _mv(e, global_L:'plane_x' + 0.004, g:'top' - Zw:'h' * g:'P' + 0.025 * s, g:'zl' - Zw:'w' * g:'P' / 2);
   modify(e, 'nbt_merge', str('{transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.4ff,%.4ff,%.4ff]},text:%s}',
     s, s, s, encode_json(_grid_text(global_views:(Zw:'vi'), Zw:'v0', Zw:'v0' + Zw:'h', Zw:'u0', Zw:'u0' + Zw:'w'))))
 );
@@ -558,7 +561,7 @@ _cursor(p) -> (
              z = g:'zl' - (h:1 - Zw:'u0' + n / 2) * P; y = g:'top' - (h:2 - Zw:'v0' + n) * P + 0.025 * s),
       (P = global_L:'px'; vw = global_views:(h:0); s = global_L:'scale' * n;
        z = vw:'z_left' - (h:1 + n / 2) * P; y = global_L:'y_top' - (h:2 + n) * P + 0.025 * s));
-    modify(e, 'pos', global_L:'plane_x' + 0.012, y, z);
+    _mv(e, global_L:'plane_x' + 0.012, y, z);
     col = if (global_S:'tool' == 'erase', '#FFFFFF', global_S:'tool' == 'pick', '#FFFFFF', _hex(global_S:'color'));
     modify(e, 'nbt_merge', str('{transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[%.4ff,%.4ff,%.4ff]},text:%s}',
       s, s, s, encode_json({'text' -> global_L:'glyphs':'px', 'font' -> 'skinpaint:canvas', 'color' -> col})))
@@ -619,15 +622,15 @@ _ui_refresh() -> (
   sel = first(TB:'tools', _:'action' == 'tool:' + (S:'tool' || 'brush'));
   k = TB:'cell' / 0.25 * 0.96;
   e = _ent('sp_tb_sel');
-  if (e, (p0 = _tb_pos(sel:'col', sel:'row', 1, 1, k); modify(e, 'pos', p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
+  if (e, (p0 = _tb_pos(sel:'col', sel:'row', 1, 1, k); _mv(e, p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
           _set_text('sp_tb_sel', _sw([{'text' -> '', 'color' -> if (on, '#FF4FA0', '#E8D0DD')}]))));
   m = first(TB:'tools', _:'action' == 'mirror');
   e = _ent('sp_tb_mir');
-  if (e, (p0 = _tb_pos(m:'col', m:'row', 1, 1, k); modify(e, 'pos', p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
+  if (e, (p0 = _tb_pos(m:'col', m:'row', 1, 1, k); _mv(e, p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
           _set_text('sp_tb_mir', _sw(if (on && S:'mirror', [{'text' -> '', 'color' -> '#5BCEFA'}], [])))));
   zt = first(TB:'tools', _:'action' == 'zoom');
   e = _ent('sp_tb_zm');
-  if (e && zt, (p0 = _tb_pos(zt:'col', zt:'row', 1, 1, k); modify(e, 'pos', p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
+  if (e && zt, (p0 = _tb_pos(zt:'col', zt:'row', 1, 1, k); _mv(e, p0:0 - 0.005, p0:1 + TB:'cell' * 0.02, p0:2);
           _set_text('sp_tb_zm', _sw(if (on && (S:'zoom' || S:'zoom_pick'), [{'text' -> global_L:'glyphs':'px', 'color' -> '#FFD23F'}], [])))));
   e = _ent('sp_tbi_layer');
   if (e, modify(e, 'nbt_merge', str('{item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"skinpaint:tb_layer%d"}}}', if (on && S:'layer' == 2, 2, 1))))

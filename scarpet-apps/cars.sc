@@ -3,7 +3,8 @@
 // (1 W · 2 S · 4 A · 8 D · 16 Space · 32 Shift · 64 Ctrl).
 //
 // A car = an item_display with the model (teleport_duration 2 → smooth), an interaction box (right-click = get in),
-// a marker armor stand as the seat. Physics run here every tick, only for cars that have a driver or are still
+// an invisible item_display as the seat (an armor stand moved every tick jumped — Carpet's position packet fights the
+// tracker's 3-tick deltas; displays sync every tick and interpolate like the body, so the rider moves with the car). Physics run here every tick, only for cars that have a driver or are still
 // moving: throttle with a soft top speed, brakes, reverse, steering that scales with speed, grip on the tyres (the
 // sideways slide decays) — Space pulls the handbrake: less grip, the tail slides out, you drift. Ctrl = boost.
 // Solid blocks stop the car (bounce + crunch), 1-block steps are climbed, it falls off edges, grass slows it down,
@@ -113,9 +114,9 @@ _new_car(model, color, q, yaw, home) -> (
   body = spawn('item_display', q, str('{Tags:[%s],item:{id:"minecraft:paper",count:1,components:{"minecraft:item_model":"cars:%s","minecraft:dyed_color":%d}},teleport_duration:2,Rotation:[%.1ff,0f],view_range:4f,shadow_radius:1.4f,shadow_strength:0.6f,transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,%.3ff,0f],scale:[%.2ff,%.2ff,%.2ff]}}',
     tags, model, rgb, yaw + global_MODEL_YAW, m:1 / 2, m:1, m:1, m:1));
   hit = spawn('interaction', q, str('{Tags:[%s],width:%.2ff,height:1.6f,response:1b}', tags, m:9 * 2 + 0.2));
-  seat_nbt = str('{Tags:[%s],Marker:1b,Invisible:1b,NoGravity:1b,Invulnerable:1b,Rotation:[%.1ff,0f]}', tags, yaw);
-  seat = spawn('armor_stand', q, seat_nbt);
-  seat2 = spawn('armor_stand', q, seat_nbt);
+  seat_nbt = str('{Tags:[%s],teleport_duration:2,Rotation:[%.1ff,0f]}', tags, yaw);
+  seat = spawn('item_display', q, seat_nbt);
+  seat2 = spawn('item_display', q, seat_nbt);
   c = {'id' -> id, 'model' -> model, 'color' -> color, 'body' -> query(body, 'uuid'), 'hit' -> query(hit, 'uuid'),
        'seat' -> query(seat, 'uuid'), 'seat2' -> query(seat2, 'uuid'),
        'x' -> q:0, 'y' -> q:1, 'z' -> q:2, 'h' -> yaw, 'vx' -> 0, 'vz' -> 0, 'vy' -> 0, 'steer' -> 0,

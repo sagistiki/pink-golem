@@ -188,4 +188,17 @@ Read this once; come back when something feels familiar. New lessons you learn g
     `server.properties`; when it fails, try the next host once. Never loop uploads: retry loops look like bot spam,
     and free hosts close uploads over it. `minecraft_pack action:deploy` does both.
 
+## From horror games: monsters, jump scares and sound
+
+63. **A jump scare made no sound.** The catch called the exit in the same tick, so the exit's blindness, its own sound
+    and title and the teleport buried the scream (a played sound stays where it started, lesson 55). Freeze the player
+    for about a second, show the face and play the scream, then run the exit.
+64. **A game sound was a real trauma trigger.** Players who live with rocket-alert sirens heard a falling creature
+    call, a rising "creak" and a swelling sine chord as the start of an air-raid siren. Never ship a smooth pitch glide
+    (wind-ups, wails, slide or kettle whistles, long trombone bends) or a long pure tone as ambience; use stepped
+    notes and noise. `scripts/siren_check.py` flags them in files, folders and pack zips — run it on music too.
+65. **A monster stood still at the exit.** It chased a player into a dead-end corridor, and from there every far
+    patrol target exhausted the path search. Give each walker its own copy of the navigation grid with exits and safe
+    zones blocked, and pick patrol targets near it.
+
 See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`, `tower-floors.md`.

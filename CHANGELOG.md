@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-03: Script and sound checks (1.1.2)
+
+- **`scripts/sc_check.py`** checks scarpet apps before `script load` (a failed load unloads the running app): bracket
+  depth per function, `list + list` (adds element-wise) and `l:N || default` (list indexes wrap around).
+- **`scripts/siren_check.py`** flags siren-like sounds before they ship: pitch glides of 2+ semitones over 0.3 s (up
+  or down) and long pure tones, in files, folders or a pack zip. For some players a wail is a trauma trigger.
+- Three lessons from horror games (jump scares that made no sound, siren-like sounds, a monster stuck at the exit) and
+  two new scarpet traps in `reference/scarpet.md`.
+
 ## 2026-10-02: Pack hosts are opt-in (1.1.1)
 
 - `minecraft_pack deploy` no longer uploads to a public pack host unless you list it:

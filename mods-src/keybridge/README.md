@@ -1,6 +1,6 @@
 # Key Bridge — a tiny server-side Fabric mod for scarpet apps
 
-Four things scarpet can't do on its own, in ~700 lines of Java. Players need **no** client mod.
+Five things scarpet can't do on its own, in ~800 lines of Java. Players need **no** client mod.
 
 ## 1. Movement keys → scoreboard
 
@@ -36,6 +36,23 @@ no second reload. Otherwise they get it right after login. Adopting rewrites `se
 format, as it does at every start.
 
 `minecraft_pack action:deploy` uses `/packpush` automatically when the command exists.
+
+### With Polymer AutoHost (1.4.0)
+
+[Polymer](https://modrinth.com/mod/polymer) can serve the resource pack itself, from the game port, and send it during
+login (`config/polymer/auto-host.json` → `"enabled": true`). Key Bridge then works with it instead of next to it:
+
+- `/packpush` reuses Polymer's pack id (`main_uuid` in `config/polymer/resource-pack.json`), so the pushed pack
+  **replaces** the one Polymer sent at login instead of stacking a second pack on top of it.
+- Logins are left to Polymer: after `/polymer generate-pack` it sends the regenerated pack itself.
+- `/packpop` is refused (there is no older pack left to go back to: run `/polymer generate-pack` and push again).
+- `/packpush` with no arguments shows `Polymer autohost: on`.
+
+The mod reads both files at every push and every join, so switching AutoHost on or off needs no rebuild. Keep
+`resource-pack` in `server.properties` empty in this mode, or players get two packs. The pack is then served over
+plain HTTP on the game port: a tunnel that only carries the Minecraft protocol (some free tunnel services have a
+"Minecraft Java" tunnel type that resets other traffic) breaks the download for players who join through it — use a
+raw TCP tunnel, or host the pack elsewhere.
 
 ## 3. Flip camera — the world upside down for one player
 
@@ -89,11 +106,29 @@ Scarpet can't write a PNG or make an HTTP request, so the skin easel app
   twice, and bakes one skin at a time. For higher limits put a key in `config/keybridge-mineskin.txt`.
 - The app puts the result on the player with SkinRestorer (`skin set web classic <url> <player>`, re-signed
   instantly for everyone) and on gallery mannequins with the signed `value` + `signature`.
-- At `SERVER_STARTED` the mod writes `skinpaint.data/keybridge.json` (`{"version":"1.3.0","skinbake":true}`) so the
+- At `SERVER_STARTED` the mod writes `skinpaint.data/keybridge.json` (`{"version":"1.4.0","skinbake":true}`) so the
   app knows saving works. Scarpet apps load **before** `SERVER_STARTED`, so the app reads this marker lazily (when
   someone opens the save dialog), not in `__on_start`.
 - `SkinBake.java` has no Minecraft imports; `main()` bakes one file from the command line for testing
   (`java -cp <gson.jar>:<classes> pinkgolem.keybridge.SkinBake <skinpaint.data dir> <id>`).
+
+## 5. Hidden from one player (1.4.0)
+
+An entity tagged `kbhide_<player name in lower case>` is drawn for everyone **except** that player. Every tick the mod
+tells that player's client the entity is gone (a remove-entities packet); the client ignores later updates for an
+id it doesn't know, and if the server sends the entity again (it came back into view), the next tick removes it again.
+
+Typical use: a body double. A seated rider who should look standing to the others gets a mannequin with their skin,
+tagged `kbhide_<their name>`, so the other passengers see it and the rider, who looks out from the same spot, doesn't
+have it in front of the camera.
+
+```
+summon mannequin ~ ~ ~ {Tags:["ride","kbhide_steve"],immovable:1b}
+```
+
+Tags are case-sensitive and player names are not, so the tag always uses the lower-case name. The mod looks at the
+tags of every loaded entity once per tick, so this is for a few special entities, not a visibility system for
+thousands.
 
 ## Build and install
 

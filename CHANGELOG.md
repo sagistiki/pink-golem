@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-02: Checked pack uploads, an entity census, display entities in screenshots (1.1.0)
+
+- **`minecraft_pack deploy` uploads to free pack hosts by itself**: [mcpacks.dev](https://mcpacks.dev), then
+  [catbox.moe](https://catbox.moe) (`resource_pack.upload.hosts` in `pinkgolem.json`).
+  - Each host gets **one** upload. The first copy that downloads back with the right SHA-1 goes into
+    `server.properties`, and the reply names the `host` and every `hosts_tried`.
+  - Why the check: a host started storing empty files while still returning a URL. Why one try each: retry loops look
+    like bot spam to a free host.
+  - Your own `upload.command` (the older `upload_command` still works), `publish_dir` + `public_url` and `url:` work
+    as before. `"upload": {"hosts": []}` turns the public hosts off. [PRIVACY.md](PRIVACY.md) lists both hosts.
+- **New tool `minecraft_entities`** (38 tools now): a census of the loaded display, interaction, armor-stand,
+  mannequin and marker entities by app, with their x/z span.
+  - **Duplicates**: piles of identical copies on one spot (same type, tags, position and what they show). `fix:true`
+    keeps one of each.
+  - **Ghosts**: one object carrying two incarnation tags (`<app>_i<n>`), or one app with two generations alive
+    (`<app>_g<n>`, `_gen<n>`, `_run<n>`): an old copy left behind after a chunk unload.
+  - **Remove** by tags or uuids, a dry run unless `confirm:true`.
+  - The `cu` app has the scan (`census()`, `census_rm()`): update it with `python3 pinkgolem.py apps add cu`.
+  - [`entities.md`](skill/pinkgolem/reference/entities.md) explains the tagging convention it relies on.
+- **Screenshots draw display entities the way players see them**, in iso, top, fpv and pov ([`display.js`](mcp-server/display.js)):
+  - item displays with their models from the server pack, block displays with real block models, text displays with
+    their text, including right-to-left scripts and billboards, depth-tested against the blocks;
+  - vanilla items, blocks and the font come from the client jar of a local Minecraft launcher when there is one
+    (`client_jar` in `pinkgolem.json`: a path, or `false`; `MC_CLIENT_JAR=off`); without it, everything still works
+    with flat colours and markers;
+  - markers and interaction boxes are no longer drawn: players never see them.
+- **Key Bridge 1.4** ([`mods-src/keybridge`](mods-src/keybridge/README.md)):
+  - works with Polymer's AutoHost: `/packpush` reuses Polymer's pack id, so it replaces the pack Polymer sent at login
+    instead of stacking a second one; logins are left to Polymer;
+  - an entity tagged `kbhide_<player name>` is not drawn for that one player (a rider's own body double).
+- Lessons 57-62: integer x/z in `summon`/`tp` are centred (write `-72.0`), entities that vanish from `entity_id()` when
+  a chunk drops below full loading, boards that grew one copy per restart, virtual model mobs, AutoHost behind a
+  "Minecraft Java" tunnel, checking every uploaded pack.
+
 ## 2026-09-30: Rides that move smoothly
 
 - **Fix: riders jumped on moving seats.** Carpet's `modify(e, 'pos'|'location', …)` sends its own position packet, but the

@@ -134,6 +134,44 @@ minecraft_scarpet expression:"l=[]; for(entity_selector('@e[tag=zoo]'), p=pos(_)
   optionally in an area (`from`/`to` or `pos` + `radius`); `dry_run:true` only counts; `types:[...]` for others.
 - Flowers washed away by water or popped off stone show up as dropped items — clean them after fixing the cause.
 
+## Leaks: census, duplicates and ghosts — `minecraft_entities`
+
+Apps that spawn entities leak in two typical ways: a **pile** (the same display summoned again and again on one spot,
+e.g. on every restart) and a **ghost** (an old copy of a moving object left behind when its chunk unloaded, while the
+app made a new one). Both cost server time and look broken.
+
+| Call | What you get |
+|---|---|
+| `minecraft_entities` (census) | display / interaction / armor-stand / mannequin / marker entities by type and by family (first tag that isn't numbered) with their x/z span, plus piles and ghosts. `all:true` = every non-player entity |
+| `action:duplicates` | piles: same type + tags + position + what they show (item model, dye, text, block, transformation). `fix:true` keeps one of each pile and removes the rest |
+| `action:ghosts` | objects carrying two incarnations, apps with two generations alive (see the convention below), newest first |
+| `action:remove tags:[…]` or `uuids:[…]` | a dry run listing what would go; `confirm:true` removes (max 5000, never players) |
+
+Area: every loaded chunk, or `pos`/`player` + `radius` (default 64). **Only loaded chunks are seen**: a leak where
+nobody is standing doesn't show up until someone goes there. After a fix, the app still leaks until its spawn code is
+fixed (lessons 58-59). Mobs whose model comes from a Polymer-based model library show up as their base mob only: the
+model parts are packets, not entities (lesson 60). Needs the `cu` app's `census()`: after an update,
+`python3 pinkgolem.py apps add cu`.
+
+### The tagging convention ghosts rely on
+
+Give everything an app spawns three kinds of tags:
+
+| Tag | Example | Meaning |
+|---|---|---|
+| the app | `bus` | find and remove everything of the app |
+| the object | `bus_5` | one bus = several entities (body, seats, hitboxes) |
+| an incarnation **or** a generation | `bus_i43` / `bus_g7` (also `_gen<n>`, `_run<n>`) | `_i<n>`: a new n every time this object is spawned again. `_g<n>`: one n per app run, bumped when the app starts |
+
+Then an app can sweep by tag (`entity_selector('@e[tag=bus]')`, remove what doesn't carry the live incarnation or
+generation) instead of trusting stored uuids, and the census can say "`bus_5` carries `bus_i43` **and** `bus_i76`":
+one of them is a leftover (ask the app which is live, then `action:remove tags:['bus_i43']`). Only `_i`, `_g`, `_gen`
+and `_run` tags are compared; other numbered tags (`car_12`, `flag_8795`) are object ids and never count as ghosts of
+each other. Keep tags to `[a-z0-9_]`.
+
+Spawn such groups only while a player is near, check for an existing one first, and never in `__on_start` (the chunk
+may not be loaded: lessons 58-59).
+
 ## `execute as … at @s` — the one-entity rule
 
 | Wrong | Right | Why |

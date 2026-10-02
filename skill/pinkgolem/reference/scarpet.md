@@ -102,6 +102,7 @@ Installed with the server (`skill/pinkgolem/scripts/cu.sc`). Call as `script in 
 | `verify('id', k)` | MCP only: compares `cu.data/verify_<id>_<k>.json` with the world |
 | `vfluid('id', x1,y1,z1,x2,y2,z2)` | MCP only: water/lava the build did not place (`stray_fluids`, `flowing`) |
 | `mon_start('id')` | MCP only: the sampler behind `minecraft_monitor` |
+| `census('id', 'deco'\|'all', cx, cz, r)` / `census_rm('id')` | MCP only: the entity scan and remover behind `minecraft_entities` |
 
 `level()`, `restore()` and your own `set()` calls bypass the MCP's zone guard and automatic undo: take a `snap`
 first. Container and sign contents are not in snapshots.

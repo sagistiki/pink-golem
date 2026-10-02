@@ -161,11 +161,19 @@ pack assets (the minimap, a HUD, vehicles, a furniture mod), they must be merged
   deterministic: the same parts give the same SHA-1.
   A clash is a real problem when two packs replace the same file — e.g. two packs that both override
   `assets/minecraft/shaders/core/text.vsh` can't both work; merge the shader code by hand.
-- **deploy** builds, puts the zip under a **new** URL (`upload_command`, or `publish_dir` + `public_url` in the config,
-  or `url:` for a file you uploaded yourself), downloads it back to check the SHA-1, backs up `server.properties`,
-  writes the new url + sha1, and pushes it live with `/packpush` when the Key Bridge mod is installed
-  ([mods-src/keybridge](../../../mods-src/keybridge/README.md)); otherwise players get it after the next restart.
-  `dry_run:true` shows the plan and changes nothing. Never overwrite a file at a URL players already use: a client
-  that downloads while you replace it gets a broken pack, and clients cache by URL.
+- **deploy** builds, puts the zip under a **new** URL, downloads it back to check the SHA-1, backs up
+  `server.properties`, writes the new url + sha1, and pushes it live with `/packpush` when the Key Bridge mod is
+  installed ([mods-src/keybridge](../../../mods-src/keybridge/README.md)); otherwise players get it after the next
+  restart. `dry_run:true` shows the plan and changes nothing. Never overwrite a file at a URL players already use: a
+  client that downloads while you replace it gets a broken pack, and clients cache by URL. Where the zip goes:
+  - by default, free public pack hosts in order: **mcpacks.dev**, then **catbox.moe**
+    (`resource_pack.upload.hosts` in `pinkgolem.json`). Each host gets **one** upload; the first copy that downloads
+    with the right SHA-1 wins, and the reply names the `host` and every `hosts_tried`. A host can return a URL and
+    still store a broken (even empty) file, which is why every copy is checked. Never retry uploads in a loop: free
+    hosts treat that as bot spam.
+  - your own uploader: `"upload": {"command": ["my-upload", "{file}"]}` (it prints the public URL; the older
+    `upload_command` still works);
+  - your own web server: `publish_dir` + `public_url` (a copy under a new name);
+  - `url:` for a file you uploaded yourself. `"upload": {"hosts": []}` turns the public hosts off.
 - **status**: what `server.properties` points at vs. what was built, parts changed since the build, the last deploy,
   whether `/packpush` exists; `check_url:true` downloads the live URL and checks its SHA-1.

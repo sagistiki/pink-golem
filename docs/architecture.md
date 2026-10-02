@@ -82,6 +82,7 @@ network protocol.
 | `tools/memory.js` | `minecraft_map`, `minecraft_zones`, `minecraft_people`, `minecraft_notes`, `minecraft_cleanup` |
 | `tools/dev.js` | `minecraft_app` (lint / status / reload / patch / errors), `minecraft_playtest` (scripted tests with fake players) |
 | `tools/pack.js` | `minecraft_pack` (build / deploy / status of the server resource pack) |
+| `tools/entities.js` | `minecraft_entities` (census / duplicates / ghosts / remove of loaded entities) |
 | `lib/core.js` | paths, the locked RCON call, JSON files, chat, players, geometry, scarpet calls |
 | `lib/features.js` | which mods are installed (see *Feature detection*) |
 | `lib/world.js` | reads the world as a voxel grid; tells natural terrain from builds |
@@ -92,7 +93,7 @@ network protocol.
 | `lib/sight.js` | screenshots, previews, BlueMap photos, the access check, free-space search |
 | `lib/context.js` | where each chat line was written from, big-box reads, area arguments, the preflight (server-side syntax check without running anything) |
 | `lib/devkit.js` | pure helpers of the dev tools: the scarpet linter, zip read/write, resource-pack merge and validation, finding what a test left in app records |
-| `render.js`, `pathfind.js`, `sim.js`, `analyze.js`, `worldmap.js` | pure modules: PNG renderer, A* pathfinder, command simulator (previews), accessibility analysis, world-map index |
+| `render.js`, `display.js`, `pathfind.js`, `sim.js`, `analyze.js`, `worldmap.js` | pure modules: PNG renderer, display entities for it (models, block states and fonts from the resource pack and the optional client jar), A* pathfinder, command simulator (previews), accessibility analysis, world-map index |
 
 ### Hot reload
 
@@ -194,6 +195,13 @@ The MCP server reads `pinkgolem.json` (or the file in `PINKGOLEM_CONFIG`), then 
 override it: `MC_BOT_NAME`, `MC_CHAT_COLOR`, `MC_SERVER_DIR`, `MC_RCON_HOST`, `MC_RCON_PORT`, `MC_RCON_PASSWORD`. The
 RCON port and password come from `server.properties` unless overridden. `pinkgolem.json` also holds `bot_aliases`
 (names players can use to address the AI) and `crew` (`names` of up to 4 helpers, optional `lines` they say).
+
+**Screenshots and the resource pack.** `resource_pack` configures `minecraft_pack` (parts, output, and where deploy
+uploads: `upload.hosts`, default `["mcpacks", "catbox"]`, or `upload.command`, or `publish_dir` + `public_url`;
+[testing-apps.md](../skill/pinkgolem/reference/testing-apps.md)). Screenshots draw display entities with the built
+pack (or its parts) and, if it finds one, the vanilla client jar of a local Minecraft launcher (the `mc_version`
+first, else the newest). `client_jar` sets the jar's path, or `false` to never read it; the environment variable
+`MC_CLIENT_JAR` (a path, or `off`) overrides both. The jar is only read, never copied or uploaded.
 
 **The bot's look.** The default body is the player `Golem` with the team prefix `Pink `, so players see **Pink Golem**
 over its head, in the player list and in chat (a player name can't contain a space). It wears pink leather armor with a

@@ -36,11 +36,11 @@ export const tools = [
   },
   {
     name: "minecraft_screenshot",
-    description: "Take a picture of part of the world and SEE it. mode iso (default: isometric 3D, view from se|sw|nw|ne) | top (map) | fpv (first person from a player's eyes, near) | pov (first person, far, + which builds are in view) | real (BlueMap render with real textures; needs the BlueMap mod + Chrome/Edge). Area = from/to box, or pos/player + radius (default: around the first real player). cut_y = cutaway to see inside rooms. Flat colours, no textures. Max ~118k blocks per iso/top shot.",
+    description: "Take a picture of part of the world and SEE it. mode iso (default: isometric 3D, view from se|sw|nw|ne) | top (map) | fpv (first person from a player's eyes, near) | pov (first person, far, + which builds are in view) | real (BlueMap render with real textures; needs the BlueMap mod + Chrome/Edge). Area = from/to box, or pos/player + radius (default: around the first real player). cut_y = cutaway to see inside rooms. Blocks in flat colours; display entities (item/block/text displays: posters, item models, floating text) drawn textured like in game, from the server resource pack (+ the vanilla client jar when one is on this machine); other entities as bright markers. Max ~118k blocks per iso/top shot.",
     inputSchema: { type: "object", properties: {
       from: vec, to: vec, pos: vec, player: { type: "string" }, radius: { type: "number" }, height: { type: "number", description: "blocks above the centre (default 24)" },
       view: { type: "string", enum: ["se", "sw", "nw", "ne"] }, mode: { type: "string", enum: ["iso", "top", "fpv", "pov", "real"] },
-      cut_y: { type: "number" }, entities: { type: "boolean", description: "draw NPCs/players/text as bright markers (default true)" },
+      cut_y: { type: "number" }, entities: { type: "boolean", description: "draw entities: display entities textured, NPCs/players as bright markers (default true)" },
       yaw: { type: "number" }, pitch: { type: "number" }, fov: { type: "number" }, width: { type: "number" },
       distance: { type: "number" }, update: { type: "boolean", description: "real mode: re-render the area in BlueMap first (+8 s)" }, fetch: { type: "string" }, angle: { type: "number" },
       scale: { type: "number", description: "px per block (auto)" }, name: { type: "string" } } },

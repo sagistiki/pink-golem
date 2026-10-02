@@ -4,14 +4,14 @@
 
 <p align="center">
   <b>Give your AI a body, hands and eyes in a Minecraft world — and the know-how to build like a pro.</b><br>
-  One installer · an MCP server with 37 tools · a deep building skill · works with Claude, Gemini, Codex and local models
+  One installer · an MCP server with 38 tools · a deep building skill · works with Claude, Gemini, Codex and local models
 </p>
 
 <p align="center">
   <a href="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml"><img alt="check" src="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml/badge.svg"></a>
   <img alt="Minecraft 26.2" src="https://img.shields.io/badge/Minecraft-26.2-62B47A">
   <img alt="Fabric + Carpet" src="https://img.shields.io/badge/Fabric-Carpet-DBB064">
-  <img alt="MCP" src="https://img.shields.io/badge/MCP-37_tools-7C5CFF">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-38_tools-7C5CFF">
   <img alt="macOS · Windows · Linux" src="https://img.shields.io/badge/macOS_·_Windows_·_Linux-supported-3C8DBC">
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
@@ -34,7 +34,7 @@ block, every room reachable from the door, no dark corners) and tells you where 
 | 🏗️ **Build** | houses, towers, parks, whole districts, from blueprints or its own generators, with undo, protected zones and automatic checks |
 | 🎮 **Make it playable** | minigames with rounds and records, races, a rideable Ferris wheel and roller coaster, drivable cars |
 | 🗺️ **Draw on screen, no mods** | a live minimap and a HUD (speedometer, compass, timers) from a resource pack |
-| 🩺 **Run a live server** | test apps with fake players, patch them without a reload, find what lags, back up safely |
+| 🩺 **Run a live server** | test apps with fake players, patch them without a reload, find what lags or leaks, back up safely |
 | 📚 **Know how** | a building skill with golden rules and 35 reference pages, for strong and small models alike |
 | 🔒 **Safe with strangers** | players are owners or guests; guests can't unlock generators or admin commands, enforced in code ([SECURITY.md](SECURITY.md)) |
 
@@ -120,7 +120,7 @@ import. Pink Golem works on the server side, like a building crew with a manual:
 
 ```mermaid
 flowchart LR
-    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>37 minecraft_* tools" --> MCP["Pink Golem MCP server<br/>(Node, hot-reloading tools)"]
+    AI["AI client<br/>(Claude, Gemini, Codex, local)"] <-- "MCP over stdio<br/>38 minecraft_* tools" --> MCP["Pink Golem MCP server<br/>(Node, hot-reloading tools)"]
     MCP -- "RCON: any command as console" --> MC["Minecraft 26.2 server<br/>Fabric + Carpet"]
     MC -- "latest.log: chat, joins" --> MCP
     MCP -- "scarpet: read the world fast,<br/>snapshots, checks" --> MC

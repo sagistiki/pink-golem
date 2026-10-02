@@ -1,8 +1,8 @@
 {
   "name": "pink-golem",
   "displayName": "Pink Golem",
-  "version": "1.0.0",
-  "description": "Give your AI a body, hands and eyes in a Minecraft world: an MCP server with 37 tools (build, see, walk, talk, test, undo) plus a deep building skill with golden rules and 35 reference pages.",
+  "version": "1.1.0",
+  "description": "Give your AI a body, hands and eyes in a Minecraft world: an MCP server with 38 tools (build, see, walk, talk, test, undo) plus a deep building skill with golden rules and 35 reference pages.",
   "author": { "name": "sagistiki", "url": "https://github.com/sagistiki" },
   "homepage": "https://github.com/sagistiki/pink-golem",
   "repository": "https://github.com/sagistiki/pink-golem",

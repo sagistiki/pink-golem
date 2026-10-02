@@ -1,8 +1,20 @@
 /**
- * render.js — turn a block region into a PNG picture (isometric or top-down), no dependencies.
- * Pure functions: R = { lo:[x,y,z], hi:[x,y,z], at(x,y,z) -> block name | null }.
+ * render.js — turn a block region into a PNG picture (isometric, top-down or first person), no dependencies.
+ * Pure functions: R = { lo:[x,y,z], hi:[x,y,z], at(x,y,z) -> block name | null }. Blocks are flat colours; display
+ * entities (item / block / text displays) are drawn textured by display.js, other entities as bright markers.
  */
 import zlib from "node:zlib";
+
+// display entities (item/block/text displays) as textured quads — optional: if display.js fails to load, the old
+// bright-cube markers are drawn instead. Same hot-reload query as this module.
+const DX = await import("./display.js" + new URL(import.meta.url).search).catch((e) => { console.error("display.js:", e.message); return null; });
+/** display entities → { groups (textured quads, world space), rest (entities for the old markers) }.
+ *  opts.packs (resource-pack zips, first wins), opts.jar / opts.version (the optional client jar, see display.js) */
+function displayGroups(entities, cam, opts) {
+  if (!DX || opts.textured === false) return { groups: [], rest: entities || [] };
+  try { return DX.buildGroups(entities, { ...cam, packs: opts.packs, jar: opts.jar, version: opts.version, colorOf: blockColor }); }
+  catch (e) { console.error("display quads:", e.message); return { groups: [], rest: entities || [] }; }
+}
 
 // ───────────── PNG encoder ─────────────
 const CRC = (() => {
@@ -198,8 +210,15 @@ export function renderIso(R, opts = {}) {
     const [u, v] = toUV(x, z);
     items.push([u, v, y, n, k]);
   }
+  // display entities → textured quads; continuous world → (U, V, Y) with the cell of block x spanning [u, u+1]
+  const offU = view.u[0] < 0 || view.u[1] < 0 ? 1 : 0, offV = view.v[0] < 0 || view.v[1] < 0 ? 1 : 0;
+  const toCam = [U[0] + Vd[0], 1, U[1] + Vd[1]];   // world direction toward the iso camera (+u, +v, up)
+  const camLen = Math.hypot(...toCam);
+  const inBox = (e) => !/_display$/.test(e.type) || (e.pos[0] >= x1 - 1 && e.pos[0] < x2 + 2 && e.pos[2] >= z1 - 1 && e.pos[2] < z2 + 2 && e.pos[1] >= y1 - 2 && e.pos[1] < y2 + 2);
+  const { groups, rest } = displayGroups((opts.entities || []).filter(inBox), { camYaw: (Math.atan2(toCam[0], -toCam[2]) * 180) / Math.PI, camPitch: (Math.asin(toCam[1] / camLen) * 180) / Math.PI }, opts);
   // v4: entities (mannequins, players, armor stands, paintings, text displays, carts...) as small figures
-  for (const e of opts.entities || []) {
+  for (const e of rest) {
+    if (INVISIBLE.test(e.type)) continue;   // never visible in game (click boxes, markers)
     const ex = Math.floor(e.pos[0]), ey = Math.floor(e.pos[1]), ez = Math.floor(e.pos[2]);
     if (ex < x1 || ex > x2 || ez < z1 || ez > z2 || ey < y1 - 1 || ey > y2 + 1) continue;
     const [u, v] = toUV(ex, ez);
@@ -239,6 +258,9 @@ export function renderIso(R, opts = {}) {
     else for (let k = 0; k < 3; k++) img[i + k] = Math.round(img[i + k] * (1 - alpha) + rgb[k] * alpha);
   };
   const tiny = spriteMask(Math.max(2, 2 * Math.round(s / 3)));
+  // depth buffer for the display quads: nearness D = U + V + 2Y (exact plane of the face under each pixel), stored as −D
+  const zbuf = groups.length ? new Float32Array(w * h).fill(Infinity) : null;
+  const ox = minX - pad, oy = minY - pad;
   for (const [u, v, y, n, k, ec] of items) {
     const base = k === 5 ? ec : blockColor(n);
     let sx = Math.round((u - v) * s - minX + pad), sy = Math.round(((u + v) * s) / 2 - y * s - minY + pad);
@@ -263,9 +285,28 @@ export function renderIso(R, opts = {}) {
         rgb[0] = d[0] * m; rgb[1] = d[1] * m; rgb[2] = d[2] * m;
       }
       put(sx - S + px, sy + py, rgb, alpha);
+      if (zbuf && alpha >= 1) {
+        const ix = sx - S + px, iy = sy + py;
+        if (ix < 0 || iy < 0 || ix >= w || iy >= h) continue;
+        const a = (ix + 0.5 + ox) / s, b = (iy + 0.5 + oy) / s - 1;
+        let D;
+        if (k >= 4) D = u + v + 2 * y + 2;                                   // small things / markers: their centre
+        else if (face === 1) D = 2 * b + 4 * (k === 3 ? y : y + 1);          // top face (flat things sit one block lower)
+        else if (face === 2) D = 2 * (a + 2 * (v + 1)) - 2 * b;               // +v face
+        else D = 4 * (u + 1) - 2 * a - 2 * b;                                 // +u face
+        zbuf[iy * w + ix] = -D;
+      }
     }
   }
-  return { png: encodePNG(w, h, img), width: w, height: h, blocks: items.length, scale: s };
+  if (groups.length) {
+    const project = (x, y, z) => {
+      const Uc = view.u[0] * x + view.u[1] * z + offU, Vc = view.v[0] * x + view.v[1] * z + offV;
+      return [(Uc - Vc) * s - ox, ((Uc + Vc) * s) / 2 - y * s + s - oy, -(Uc + Vc + 2 * y)];
+    };
+    try { DX.rasterGroups(groups, { W: w, H: h, rgb: img, z: zbuf }, { persp: false, project, toCam, scale: s }); }
+    catch (e) { console.error("display raster:", e.message); }
+  }
+  return { png: encodePNG(w, h, img), width: w, height: h, blocks: items.length, scale: s, displays: groups.length };
 }
 
 const ENTITY_COLORS = {
@@ -274,6 +315,7 @@ const ENTITY_COLORS = {
   allay: [80, 220, 255], villager: [150, 100, 60], item_frame: [170, 120, 70], glow_item_frame: [200, 255, 120],
 };
 export { ENTITY_COLORS };
+const INVISIBLE = /^(interaction|marker)$/;   // entities players never see — not drawn (they used to hide what is behind them)
 
 // ───────────── first-person view (voxel ray casting) ─────────────
 /**
@@ -291,11 +333,15 @@ export function renderFPV(R, opts = {}) {
   const tanF = Math.tan(fov / 2), aspect = W / H;
   const maxD = opts.maxDist || 64;
   const img = Buffer.alloc(W * H * 3);
-  const ents = (opts.entities || []).map((e) => {
+  // display entities → textured quads (drawn after the voxels, depth-tested); the rest keep their boxes
+  const { groups, rest } = displayGroups(opts.entities, { camYaw: opts.yaw || 0, camPitch: opts.pitch || 0 }, opts);
+  const zbuf = groups.length ? new Float32Array(W * H).fill(Infinity) : null;          // view depth of the voxel hit
+  const tintZ = groups.length ? new Float32Array(W * H).fill(Infinity) : null, tintC = groups.length ? new Uint8Array(W * H * 4) : null;
+  const ents = rest.filter((e) => !INVISIBLE.test(e.type)).map((e) => {
     const lying = e.pose === "sleeping" || e.pose === "swimming";
     const hw = /painting|text_display/.test(e.type) ? 0.5 : 0.3, hh = lying ? 0.35 : /mannequin|player|armor_stand|villager/.test(e.type) ? 1.8 : 0.7;
     return { lo: [e.pos[0] - hw, e.pos[1], e.pos[2] - hw], hi: [e.pos[0] + hw, e.pos[1] + hh, e.pos[2] + hw], c: ENTITY_COLORS[e.type] || [230, 60, 200] };
-  });
+  }).filter((b) => !(ex > b.lo[0] && ex < b.hi[0] && ey > b.lo[1] && ey < b.hi[1] + 0.3 && ez > b.lo[2] && ez < b.hi[2]));   // not the viewer's own body
   const hitBox = (o, d, b) => {
     let t0 = 0, t1 = maxD, n = 1;
     for (let i = 0; i < 3; i++) {
@@ -321,10 +367,10 @@ export function renderFPV(R, opts = {}) {
     const step = d.map((v) => (v > 0 ? 1 : -1));
     const tD = d.map((v) => (Math.abs(v) < 1e-9 ? 1e9 : Math.abs(1 / v)));
     const tM = [0, 1, 2].map((i) => { const p = [ex, ey, ez][i], c = [X, Y, Z][i]; return Math.abs(d[i]) < 1e-9 ? 1e9 : (d[i] > 0 ? c + 1 - p : p - c) * tD[i]; });
-    let t = 0, face = 1, tint = null, tintA = 0;
+    let t = 0, face = 1, tint = null, tintA = 0, tintT = Infinity, hitT = Infinity;
     for (let it = 0; it < 400 && t < maxD; it++) {
       const n = R.at(X, Y, Z);
-      if (n == null && (Y < R.lo[1] || Y > R.hi[1])) { if (Y < R.lo[1]) { col = [100, 80, 60]; } break; }
+      if (n == null && (Y < R.lo[1] || Y > R.hi[1])) { if (Y < R.lo[1]) { col = [100, 80, 60]; hitT = t; } break; }
       const k = n ? kindOf(n) : 0;
       let hitSmall = false;
       if (k === 4) {   // sample the ray in the middle of this voxel: only the central post counts
@@ -334,7 +380,7 @@ export function renderFPV(R, opts = {}) {
         hitSmall = Math.abs(fx - 0.5) < w && Math.abs(fz - 0.5) < w && (fy < (PLANT.test(n) || THIN.test(n) ? 0.95 : 0.7));
         if (/vine|lichen/.test(n)) hitSmall = ((X * 7 + Y * 13 + Z * 5 + Math.floor(fx * 4) + Math.floor(fy * 4) * 3) & 3) !== 0;   // patchy wall cover
       }
-      if (k === 2 && !tint) { tint = blockColor(n); tintA = /water/.test(n) ? 0.55 : DOORISH.test(n) ? 0.55 : 0.3; }
+      if (k === 2 && !tint) { tint = blockColor(n); tintA = /water/.test(n) ? 0.55 : DOORISH.test(n) ? 0.55 : 0.3; tintT = t; }
       else if (k === 1 || hitSmall || (k === 3 && face === 1)) {
         if (eHit && eHit.t < t) break;
         const base = blockColor(n);
@@ -342,6 +388,7 @@ export function renderFPV(R, opts = {}) {
         const fog = Math.min(1, t / maxD);
         col = base.map((c, i) => Math.round(c * sh * (1 - fog * 0.6) + [190, 210, 240][i] * fog * 0.6));
         eHit = null;
+        hitT = t;
         break;
       }
       const a = tM[0] < tM[1] ? (tM[0] < tM[2] ? 0 : 2) : (tM[1] < tM[2] ? 1 : 2);
@@ -349,9 +396,26 @@ export function renderFPV(R, opts = {}) {
       if (a === 0) X += step[0]; else if (a === 1) Y += step[1]; else Z += step[2];
       face = a === 1 ? 1 : a === 0 ? 0 : 2;
     }
-    if (eHit) col = eHit.c.map((c) => Math.round(c * (eHit.n === 1 ? 1 : 0.8)));
+    if (eHit) { col = eHit.c.map((c) => Math.round(c * (eHit.n === 1 ? 1 : 0.8))); hitT = eHit.t; }
     if (tint) col = col.map((c, i) => Math.round(c * (1 - tintA) + tint[i] * tintA));
     img[(py * W + px) * 3] = col[0]; img[(py * W + px) * 3 + 1] = col[1]; img[(py * W + px) * 3 + 2] = col[2];
+    if (zbuf) {   // ray length t → view depth (d is unit, its forward component is 1/L)
+      const q = py * W + px;
+      zbuf[q] = hitT / L;
+      if (tint && tintT < hitT) { tintZ[q] = tintT / L; tintC[q * 4] = tint[0]; tintC[q * 4 + 1] = tint[1]; tintC[q * 4 + 2] = tint[2]; tintC[q * 4 + 3] = Math.round(tintA * 255); }
+    }
+  }
+  if (groups.length) {
+    const sky = [190, 210, 240];
+    const post = (q, px, py, z, c) => {   // the voxels' fog + glass/water tint in front of the quad
+      const sx = ((px + 0.5) / W * 2 - 1) * tanF * aspect, sy = (1 - (py + 0.5) / H * 2) * tanF;
+      const f = Math.min(1, (z * Math.sqrt(1 + sx * sx + sy * sy)) / maxD) * 0.6;
+      for (let i = 0; i < 3; i++) c[i] = c[i] * (1 - f) + sky[i] * f;
+      if (tintZ[q] < z) { const a = tintC[q * 4 + 3] / 255; for (let i = 0; i < 3; i++) c[i] = c[i] * (1 - a) + tintC[q * 4 + i] * a; }
+    };
+    try {
+      DX.rasterGroups(groups, { W, H, rgb: img, z: zbuf, post }, { persp: true, eye: [ex, ey, ez], fwd, right, up, tanF, aspect, near: 0.05, maxD, W, H });
+    } catch (e) { console.error("display raster:", e.message); }
   }
   // crosshair
   for (let k = -4; k <= 4; k++) {
@@ -386,5 +450,14 @@ export function renderTop(R, opts = {}) {
       img[i] = rgb[0] * edge; img[i + 1] = rgb[1] * edge; img[i + 2] = rgb[2] * edge;
     }
   }
-  return { png: encodePNG(w, h, img), width: w, height: h, scale: k };
+  // display entities seen from above (depth = height), when the caller passes entities
+  const { groups } = opts.entities ? displayGroups(opts.entities, { camYaw: 180, camPitch: 90 }, opts) : { groups: [] };
+  if (groups.length) {
+    const zbuf = new Float32Array(w * h);
+    for (const [x, z, yy] of tops) for (let py = 0; py < k; py++) zbuf.fill(-(yy + 1), ((z - z1) * k + py) * w + (x - x1) * k, ((z - z1) * k + py) * w + (x - x1 + 1) * k);
+    const project = (x, y, z) => [(x - x1) * k, (z - z1) * k, -y];
+    try { DX.rasterGroups(groups, { W: w, H: h, rgb: img, z: zbuf }, { persp: false, project, toCam: [0, 1, 0], scale: k }); }
+    catch (e) { console.error("display raster:", e.message); }
+  }
+  return { png: encodePNG(w, h, img), width: w, height: h, scale: k, displays: groups.length };
 }

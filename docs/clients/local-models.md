@@ -103,7 +103,7 @@ Other settings the MCP server reads (all optional, in `env` or in `pinkgolem.jso
 
 ## Which model? An honest guide
 
-Pink Golem gives the model **37 tools**. Their descriptions and argument schemas take about **12,000 tokens**
+Pink Golem gives the model **38 tools**. Their descriptions and argument schemas take about **12,000 tokens**
 before you say a word, and tool results (a structure read as text, a job report) can be a few thousand tokens more.
 
 **Requirements**

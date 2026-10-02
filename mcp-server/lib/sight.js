@@ -18,6 +18,23 @@ export function install(K) {
   const { Render, Sim, AN, WM } = K;
   K.mapEntries = () => WM.mergeIndex(K.readJSON(K.P.INDEX, []), K.loadZones());
 
+  /** What the renderer needs to draw display entities textured: the built server pack (minecraft_pack), else its
+   *  parts; the optional client jar setting and the Minecraft version (display.js finds the jar). */
+  K.shotOpts = () => {
+    const C = K.ctx.config.RAW || {}, rp = C.resource_pack || {};
+    const abs = (p) => path.resolve(K.P.ROOT, p);
+    const exists = (f) => { try { return fs.statSync(f).isFile(); } catch { return false; } };
+    let packs = [abs(rp.output || "data/server-pack.zip")].filter(exists);
+    if (!packs.length) {
+      let parts = (rp.parts || []).map((p) => (typeof p === "string" ? p : p.path));
+      if (!rp.parts) try { parts = fs.readdirSync(abs("resourcepacks")).sort().map((n) => `resourcepacks/${n}/${n}.zip`); } catch {}
+      packs = parts.map(abs).filter(exists);
+    }
+    return { packs, jar: C.client_jar, version: C.mc_version };
+  };
+  const entityNote = (n, out, top) => (n ? ` ${n} entities: display entities drawn textured like in game (${out.displays ?? 0} drawn)` +
+    `${top ? "" : ", others as bright cubes (red = NPC, blue = player, purple = painting; markers and interaction boxes are invisible in game and not drawn)"}.` : "");
+
   // ── screenshots of the real world
   K.screenshot = async (args) => {
     if (args.fetch) return realShot(args);
@@ -43,10 +60,10 @@ export function install(K) {
     if (K.volOf([lo, hi]) > 118000) throw new Error(`area too big (${K.volOf([lo, hi])} blocks) — use a smaller box (max ~118k blocks)`);
     const R = await K.dumpRegion(lo, hi);
     const ents = args.entities === false ? [] : await K.entitiesIn(lo, hi).catch(() => []);
-    const out = mode === "top" ? Render.renderTop(R, { scale: args.scale }) : Render.renderIso(R, { view: args.view || "se", scale: args.scale, entities: ents });
+    const out = mode === "top" ? Render.renderTop(R, { scale: args.scale, entities: ents, ...K.shotOpts() }) : Render.renderIso(R, { view: args.view || "se", scale: args.scale, entities: ents, ...K.shotOpts() });
     const saved = K.saveShot(args.name || "shot", out.png);
     return { content: [K.img(out.png), { type: "text", text: `${mode === "top" ? "top-down map" : `isometric view from the ${(args.view || "se").toUpperCase()} (camera there, looking across)`} of ${lo.join(",")} → ${hi.join(",")}, ${out.width}x${out.height}px, ${out.scale}px/block.` +
-      `${ents.length ? ` ${ents.length} entities drawn as bright cubes (red = NPC, blue = player, white = text, purple = painting).` : ""}${args.cut_y != null ? ` Cutaway above y=${hi[1]}.` : ""} Saved as ${saved}` }] };
+      `${entityNote(ents.length, out, mode === "top")}${args.cut_y != null ? ` Cutaway above y=${hi[1]}.` : ""} Saved as ${saved}` }] };
   };
 
   const fpvShot = async (args) => {
@@ -63,9 +80,9 @@ export function install(K) {
     while (K.volOf([lo, hi]) > 118000) { lo[0]++; hi[0]--; lo[2]++; hi[2]--; }
     const R = await K.dumpRegion(lo, hi);
     const ents = await K.entitiesIn(lo, hi).catch(() => []);
-    const out = Render.renderFPV(R, { eye, yaw: yaw ?? 0, pitch: pitch ?? 0, fov: args.fov || 75, width: args.width || 480, height: args.height || 270, entities: ents, maxDist: r * 1.5 });
+    const out = Render.renderFPV(R, { eye, yaw: yaw ?? 0, pitch: pitch ?? 0, fov: args.fov || 75, width: args.width || 480, height: args.height || 270, entities: ents, maxDist: r * 1.5, ...K.shotOpts() });
     const saved = K.saveShot(args.name || "fpv", out.png);
-    return { content: [K.img(out.png), { type: "text", text: `first-person view from ${eye.map((v) => v.toFixed(1)).join(",")} yaw ${Number(yaw ?? 0).toFixed(0)} pitch ${Number(pitch ?? 0).toFixed(0)} (flat colours, no textures; entities = bright boxes). Saved as ${saved}` }] };
+    return { content: [K.img(out.png), { type: "text", text: `first-person view from ${eye.map((v) => v.toFixed(1)).join(",")} yaw ${Number(yaw ?? 0).toFixed(0)} pitch ${Number(pitch ?? 0).toFixed(0)} (flat-colour blocks; display entities textured; other entities = bright boxes, red = NPC). Saved as ${saved}` }] };
   };
 
   /** Far first-person picture of exactly what a player sees + which builds are in view. */
@@ -89,7 +106,7 @@ export function install(K) {
     }
     const R = await K.multiRegion(lo, hi);
     const ents = args.entities === false ? [] : await K.entitiesIn(lo, hi).catch(() => []);
-    const out = Render.renderFPV(R, { eye, yaw, pitch, fov, width: args.width || 960, height: args.height || 540, entities: ents, maxDist: dist * 1.05 });
+    const out = Render.renderFPV(R, { eye, yaw, pitch, fov, width: args.width || 960, height: args.height || 540, entities: ents, maxDist: dist * 1.05, ...K.shotOpts() });
     const f = [-Math.sin((yaw * Math.PI) / 180) * Math.cos((pitch * Math.PI) / 180), -Math.sin((pitch * Math.PI) / 180), Math.cos((yaw * Math.PI) / 180) * Math.cos((pitch * Math.PI) / 180)];
     let target = null;
     for (let t = 0.5; t < dist; t += 0.25) {
@@ -102,7 +119,7 @@ export function install(K) {
     const inView = WM.inView(E, eye, yaw, fov, Math.max(dist, args.list_distance ?? 150)).slice(0, 12);
     const saved = K.saveShot(`pov-${who || "pos"}`, out.png);
     const dir = WM.compass(f[0] * 100, f[2] * 100);
-    return { content: [K.img(out.png), { type: "text", text: JSON.stringify({ view: `${who ? who + "'s" : "the"} eyes at ${eye.map((v) => v.toFixed(1)).join(" ")}, looking ${dir}, yaw ${yaw.toFixed(0)} pitch ${pitch.toFixed(0)}, drawn out to ${dist} blocks (flat colours)`,
+    return { content: [K.img(out.png), { type: "text", text: JSON.stringify({ view: `${who ? who + "'s" : "the"} eyes at ${eye.map((v) => v.toFixed(1)).join(" ")}, looking ${dir}, yaw ${yaw.toFixed(0)} pitch ${pitch.toFixed(0)}, drawn out to ${dist} blocks (flat-colour blocks, display entities textured)`,
       crosshair: target || "sky / beyond the drawn distance", builds_in_view: inView, saved }, null, 1) }] };
   };
 

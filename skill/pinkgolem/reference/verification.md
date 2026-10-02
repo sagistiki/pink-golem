@@ -115,9 +115,15 @@ height (`execute if block X Y Z air run setblock X Y Z light[level=15]`), then r
 | `pov` | far first person (up to 110 blocks) + which builds are in view and under the crosshair |
 | `real` | BlueMap render with real textures (needs the BlueMap mod and Chrome or Edge; `update:true` re-renders first; BlueMap can lag ~1 min) |
 
-Renders use flat colours without textures: stairs and slabs are drawn as cubes, doors and gates as see-through
-panels, fences and panes thin, entities as bright cubes (red NPC, blue player, white text). So a picture shows shape
-and colour; states, door halves and stair directions come from `minecraft_inspect`.
+Renders draw blocks in flat colours without textures: stairs and slabs are drawn as cubes, doors and gates as
+see-through panels, fences and panes thin. Display entities are drawn the way players see them: item displays with
+their models, block displays with block models, text displays with their text (also right-to-left), using the server
+pack (the one `minecraft_pack` built, else its parts) and, when this machine has the Minecraft launcher, the vanilla
+client jar for vanilla items, blocks and the font (`client_jar` in `pinkgolem.json`: a path, or `false` = never;
+`MC_CLIENT_JAR=off` too). Without the jar, vanilla items become markers and text uses placeholder glyphs. Other
+entities are bright cubes (red NPC, blue player, purple painting); markers and interaction boxes are not drawn. So a
+picture shows shape, colour and what the displays show; states, door halves and stair directions come from
+`minecraft_inspect`. Mobs with models from a server-side model library show as their base mob (lesson 60).
 
 - `minecraft_inspect pos:[x,y,z]` gives the full state (`oak_door[facing=north,half=lower,hinge=left,open=false,…]`).
 - `minecraft_inspect from to mode:list` (≤ 8000 blocks) lists every non-air block; `mode:counts` gives totals.

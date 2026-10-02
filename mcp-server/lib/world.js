@@ -1,7 +1,9 @@
 /**
  * world — read the world as a voxel grid (one scarpet call per ~120k blocks), tell natural terrain from builds,
- * find the structure around a block and describe it as text (top view + elevations).
+ * find the structure around a block and describe it as text (top view + elevations), list entities for pictures.
  */
+import fs from "node:fs";
+import path from "node:path";
 
 const AIR = new Set(["air", "cave_air", "void_air", "light"]);
 // natural terrain never counts as "somebody's build" (you may build on it / replace it)
@@ -75,9 +77,32 @@ export function install(K) {
     return m ? +m[1] + 1 : fallback;
   };
 
-  /** Entities for pictures (no items/xp/fireworks). */
+  /** Entities for pictures (no items/xp/fireworks), with what display entities SHOW (transformation, item model, dye,
+   *  block state, text, background, billboard…; one NBT read each) so render.js can draw them textured. The cu app
+   *  writes the list to cu.data/shot_<id>.json (a big frame overflows an RCON reply); without cu → positions only. */
+  const nul = (v) => (v === "null" || v === undefined ? null : v);
+  const dyeOf = (v) => { v = nul(v); if (v == null) return null; if (typeof v === "number") return v; const m = /rgb:\s*(-?\d+)/.exec(String(v)); return m ? +m[1] : null; };
   K.entitiesIn = async (lo, hi) => {
     const c = [0, 1, 2].map((i) => (lo[i] + hi[i] + 1) / 2), h = [0, 1, 2].map((i) => (hi[i] - lo[i] + 1) / 2);
+    const id = `shot_${process.pid}_${Date.now().toString(36)}`, f = path.join(K.P.CU_DATA, id + ".json");
+    try {
+      const out = await K.inApp("cu", `l=[];for(entity_area('*',[${c.join(",")}],[${h.join(",")}]),t=query(_,'type');if(t!='item'&&t!='experience_orb'&&t!='firework_rocket',p=pos(_);` +
+        `r=[t,p:0,p:1,p:2,query(_,'yaw'),query(_,'pitch')];if(t=='mannequin',r+=query(_,'nbt','pose'),t~'_display',n=query(_,'nbt');r+=[parse_nbt(n:'transformation'),` +
+        `n:'item.components."minecraft:item_model"',n:'item.components."minecraft:dyed_color"',n:'item.id',n:'item_display',parse_nbt(n:'block_state'),parse_nbt(n:'text'),` +
+        `n:'background',n:'billboard',n:'line_width',n:'alignment',n:'text_opacity',n:'default_background',n:'shadow']);l+=r));write_file('${id}','json',l);length(l)`);
+      if (/^\s*=\s*\d+/.test(out) && fs.existsSync(f)) {
+        return JSON.parse(fs.readFileSync(f, "utf8")).map(([type, x, y, z, yaw, pitch, ex]) => {
+          const e = { type, pos: [x, y, z], yaw, pitch, pose: typeof ex === "string" ? ex.replace(/"/g, "") : "" };
+          if (Array.isArray(ex) && /_display$/.test(type)) {
+            const [tf, model, dye, item, ctx, block, txt, bg, billboard, lw, align, op, dbg, shadow] = ex;
+            e.display = { transformation: nul(tf), model: nul(model), dye: dyeOf(dye), item: nul(item), item_display: nul(ctx), block: nul(block), text: nul(txt),
+              background: nul(bg), billboard: nul(billboard), line_width: nul(lw), alignment: nul(align), text_opacity: nul(op), default_background: nul(dbg), shadow: nul(shadow) };
+          }
+          return e;
+        });
+      }
+    } catch (e) { K.log("entitiesIn (cu):", e.message); }
+    finally { try { fs.unlinkSync(f); } catch {} }
     const r = await K.scarpet(`l=[];for(entity_area('*',[${c.join(",")}],[${h.join(",")}]),t=query(_,'type');if(t!='item'&&t!='experience_orb'&&t!='firework_rocket',` +
       `p=pos(_);l+=str('%s,%.1f,%.1f,%.1f,%s',t,p:0,p:1,p:2,if(t=='mannequin',query(_,'nbt','pose'),''))));join(';',slice(l,0,min(length(l),400)))`);
     const v = r.value.replace(/^'|'$/g, "");

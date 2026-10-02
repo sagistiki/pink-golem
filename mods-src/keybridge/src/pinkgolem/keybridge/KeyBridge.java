@@ -70,6 +70,8 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
  *    /packpop                         removes the pushed pack and gives players back their join pack.
  *    If server.properties already names the same url + sha1 when you push (deploy writes it first), the running
  *    server adopts it, so later joiners get the new pack during login (one download, no double reload).
+ *    Polymer AutoHost mode (1.4.0, config/polymer/auto-host.json enabled): pushes reuse Polymer's pack UUID, so they
+ *    replace the pack Polymer sent at login; logins are left to Polymer; /packpop is refused.
  *
  * 3. Flip camera (op level 2+) — an upside-down view for one player, e.g. in a roller-coaster loop:
  *    /flipcam start <player> <x> <y> <z> <yaw> <pitch> [eye_height]
@@ -91,6 +93,9 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
  *                     `script in skinpaint run _baked('<id>','<url>','<value>','<signature>')` or `_bake_failed('<id>','<why>')`.
  *    On start it writes skinpaint.data/keybridge.json {"version","skinbake":true} so the app knows it can save.
  *    Optional MineSkin API key (higher limits): config/keybridge-mineskin.txt.
+ *
+ * 5. Hidden from one player (1.4.0): an entity tagged kbhide_<player name in lower case> is not drawn for that player;
+ *    everyone else sees it (e.g. a rider's own body double, which only the other riders should see).
  *
  * No client install needed. Any failure is logged once and that part switches off; it never takes the server down.
  */
@@ -124,6 +129,7 @@ public class KeyBridge implements ModInitializer {
     private boolean flipBroken = false;
     private boolean keysBroken = false;
     private boolean packBroken = false;
+    private boolean hideBroken = false;
     private SkinBake baker = null;
 
     @Override
@@ -163,6 +169,14 @@ public class KeyBridge implements ModInitializer {
                 System.err.println("[KeyBridge] pack push on join disabled after an error: " + t);
             }
         }
+        if (!hideBroken) {
+            try {
+                hideFromSelf(server);
+            } catch (Throwable t) {
+                hideBroken = true;
+                System.err.println("[KeyBridge] per-player hiding disabled after an error: " + t);
+            }
+        }
         if (!flipBroken && !flips.isEmpty()) {
             try {
                 flipWatch(server);
@@ -196,7 +210,51 @@ public class KeyBridge implements ModInitializer {
         }
     }
 
+    // ───────────────────────────── hidden from one player ─────────────────────────────
+    /** An entity tagged kbhide_<player name, lower case> is drawn for everyone except that player: every tick the
+     *  player is told the entity is gone (ClientboundRemoveEntitiesPacket; later updates for an unknown id are ignored
+     *  by the client, and a fresh spawn packet is answered on the next tick). E.g. a body double that shows a rider to
+     *  the other riders, which the rider must not see from inside. */
+    private void hideFromSelf(MinecraftServer server) {
+        Map<String, it.unimi.dsi.fastutil.ints.IntArrayList> hide = null;
+        for (net.minecraft.server.level.ServerLevel level : server.getAllLevels()) {
+            for (net.minecraft.world.entity.Entity e : level.getAllEntities()) {
+                Set<String> tags = e.entityTags();
+                if (tags.isEmpty()) continue;
+                for (String t : tags) {
+                    if (!t.startsWith("kbhide_")) continue;
+                    if (hide == null) hide = new HashMap<>();
+                    hide.computeIfAbsent(t.substring(7), k -> new it.unimi.dsi.fastutil.ints.IntArrayList()).add(e.getId());
+                }
+            }
+        }
+        if (hide == null) return;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            it.unimi.dsi.fastutil.ints.IntArrayList ids = hide.get(p.getGameProfile().name().toLowerCase(java.util.Locale.ROOT));
+            if (ids != null && !ids.isEmpty())
+                p.connection.send(new net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket(ids));
+        }
+    }
+
     // ───────────────────────────── live resource pack ─────────────────────────────
+    /** Polymer AutoHost mode: when config/polymer/auto-host.json says "enabled": true, Polymer serves the pack from the
+     *  game port and sends it during login under its main UUID (config/polymer/resource-pack.json main_uuid). A live
+     *  push then reuses that UUID, so the client REPLACES Polymer's pack in place instead of stacking a second pack on
+     *  top, and joins are left to Polymer (it serves the regenerated pack after /polymer generate-pack).
+     *  Read at every push and join: switching the mode needs no rebuild. Empty = classic mode (server.properties pack). */
+    static Optional<UUID> polymerPackId() {
+        try {
+            Path dir = Path.of("config", "polymer");
+            String host = java.nio.file.Files.readString(dir.resolve("auto-host.json")).replaceAll("\\s", "");
+            if (!host.contains("\"enabled\":true")) return Optional.empty();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"main_uuid\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"")
+                    .matcher(java.nio.file.Files.readString(dir.resolve("resource-pack.json")));
+            return m.find() ? Optional.of(UUID.fromString(m.group(1))) : Optional.empty();
+        } catch (Throwable t) {
+            return Optional.empty();
+        }
+    }
+
     /** A player who is new in the player list has finished logging in (and got the server.properties pack then). */
     private void joins(MinecraftServer server) {
         Set<UUID> now = new HashSet<>();
@@ -206,18 +264,20 @@ public class KeyBridge implements ModInitializer {
             if (joinPack.containsKey(u)) continue;
             Optional<MinecraftServer.ServerResourcePackInfo> base = server.getServerResourcePack();
             joinPack.put(u, base);
-            if (latest != null && !(base.isPresent() && base.get().hash().equalsIgnoreCase(latest.hash()))) send(p, base);
+            if (latest != null && polymerPackId().isEmpty()   // Polymer mode: Polymer sends the current pack at login
+                    && !(base.isPresent() && base.get().hash().equalsIgnoreCase(latest.hash()))) send(p, base);
         }
         joinPack.keySet().retainAll(now);
         popped.retainAll(now);
     }
 
     private void send(ServerPlayer p, Optional<MinecraftServer.ServerResourcePackInfo> base) {
-        if (base.isPresent() && !base.get().hash().equalsIgnoreCase(latest.hash())) {
+        Optional<UUID> poly = polymerPackId();
+        if (poly.isEmpty() && base.isPresent() && !base.get().hash().equalsIgnoreCase(latest.hash())) {
             p.connection.send(new ClientboundResourcePackPopPacket(Optional.of(base.get().id())));
             popped.add(p.getUUID());
         }
-        p.connection.send(new ClientboundResourcePackPushPacket(PUSH_ID, latest.url(), latest.hash(), latest.required(), latest.prompt()));
+        p.connection.send(new ClientboundResourcePackPushPacket(poly.orElse(PUSH_ID), latest.url(), latest.hash(), latest.required(), latest.prompt()));
     }
 
     // ───────────────────────────── skin easel ─────────────────────────────
@@ -229,7 +289,7 @@ public class KeyBridge implements ModInitializer {
         try {
             Path dir = skinDir(server);
             java.nio.file.Files.createDirectories(dir);
-            java.nio.file.Files.writeString(dir.resolve("keybridge.json"), "{\"version\":\"1.3.0\",\"skinbake\":true}");
+            java.nio.file.Files.writeString(dir.resolve("keybridge.json"), "{\"version\":\"1.4.0\",\"skinbake\":true}");
         } catch (Throwable t) {
             System.err.println("[KeyBridge] could not write the skin easel marker: " + t);
         }
@@ -320,7 +380,8 @@ public class KeyBridge implements ModInitializer {
         Optional<MinecraftServer.ServerResourcePackInfo> base = src.getServer().getServerResourcePack();
         String b = base.map(i -> i.url() + " " + i.hash()).orElse("none");
         String l = latest == null ? "none" : latest.url() + " " + latest.hash();
-        src.sendSuccess(() -> Component.literal("[KeyBridge] pushed: " + l + " | server pack for new joins: " + b
+        String mode = polymerPackId().map(u -> " | Polymer autohost: on (pushes replace pack " + u + ")").orElse("");
+        src.sendSuccess(() -> Component.literal("[KeyBridge] pushed: " + l + " | server pack for new joins: " + b + mode
                 + " | usage: /packpush <url> <sha1> [prompt], /packpop"), false);
         return latest == null ? 0 : 1;
     }
@@ -365,6 +426,10 @@ public class KeyBridge implements ModInitializer {
     }
 
     private int pop(CommandSourceStack src) {
+        if (polymerPackId().isPresent()) {
+            src.sendFailure(Component.literal("[KeyBridge] Polymer autohost is on: the pushed pack replaced Polymer's in place, so there is nothing to pop (run /polymer generate-pack + /packpush to go back)"));
+            return 0;
+        }
         if (latest == null) {
             src.sendFailure(Component.literal("[KeyBridge] nothing is pushed"));
             return 0;

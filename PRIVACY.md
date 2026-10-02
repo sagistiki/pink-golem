@@ -13,6 +13,8 @@ connection the code in this repository makes, so you can check that for yourself
 - **`server/`**: your Minecraft server, its world and its logs. The MCP server reads `server/logs/latest.log` to see chat.
 - The MCP server talks to your AI client over stdio (a local process) and to the Minecraft server over RCON on
   `127.0.0.1`. It opens no port of its own.
+- Screenshots read the server resource pack and, if this computer has the Minecraft launcher, its client jar (for
+  vanilla models and the font). Both are only read, on this computer (`"client_jar": false` turns the jar off).
 
 ## What your AI provider sees
 
@@ -31,7 +33,9 @@ privacy policy (Anthropic, Google, OpenAI, …). With a local model, nothing lea
 | Setup, if you say yes | Mojang's download servers, by BlueMap | BlueMap downloads Minecraft's textures to draw the map | answer no at setup, or `"bluemap_textures": false` |
 | Every tool call | `127.0.0.1` (RCON) | server commands | local only |
 | `minecraft_screenshot` with real textures | `localhost:8100` (BlueMap), through your own Chrome or Edge, started headless with a fresh temporary profile and driven over a local DevTools port for a few seconds | a map URL | local only (the browser may still make its own background calls, as on any start) |
-| `minecraft_pack deploy`, only if you set it up | whatever you configured: your `upload_command` or `publish_dir` | the resource pack zip; afterwards the tool downloads that URL once to check it | nothing happens unless you configure it |
+| `minecraft_pack deploy` (when you or the AI deploy a pack), by default | `mcpacks.dev`, a free resource-pack host | the resource pack zip and its file name, through the site's upload form (the tool ticks its consent box for you, so [mcpacks.dev's terms](https://mcpacks.dev) apply); the pack gets a link anyone who has it can download, which is how players' games fetch it. The tool then downloads it once to check it | `"resource_pack": {"upload": {"hosts": []}}` in `pinkgolem.json`, your own upload setting (below), or deploy with `url:` |
+| The same, only if `mcpacks.dev` fails or serves a broken copy | `catbox.moe`, a free file host | the same zip, as an anonymous upload; checked the same way | the same; or `"upload": {"hosts": ["mcpacks"]}` |
+| `minecraft_pack deploy` with your own upload setting | whatever you configured: `upload.command` (or the older `upload_command`) or `publish_dir` | the resource pack zip; afterwards the tool downloads that URL once to check it | remove the setting |
 | Saving a skin on the in-game skin easel (the optional Key Bridge mod) | `api.mineskin.org` | the 64×64 skin image and its name, uploaded as *unlisted*; [MineSkin's terms](https://mineskin.org) apply | don't install Key Bridge, or don't use the easel |
 
 Pink Golem makes no other connections: no update checks, no crash reports, no usage statistics.
@@ -50,4 +54,4 @@ Pink Golem makes no other connections: no update checks, no crash reports, no us
 Questions or a connection this page missed: [open an issue](https://github.com/sagistiki/pink-golem/issues).
 Security problems: [SECURITY.md](SECURITY.md).
 
-*Last updated: 2026-09-29.*
+*Last updated: 2026-10-02.*

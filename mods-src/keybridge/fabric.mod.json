@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "keybridge",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "Key Bridge",
-  "description": "Server-side helper for scarpet apps: copies each player's movement keys (W/A/S/D, jump, sneak, sprint) into the scoreboard objective 'keys', pushes a new server resource pack to everyone live (/packpush <url> <sha1> [prompt], /packpop), gives one player an upside-down camera (/flipcam start|move|stop; op level 2), and bakes skins painted on the in-game easel (skinpaint.sc) into real, signed player skins (/skinbake <id> → PNG → MineSkin). No client mod needed.",
+  "description": "Server-side helper for scarpet apps: copies each player's movement keys (W/A/S/D, jump, sneak, sprint) into the scoreboard objective 'keys', pushes a new server resource pack to everyone live (/packpush <url> <sha1> [prompt], /packpop; also with Polymer AutoHost), gives one player an upside-down camera (/flipcam start|move|stop; op level 2), bakes skins painted on the in-game easel (skinpaint.sc) into real, signed player skins (/skinbake <id> → PNG → MineSkin), and hides an entity tagged kbhide_<player> from that one player. No client mod needed.",
   "authors": ["Pink Golem"],
   "license": "MIT",
   "environment": "*",

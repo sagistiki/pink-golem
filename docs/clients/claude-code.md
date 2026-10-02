@@ -1,7 +1,7 @@
 # Claude Code
 
 This page connects **Claude Code** (Anthropic's terminal coding agent) to your Pink Golem server. Claude Code is
-the most capable client for Pink Golem: besides using the 37 tools, it can write its own build generators into
+the most capable client for Pink Golem: besides using the 38 tools, it can write its own build generators into
 `jobs/`, read the reference pages as it needs them, and even improve the tools themselves.
 
 | | |
@@ -111,7 +111,7 @@ double backslashes in JSON, e.g. `"C:\\Program Files\\nodejs\\node.exe"`), and c
 2. You are in the game (the AI spawns next to a player).
 3. Run `claude` **inside the Pink Golem folder**. The first time, Claude Code asks whether to trust the project's
    MCP server `pinkgolem`. Approve it.
-4. Type `/mcp`: `pinkgolem` should be *connected*. 37 tools with every recommended mod; fewer if WorldEdit is not
+4. Type `/mcp`: `pinkgolem` should be *connected*. 38 tools with every recommended mod; fewer if WorldEdit is not
    installed (its tool is hidden) or Carpet is missing (the bot and helper tools are hidden).
 5. Ask: *"Check the server and spawn in next to me."* Claude should call `minecraft_status`, read its notes and the
    world map, then spawn its body beside you.

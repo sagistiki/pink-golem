@@ -9,10 +9,12 @@
  *     "output": "data/server-pack.zip",
  *     "extra_outputs": [{"path": "server/world/resources.zip", "exclude": ["server/polymer/resource_pack.zip"]}],
  *     "merge_json": true,                         // fonts/atlases/lang/sounds.json from several parts are merged
- *     "upload_command": ["my-upload", "{file}"],  // prints the public URL of the uploaded file, or:
+ *     "upload": {"hosts": ["mcpacks", "catbox"]},  // the default: free public pack hosts, tried in order, ONE try each
+ *     "upload": {"command": ["my-upload", "{file}"]},   // or your own uploader (prints the public URL), or:
  *     "publish_dir": "/var/www/packs", "public_url": "https://example.org/packs"   // copy there under a new name
  *   }
- * Without "parts": every resourcepacks/<name>/<name>.zip. Without an upload setting: deploy with url:'<where you put it>'.
+ * Without "parts": every resourcepacks/<name>/<name>.zip. "upload": {"hosts": []} turns the public hosts off (then
+ * deploy needs url:'<where you put it>'). The old "upload_command" still works (= upload.command).
  * Pure zip/validation helpers: lib/devkit.js. Guide: skill/pinkgolem/reference/testing-apps.md
  */
 import fs from "node:fs";
@@ -21,7 +23,7 @@ import path from "node:path";
 export const tools = [
   {
     name: "minecraft_pack",
-    description: "The server resource pack in one call (parts from pinkgolem.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url (upload_command, or publish_dir + public_url, or url:'…' you uploaded yourself) → download check → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
+    description: "The server resource pack in one call (parts from pinkgolem.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url: the pack hosts in resource_pack.upload.hosts, in order, ONE try each (default mcpacks.dev, then catbox.moe), the first copy that downloads with the right sha1 wins — or your upload.command, or publish_dir + public_url, or url:'…' you uploaded yourself → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; the reply names the host and hosts_tried; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
     inputSchema: { type: "object", properties: {
       action: { type: "string", enum: ["build", "deploy", "status"] }, dry_run: { type: "boolean" }, check_only: { type: "boolean" }, output: { type: "string" },
       url: { type: "string" }, force: { type: "boolean" }, skip_build: { type: "boolean" }, check_url: { type: "boolean" },
@@ -109,22 +111,89 @@ export function handlers(K, ctx) {
     if (!r.ok) throw new Error(`GET ${url}: HTTP ${r.status}`);
     return Buffer.from(await r.arrayBuffer());
   }
-  /** A NEW public url for the file: the configured upload command, or a copy in publish_dir under a new name. */
+  /** Public pack hosts, tried in order (resource_pack.upload.hosts). Each upload gets a NEW url; the copy must download
+   *  with the right sha1 or the next host is tried. ONE attempt per host per deploy: never loop uploads — retry loops
+   *  look like bot spam to a free host (and one host started storing 0-byte files, which only the sha1 check catches). */
+  const PACK_HOSTS = {
+    // mcpacks.dev: a free Minecraft resource-pack host, no account, packs kept while people download them. A
+    // Laravel/Inertia form: GET / for the XSRF + session cookies, POST /upload (resource_pack, consent) → 302
+    // /pack/<uuid>; the pack is at /pack/<uuid>/download (302 to https object storage, which the game client follows).
+    async mcpacks(buf, name) {
+      const home = await fetch("https://mcpacks.dev/", { signal: AbortSignal.timeout(30000) });
+      const html = await home.text();
+      const cookies = (home.headers.getSetCookie?.() || []).map((c) => c.split(";")[0]);
+      const xs = cookies.find((c) => c.startsWith("XSRF-TOKEN="));
+      if (!xs) throw new Error("mcpacks: no XSRF cookie");
+      const ver = (html.match(/version&quot;:&quot;([a-f0-9]+)/) || [])[1] || "";   // the page's data-page JSON
+      const fd = new FormData();
+      fd.append("resource_pack", new Blob([buf], { type: "application/zip" }), name);
+      fd.append("consent", "1");
+      const r = await fetch("https://mcpacks.dev/upload", { method: "POST", body: fd, redirect: "manual", signal: AbortSignal.timeout(600000),
+        headers: { Cookie: cookies.join("; "), "X-XSRF-TOKEN": decodeURIComponent(xs.slice("XSRF-TOKEN=".length)),
+          "X-Requested-With": "XMLHttpRequest", "X-Inertia": "true", "X-Inertia-Version": ver, Accept: "text/html, application/xhtml+xml" } });
+      const loc = r.headers.get("location") || "";
+      const m = loc.match(/^https:\/\/mcpacks\.dev\/pack\/([0-9a-f-]{36})$/);
+      if (!m) throw new Error(`mcpacks: upload gave HTTP ${r.status} location "${loc.slice(0, 120)}"`);
+      return `https://mcpacks.dev/pack/${m[1]}/download`;
+    },
+    // catbox.moe: a free file host (anonymous uploads)
+    async catbox(buf, name) {
+      const fd = new FormData();
+      fd.append("reqtype", "fileupload");
+      fd.append("fileToUpload", new Blob([buf], { type: "application/zip" }), name);
+      const r = await fetch("https://catbox.moe/user/api.php", { method: "POST", body: fd, signal: AbortSignal.timeout(180000) });
+      const t = (await r.text()).trim();
+      if (!r.ok || !/^https:\/\/files\.catbox\.moe\/[\w.-]+$/.test(t)) throw new Error(`catbox: upload failed (HTTP ${r.status}): ${t.slice(0, 200)}`);
+      return t;
+    },
+  };
+  const uploadOf = (cfg) => {
+    const up = { ...(cfg.upload || {}) };
+    if (!up.command && cfg.upload_command) up.command = cfg.upload_command;    // the older top-level setting
+    if (!up.hosts) up.hosts = up.service ? [up.service] : cfg.publish_dir && cfg.public_url ? [] : ["mcpacks", "catbox"];
+    return up;
+  };
+  const howHosted = (cfg) => {
+    const up = uploadOf(cfg);
+    if (up.command) return "your upload command";
+    if (cfg.publish_dir && cfg.public_url) return `a copy in ${cfg.publish_dir}`;
+    return up.hosts.length ? `${up.hosts.join(" → then ")} (one try each)` : null;
+  };
+  /** A NEW public url for the file → { url, host, verified, tried }: your upload command, a copy in publish_dir, or the
+   *  first pack host whose copy downloads with the right sha1. */
   async function host(file, sha, cfg) {
-    if (cfg.upload_command) {
-      const argv = cfg.upload_command.map((s) => s.replace("{file}", file));
+    const up = uploadOf(cfg);
+    if (up.command) {
+      const argv = up.command.map((s) => s.replace("{file}", file));
       const r = await K.run(argv[0], argv.slice(1), { timeout: 180000 });
       const url = (r.stdout.match(/https?:\/\/\S+/g) || []).pop();
-      if (!url) throw new Error(`upload_command printed no URL: ${(r.stderr || r.stdout).slice(0, 300)}`);
-      return url;
+      if (!url) throw new Error(`the upload command printed no URL: ${(r.stderr || r.stdout).slice(0, 300)}`);
+      return { url, host: "command", verified: false, tried: [] };
     }
     if (cfg.publish_dir && cfg.public_url) {
       const name = `pack-${sha.slice(0, 12)}-${Date.now().toString(36)}.zip`;
       fs.mkdirSync(cfg.publish_dir, { recursive: true });
       fs.copyFileSync(file, path.join(cfg.publish_dir, name));
-      return cfg.public_url.replace(/\/+$/, "") + "/" + name;
+      return { url: cfg.public_url.replace(/\/+$/, "") + "/" + name, host: "publish_dir", verified: false, tried: [] };
     }
-    throw new Error("no way to publish the pack: set resource_pack.upload_command or publish_dir + public_url in pinkgolem.json, or upload it yourself and call deploy with url:'…'");
+    if (!up.hosts.length) throw new Error("no way to publish the pack: resource_pack.upload.hosts is empty — set upload.hosts, upload.command or publish_dir + public_url in pinkgolem.json, or upload it yourself and call deploy with url:'…'");
+    const buf = fs.readFileSync(file);
+    const name = `pack-${sha.slice(0, 10)}.zip`;
+    const tried = [];
+    for (const h of up.hosts) {
+      if (!PACK_HOSTS[h]) { tried.push(`${h}: unknown host (known: ${Object.keys(PACK_HOSTS).join(", ")})`); continue; }
+      try {
+        const url = await PACK_HOSTS[h](buf, name);
+        let ok = false, why = "";
+        for (let k = 0; k < 3 && !ok; k++) {                     // download again (never upload again): a CDN can lag a few seconds
+          try { const b = await download(url); ok = D.sha1(b) === sha; if (!ok) why = `downloads ${b.length} bytes with another sha1`; } catch (e) { why = e.message; }
+          if (!ok && k < 2) await K.sleep(4000);
+        }
+        tried.push(`${h}: ${ok ? "ok" : "bad copy (" + why + ")"} ${url}`);
+        if (ok) return { url, host: h, verified: true, tried };
+      } catch (e) { tried.push(`${h}: ${e.message}`); }
+    }
+    throw new Error(`no pack host gave a good copy — ${tried.join(" | ")}`);
   }
   function setProps(kv) {
     const lines = fs.readFileSync(PROPS, "utf8").split(/\r?\n/);
@@ -150,22 +219,23 @@ export function handlers(K, ctx) {
     const kb = await keybridge();
     const d = new Date(), z = (n) => String(n).padStart(2, "0");
     const backup = `server.properties.bak-pack-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
-    const how = args.url ? "the url you gave" : cfg.upload_command ? "upload_command" : cfg.publish_dir ? `a copy in ${cfg.publish_dir}` : "NOTHING CONFIGURED — pass url:'…'";
+    const how = args.url ? "the url you gave" : howHosted(cfg) || "NOTHING: upload.hosts is empty — pass url:'…'";
     if (dry) return { ...res, keybridge: kb, plan: [
-      `host ${cfg.output} (${b?.size_mb ?? "?"} MB) under a NEW url via ${how}; download it back and compare the sha1`,
+      `put ${cfg.output} (${b?.size_mb ?? "?"} MB) under a NEW url via ${how}; download it back and compare the sha1 (a bad copy → the next host)`,
       `back up server.properties → ${backup}`, `server.properties: resource-pack=<NEW-URL>  resource-pack-sha1=${sha}`,
       kb.available ? `live: /packpush <NEW-URL> ${sha} → everyone online gets it now; later joins get it at login` : "no /packpush (the Key Bridge mod is not installed) → players get the pack after the next restart",
       `record the deploy in ${K.rel(STATE)}`] };
-    const url = args.url || (await host(out, sha, cfg));
-    let verified = false;
+    const up = args.url ? null : await host(out, sha, cfg);
+    const url = args.url || up.url;
+    let verified = !!up?.verified;
     for (let k = 0; k < 3 && !verified; k++) { try { verified = D.sha1(await download(url)) === sha; } catch {} if (!verified) await K.sleep(2000); }
-    if (!verified && !args.force) return { ...res, url, refused: "the url does not serve a file with this sha1 (yet) — server.properties NOT changed (retry with url:<that url>, or force:true)" };
+    if (!verified && !args.force) return { ...res, url, ...(up ? { host: up.host } : {}), refused: "the url does not serve a file with this sha1 (yet) — server.properties NOT changed (retry with url:<that url>, or force:true)" };
     fs.copyFileSync(PROPS, path.join(K.P.SERVER, backup));
     writeAtomic(PROPS, setProps({ "resource-pack": url, "resource-pack-sha1": sha }));
     let live = "restart needed: server.properties points to the new pack; players get it when they join after the restart";
     if (kb.available) live = (await K.cmd(`packpush ${url} ${sha}${cur.prompt && !/^\s*[{\[]/.test(cur.prompt) ? " " + cur.prompt : ""}`)).trim();
-    saveState((s) => { (s.deploys ||= []).unshift({ time: new Date().toISOString(), url, sha1: sha, previous: cur.url, backup, live }); s.deploys = s.deploys.slice(0, 20); });
-    return { ...res, url, verified_download: verified, backup, server_properties: { "resource-pack": url, "resource-pack-sha1": sha }, live };
+    saveState((s) => { (s.deploys ||= []).unshift({ time: new Date().toISOString(), url, sha1: sha, ...(up ? { host: up.host } : {}), previous: cur.url, backup, live }); s.deploys = s.deploys.slice(0, 20); });
+    return { ...res, url, ...(up ? { host: up.host, hosts_tried: up.tried } : {}), verified_download: verified, backup, server_properties: { "resource-pack": url, "resource-pack-sha1": sha }, live };
   }
 
   async function status(args) {

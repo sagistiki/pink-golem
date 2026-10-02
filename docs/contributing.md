@@ -19,7 +19,7 @@ pull request looks like. [architecture.md](architecture.md) gives the background
 ## Add a tool
 
 Tools live in **groups** in `mcp-server/tools/`: `connection.js`, `chat.js`, `build.js`, `look.js`, `survey.js`,
-`rails.js`, `body.js`, `memory.js`, `health.js`, `dev.js`, `pack.js`. Each group exports a `tools` array (the schemas) and a `handlers(K, ctx)` function that returns one
+`rails.js`, `body.js`, `memory.js`, `health.js`, `dev.js`, `pack.js`, `entities.js`. Each group exports a `tools` array (the schemas) and a `handlers(K, ctx)` function that returns one
 async handler per tool name. `K` is the shared helper object built from `lib/*.js`.
 
 Add the schema to the group that fits:

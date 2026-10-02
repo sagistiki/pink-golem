@@ -12,6 +12,8 @@ never get in the way of players.
 | Give every display a `Tags:["<project>"]` | you can find, update and remove them later |
 | In a generator, kill the old ones first: `b.before('kill @e[type=text_display,tag=<project>]')` | re-running the generator would otherwise stack duplicates |
 | On a wall, put it on the **face** of the block ± 0.03, not the block centre | a block at z=50 spans z 50..51; a display inside the block is invisible |
+| Write exact x/z with a decimal point: `-72.0`, not `-72` | `summon` and `tp` centre an integer x/z (+0.5): a poster meant for the edge at x=-72 lands at -71.5 (lesson 57) |
+| Tag groups with an incarnation or generation id too (`board_g3`) | `minecraft_entities` finds piles and leftovers (`entities.md`) |
 | `brightness:{sky:15,block:15}` | full brightness at night, like a lit sign |
 | Summon only in loaded chunks | the bot must be near (`entities.md`) |
 | **No emoji** in game text | they render as empty boxes; use ★ ✦ ♥ ✓ ✖ ⏱ ▶ ◀ ♪ ⚒ |
@@ -169,6 +171,9 @@ plain component. Colours by name (`gold`, `aqua`, `light_purple` …) or `#RRGGB
 ## Common mistakes
 
 - Display centred in the wall block → invisible. Use the face ± 0.03.
+- An integer x/z in `summon` → the display sits half a block off. Write `-72.0`.
+- A board summoned in an app's `__on_start` → one more copy after every restart (`minecraft_entities
+  action:duplicates`).
 - `data merge entity @e[tag=x]` matching two displays → error; use `execute as … run data merge entity @s`.
 - Emoji in a plaque → boxes.
 - Regenerating without `b.before('kill …')` → two copies of every label.

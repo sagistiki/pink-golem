@@ -13,6 +13,8 @@
 //   mark(x,y,z,'text', seconds)         -> floating label at a spot
 //   ytop(x,z)                           -> y of the highest non-air block at x,z (stand at ytop+1)
 //   rtrace('id', x,y,z, max)            -> walk the rail line through x y z → cu.data/rails_<id>.json (minecraft_rails trace)
+//   census('id', 'deco'|'all', cx,cz,r) -> loaded entities → cu.data/census_<id>.json (minecraft_entities)
+//   census_rm('id')                     -> remove the uuids listed in cu.data/census_rm_<id>.json (never players)
 //   bstr(block)                         -> 'oak_stairs[facing=east,half=bottom,...]'
 // Notes: set() takes a state string: set(x,y,z,'oak_stairs[facing=east]'). Container / sign contents are not snapshotted.
 
@@ -233,4 +235,33 @@ rtrace(id, x, y, z, mx) -> (
   );
   write_file('rails_' + id, 'json', {'rails' -> out, 'truncated' -> i < length(q)});
   length(out)
+);
+
+// ───── entity census (minecraft_entities) ─────
+// census('id', kinds, cx, cz, r): every LOADED entity of the chosen kinds → cu.data/census_<id>.json as
+// [type, uuid, [tags], x, y, z, sig]. sig = what the entity SHOWS (item model + dye, text, block, transformation), so two
+// entities with equal type + tags + position + sig are true duplicates (parts of one vehicle share position and tags,
+// not sig). kinds: 'deco' (displays, interaction, armor stands, mannequins, markers) or 'all' (every non-player).
+// r > 0 = only within r blocks (x/z) of cx, cz. One NBT read per display entity.
+census(id, kinds, cx, cz, r) -> (
+  deco = {'item_display', 'text_display', 'block_display', 'interaction', 'armor_stand', 'mannequin', 'marker'};
+  sel = if (r > 0, entity_area('*', [cx, 0, cz], [r, 512, r]), entity_selector('@e'));
+  out = [];
+  for (sel, e = _; t = e ~ 'type';
+    if (t != 'player' && (kinds == 'all' || has(deco, t)),
+      p = pos(e);
+      sig = '';
+      if (t == 'item_display' || t == 'text_display' || t == 'block_display',
+        n = query(e, 'nbt');
+        sig = str('%s|%s|%s|%s|%s', n:'item.components."minecraft:item_model"', n:'item.components."minecraft:dyed_color"', n:'text', n:'block_state.Name', n:'transformation'));
+      out += [t, query(e, 'uuid'), query(e, 'scoreboard_tags'), p:0, p:1, p:2, sig]));
+  write_file('census_' + id, 'json', out);
+  length(out)
+);
+// census_rm('id'): remove the entities whose uuids the MCP listed in cu.data/census_rm_<id>.json; returns how many it found
+census_rm(id) -> (
+  l = read_file('census_rm_' + id, 'json'); n = 0;
+  for (l || [], e = entity_id(_); if (e && (e ~ 'type') != 'player', modify(e, 'remove'); n += 1));
+  delete_file('census_rm_' + id, 'json');
+  n
 );

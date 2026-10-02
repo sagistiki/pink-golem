@@ -137,7 +137,8 @@ Read this once; come back when something feels familiar. New lessons you learn g
     `player_places_block` fires after and cannot. Buckets need `player_uses_item`, because they aim by raycast.
     WorldEdit, `/fill` and TNT go around all of it, so keep a block logger.
 47. **A museum photo of a roller coaster showed an empty field.** The track was display entities, which a block
-    renderer does not draw. Photograph the station building, or take a real in-game screenshot.
+    renderer does not draw. Photograph the station building, or take a real in-game screenshot. (`minecraft_screenshot`
+    now draws display entities textured; BlueMap still doesn't.)
 48. **A lit redstone lamp set with `setblock` turned itself off.** For lights an app switches on and off, use
     `waxed_copper_bulb[lit=true|false]`: a copper bulb keeps its state without redstone.
 49. **Players painted with red error spam.** `query(p, 'active_item')` does not exist in Carpet for 26.2. Track a
@@ -160,5 +161,31 @@ Read this once; come back when something feels familiar. New lessons you learn g
     level. For short rides, slice a track into equal segments and play each rider the next one.
 56. **"Some colours don't work" on a pixel canvas** was painting under a template's second layer. Paint what the
     player sees by default, and show a cursor on the aimed pixel; add a magnifier when pixels are small.
+
+## From keeping vehicles, boards and posters alive on a busy server
+
+57. **Two wall posters sat half a block off, one half behind a pillar.** `summon` and `tp` centre an **integer** x or z
+    (`-72` becomes `-71.5`); only a number with a decimal point is exact. Write `-72.0` for a display that must sit
+    exactly on a block edge (scarpet `spawn()` is exact too). Y is never shifted.
+58. **A vehicle left a frozen copy of itself behind.** When a chunk drops below full loading (its last player
+    teleports away) its entities stay in memory but `entity_id(uuid)` returns null, so a cleanup by stored uuids
+    removes nothing. When the chunk is full again they come back **without** an `entity_load_handler` event (that
+    only fires for a load from disk). Tag every group an app spawns with an incarnation id (`bus_i<n>`, a new n each
+    time) and sweep by tag (`entity_selector('@e[tag=bus]')`, remove those whose incarnation is not the live one).
+    Never trust uuid-only removal or the load handler alone. `minecraft_entities action:ghosts` finds the leftovers.
+59. **A score board grew one copy per server restart** (31 stacked). The app killed and summoned it in `__on_start`,
+    when nobody was near: the kill missed the old one in the unloaded chunk, the summon still went in. Create such
+    things lazily (on a tick, only while a player is within range), check for an existing one first, and give them a
+    generation tag. `minecraft_entities action:duplicates fix:true` removes the extra copies.
+60. **Mobs with custom models were invisible to every entity query.** Server-side model libraries built on Polymer
+    (for example Blockbench Import Library) keep only the base mob on the server; the model parts are packets sent to
+    each player. A census, a selector or a screenshot sees the base mob, not the model. Check those in game.
+61. **The resource pack stopped downloading for friends who joined through a tunnel.** Polymer's AutoHost serves the
+    pack over HTTP on the game port, and a tunnel of type "Minecraft Java" only carries the game protocol and resets
+    anything else. Use a raw TCP tunnel for the game port, or host the pack on a web host.
+62. **A pack host started storing empty files.** The upload "worked" and returned a URL, and the server would have
+    pointed every player at a 0-byte pack. Download every uploaded copy and compare its SHA-1 before it goes into
+    `server.properties`; when it fails, try the next host once. Never loop uploads: retry loops look like bot spam,
+    and free hosts close uploads over it. `minecraft_pack action:deploy` does both.
 
 See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`, `tower-floors.md`.

@@ -4,13 +4,14 @@ The long version of the README's list, with a link to the page that explains eac
 
 ## Build
 
-- **An MCP server with 37 tools.**
+- **An MCP server with 38 tools.**
   - The AI's body: walks with pathfinding, opens doors, swings. Everyone can spot it: **Pink Golem** over its head, pink
     armor with a gold trim, a pink block in hand (`bot_prefix`, `bot_outfit` to change it).
   - Safe with strangers: chat is tagged owner / guest, and a guest can't unlock generators, admin commands or app
     changes without an owner's `!approve` ([SECURITY.md](../SECURITY.md)).
   - Hands: commands, generators, background jobs, helper builders.
-  - Eyes: text vision; isometric, top-down and first-person renders; previews of builds that don't exist yet.
+  - Eyes: text vision; isometric, top-down and first-person renders, with display entities (posters, item models,
+    floating text in any script) drawn textured like in game; previews of builds that don't exist yet.
   - Memory: a world map, people, a shared learning journal.
   - [How it works](architecture.md)
 - **Safety rails:** automatic undo for every build, protected zones for other people's builds, an overwrite guard,
@@ -64,7 +65,10 @@ The long version of the README's list, with a link to the page that explains eac
   - `minecraft_app` lints scarpet apps for the traps that break them, patches a function live without a reload, and
     reloads only when nobody is using the app.
   - `minecraft_playtest` runs a scripted test with fake players in one call and cleans up after itself.
-  - `minecraft_pack` merges, validates and deploys the server resource pack.
+  - `minecraft_pack` merges, validates and deploys the server resource pack, to free pack hosts by default (each
+    copy checked before players get it).
+  - `minecraft_entities` counts the loaded entities by app and finds leaks: piles of identical displays and old
+    copies of moving objects left behind.
   - [Testing apps](../skill/pinkgolem/reference/testing-apps.md)
 - **A watchdog:**
   - It finds what makes the server slow: entity piles, leaking apps that re-create the same entity, hot chunks, busy
@@ -73,8 +77,9 @@ The long version of the README's list, with a link to the page that explains eac
   - [Watchdog](../skill/pinkgolem/reference/watchdog.md)
 - **Key Bridge**, a tiny server-side Fabric mod:
   - movement keys to a scoreboard for scarpet vehicles;
-  - `/packpush` to send a new resource pack to everyone live;
-  - a flip camera for upside-down rides.
+  - `/packpush` to send a new resource pack to everyone live (also with Polymer's AutoHost);
+  - a flip camera for upside-down rides;
+  - an entity hidden from one player (a rider's own body double).
   - [mods-src/keybridge](../mods-src/keybridge)
 
 ## What's in the box
@@ -97,7 +102,7 @@ The long version of the README's list, with a link to the page that explains eac
 | Fabric API, **Carpet** | required | Carpet gives the AI its body (fake players) and scarpet (fast world reads, undo, checks) |
 | Lithium, WorldEdit, BlueMap, Essential Commands, spark | recommended | performance · big edits · a 3D web map + real-texture screenshots · warps · lag profiling |
 | Chunky, Polydecorations (+Polymer), Ledger, Carpet Extra | optional | pre-generation · server-side furniture · rollback logs · extra rules |
-| Key Bridge (built from `mods-src/keybridge`) | optional | movement keys for vehicles and rides; live resource-pack push; the flip camera |
+| Key Bridge (built from `mods-src/keybridge`) | optional | movement keys for vehicles and rides; live resource-pack push; the flip camera; per-player hiding |
 
 The installer downloads everything from Modrinth for your Minecraft version, and `python3 pinkgolem.py mods` adds or
 removes mods later. Tools that need a missing mod hide themselves. Players need **no** client mods.

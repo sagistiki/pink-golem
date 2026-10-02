@@ -85,7 +85,7 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Know an area | `minecraft_survey` pos/player + radius, from/to, build | builds, zones, ground, blocks, rails, containers, entities, nearest road + rail |
 | Slice / top map | `minecraft_section axis:x\|y\|z at:N` or `top:true heights:true` | cheap text check of arches, floors, stairs, curved roofs |
 | Rail lines | `minecraft_rails action:path / trace / ride` | shapes + boosters written for you; trace finds breaks; ride tests a real cart (`reference/rails.md`) |
-| See as picture | `minecraft_screenshot mode iso/top/fpv/pov/real`, `cut_y` | flat colours; stairs drawn as cubes |
+| See as picture | `minecraft_screenshot mode iso/top/fpv/pov/real`, `cut_y` | flat-colour blocks, stairs drawn as cubes; display entities (posters, item models, labels) drawn textured |
 | Plan as picture | `minecraft_preview commands_files mode:all entrance` | nothing is placed |
 | Exact blocks | `minecraft_inspect pos` or `from/to mode:list/counts` | door cells, stair facings |
 | Rooms reachable? | `minecraft_check_access`, `minecraft_reach` | automatic with `entrance` on a job |
@@ -101,10 +101,11 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Resource pack | `minecraft_pack` build / deploy / status | merge + validate the packs, deploy under a new url, push live with Key Bridge's `/packpush` |
 | Lag, disk, backups | `minecraft_watchdog` status / heavy / incidents / disk / backup | "why is it laggy?" → `heavy` names the culprit (`reference/watchdog.md`) |
 | Clutter | `minecraft_cleanup` | items, arrows, fireworks |
+| Entity leaks | `minecraft_entities` census / duplicates / ghosts / remove | piles of identical displays, old copies left behind; tag groups `<app>_i<n>` / `_g<n>` (`reference/entities.md`) |
 | Big edits | `minecraft_worldedit` (only with WorldEdit) | verify afterwards |
 
 The `cu` helper app (always loaded): `occupied`, `count`, `surface`, `level`, `snap/restore`, `dark`, `find`, `show`,
-`mark`, `ytop`, `bstr` — call as `script in cu run <fn>(…)` through `minecraft_run_command` (details: `reference/scarpet.md`).
+`mark`, `ytop`, `bstr`, `census` — call as `script in cu run <fn>(…)` through `minecraft_run_command` (details: `reference/scarpet.md`).
 
 ---
 

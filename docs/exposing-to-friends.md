@@ -92,6 +92,10 @@ Notes:
   custom addresses or dedicated ports. Check the current terms on the service's site.
 - Tunnel **only the game port**. Never create a tunnel to the RCON port.
 - A tunnel adds a little latency. For friends far away, a service with a relay near them helps.
+- A **Minecraft Java** tunnel carries only the game protocol and resets anything else on that port. That matters if
+  the resource pack is served from the game port too (Polymer's AutoHost does that): friends who join through the
+  tunnel can't download it. Host the pack elsewhere (`minecraft_pack action:deploy` uploads it to a pack host by
+  default), or use a plain TCP tunnel for the game port.
 
 ---
 

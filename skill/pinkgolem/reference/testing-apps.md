@@ -166,8 +166,10 @@ pack assets (the minimap, a HUD, vehicles, a furniture mod), they must be merged
   installed ([mods-src/keybridge](../../../mods-src/keybridge/README.md)); otherwise players get it after the next
   restart. `dry_run:true` shows the plan and changes nothing. Never overwrite a file at a URL players already use: a
   client that downloads while you replace it gets a broken pack, and clients cache by URL. Where the zip goes:
-  - by default, free public pack hosts in order: **mcpacks.dev**, then **catbox.moe**
-    (`resource_pack.upload.hosts` in `pinkgolem.json`). Each host gets **one** upload; the first copy that downloads
+  - free public pack hosts, **only if the owner lists them** (opt-in, off by default):
+    `"resource_pack": {"upload": {"hosts": ["mcpacks", "catbox"]}}` in `pinkgolem.json` — **mcpacks.dev**, then
+    **catbox.moe**. Listing mcpacks.dev means accepting its terms (the tool ticks its consent box); ask the owner before
+    adding a host for them. Each host gets **one** upload; the first copy that downloads
     with the right SHA-1 wins, and the reply names the `host` and every `hosts_tried`. A host can return a URL and
     still store a broken (even empty) file, which is why every copy is checked. Never retry uploads in a loop: free
     hosts treat that as bot spam.

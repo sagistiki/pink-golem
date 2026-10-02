@@ -408,7 +408,7 @@ async function tools() {
 }
 
 // ───────────────────────────── MCP wiring ─────────────────────────────
-const server = new Server({ name: "pinkgolem", version: "1.1.0" }, { capabilities: { tools: { listChanged: true } } });
+const server = new Server({ name: "pinkgolem", version: "1.1.1" }, { capabilities: { tools: { listChanged: true } } });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: (await tools()).TOOLS }));
 

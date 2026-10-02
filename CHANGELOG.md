@@ -1,15 +1,24 @@
 # Changelog
 
+## 2026-10-02: Pack hosts are opt-in (1.1.1)
+
+- `minecraft_pack deploy` no longer uploads to a public pack host unless you list it:
+  `"resource_pack": {"upload": {"hosts": ["mcpacks", "catbox"]}}` in `pinkgolem.json`. 1.1.0 used mcpacks.dev and
+  catbox.moe by default and ticked mcpacks.dev's consent box for you; a third-party upload is now your choice (listing
+  mcpacks means you accept its terms). With nothing configured, deploy asks for a host, your own uploader,
+  `publish_dir` + `public_url`, or `url:`. [PRIVACY.md](PRIVACY.md) is updated.
+
 ## 2026-10-02: Checked pack uploads, an entity census, display entities in screenshots (1.1.0)
 
-- **`minecraft_pack deploy` uploads to free pack hosts by itself**: [mcpacks.dev](https://mcpacks.dev), then
-  [catbox.moe](https://catbox.moe) (`resource_pack.upload.hosts` in `pinkgolem.json`).
+- **`minecraft_pack deploy` can upload to free pack hosts**, opt-in: list them in `resource_pack.upload.hosts` in
+  `pinkgolem.json`, e.g. `["mcpacks", "catbox"]` ([mcpacks.dev](https://mcpacks.dev), then [catbox.moe](https://catbox.moe)).
+  Nothing goes to a third party unless you list a host (listing mcpacks.dev means accepting its terms).
   - Each host gets **one** upload. The first copy that downloads back with the right SHA-1 goes into
     `server.properties`, and the reply names the `host` and every `hosts_tried`.
   - Why the check: a host started storing empty files while still returning a URL. Why one try each: retry loops look
     like bot spam to a free host.
   - Your own `upload.command` (the older `upload_command` still works), `publish_dir` + `public_url` and `url:` work
-    as before. `"upload": {"hosts": []}` turns the public hosts off. [PRIVACY.md](PRIVACY.md) lists both hosts.
+    as before. [PRIVACY.md](PRIVACY.md) lists both hosts.
 - **New tool `minecraft_entities`** (38 tools now): a census of the loaded display, interaction, armor-stand,
   mannequin and marker entities by app, with their x/z span.
   - **Duplicates**: piles of identical copies on one spot (same type, tags, position and what they show). `fix:true`

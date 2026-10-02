@@ -9,12 +9,13 @@
  *     "output": "data/server-pack.zip",
  *     "extra_outputs": [{"path": "server/world/resources.zip", "exclude": ["server/polymer/resource_pack.zip"]}],
  *     "merge_json": true,                         // fonts/atlases/lang/sounds.json from several parts are merged
- *     "upload": {"hosts": ["mcpacks", "catbox"]},  // the default: free public pack hosts, tried in order, ONE try each
+ *     "upload": {"hosts": ["mcpacks", "catbox"]},  // opt-in: free public pack hosts, tried in order, ONE try each
  *     "upload": {"command": ["my-upload", "{file}"]},   // or your own uploader (prints the public URL), or:
  *     "publish_dir": "/var/www/packs", "public_url": "https://example.org/packs"   // copy there under a new name
  *   }
- * Without "parts": every resourcepacks/<name>/<name>.zip. "upload": {"hosts": []} turns the public hosts off (then
- * deploy needs url:'<where you put it>'). The old "upload_command" still works (= upload.command).
+ * Without "parts": every resourcepacks/<name>/<name>.zip. Nothing is uploaded to a third party unless you list a host
+ * in "upload.hosts" (mcpacks.dev's upload form has a consent box: listing it means you accept mcpacks.dev's terms); with no
+ * host, command or publish_dir, deploy needs url:'<where you put it>'. The old "upload_command" still works (= upload.command).
  * Pure zip/validation helpers: lib/devkit.js. Guide: skill/pinkgolem/reference/testing-apps.md
  */
 import fs from "node:fs";
@@ -23,7 +24,7 @@ import path from "node:path";
 export const tools = [
   {
     name: "minecraft_pack",
-    description: "The server resource pack in one call (parts from pinkgolem.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url: the pack hosts in resource_pack.upload.hosts, in order, ONE try each (default mcpacks.dev, then catbox.moe), the first copy that downloads with the right sha1 wins — or your upload.command, or publish_dir + public_url, or url:'…' you uploaded yourself → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; the reply names the host and hosts_tried; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
+    description: "The server resource pack in one call (parts from pinkgolem.json resource_pack.parts, default every resourcepacks/<name>/<name>.zip; missing parts are skipped with a warning; problems inside a part marked generated:true — one a mod makes, like Polymer's — are warnings, not blockers). action: build (merge parts — first wins on a clash, font/atlas/lang/sounds JSON merged — validate JSON, models (parents, textures, atlas-generated sprites), item definitions, fonts, sounds; report clashes, size, sha1; writes the output + extra outputs; check_only:true writes nothing; output:'path' builds elsewhere) | deploy (build → put it under a NEW url: the pack hosts you opted into in resource_pack.upload.hosts (e.g. ['mcpacks','catbox']), in order, ONE try each, the first copy that downloads with the right sha1 wins — or your upload.command, or publish_dir + public_url, or url:'…' you uploaded yourself → back up + update server.properties → live push with /packpush when the Key Bridge mod is installed, else 'restart needed'; the reply names the host and hosts_tried; dry_run:true shows the plan and changes nothing) | status (deployed vs built, stale parts, last deploy, /packpush available; check_url:true downloads the deployed url and checks its sha1). Never overwrite a file clients may be downloading: every deploy gets a new url.",
     inputSchema: { type: "object", properties: {
       action: { type: "string", enum: ["build", "deploy", "status"] }, dry_run: { type: "boolean" }, check_only: { type: "boolean" }, output: { type: "string" },
       url: { type: "string" }, force: { type: "boolean" }, skip_build: { type: "boolean" }, check_url: { type: "boolean" },
@@ -150,7 +151,7 @@ export function handlers(K, ctx) {
   const uploadOf = (cfg) => {
     const up = { ...(cfg.upload || {}) };
     if (!up.command && cfg.upload_command) up.command = cfg.upload_command;    // the older top-level setting
-    if (!up.hosts) up.hosts = up.service ? [up.service] : cfg.publish_dir && cfg.public_url ? [] : ["mcpacks", "catbox"];
+    if (!up.hosts) up.hosts = up.service ? [up.service] : [];          // opt-in: no third-party upload unless configured
     return up;
   };
   const howHosted = (cfg) => {
@@ -176,7 +177,7 @@ export function handlers(K, ctx) {
       fs.copyFileSync(file, path.join(cfg.publish_dir, name));
       return { url: cfg.public_url.replace(/\/+$/, "") + "/" + name, host: "publish_dir", verified: false, tried: [] };
     }
-    if (!up.hosts.length) throw new Error("no way to publish the pack: resource_pack.upload.hosts is empty — set upload.hosts, upload.command or publish_dir + public_url in pinkgolem.json, or upload it yourself and call deploy with url:'…'");
+    if (!up.hosts.length) throw new Error("no way to publish the pack: nothing is configured — opt in to the free pack hosts with \"resource_pack\": {\"upload\": {\"hosts\": [\"mcpacks\", \"catbox\"]}} in pinkgolem.json (listing mcpacks means you accept mcpacks.dev's terms), or set upload.command / publish_dir + public_url, or upload it yourself and call deploy with url:'…'");
     const buf = fs.readFileSync(file);
     const name = `pack-${sha.slice(0, 10)}.zip`;
     const tried = [];

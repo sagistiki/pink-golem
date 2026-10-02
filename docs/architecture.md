@@ -197,7 +197,7 @@ RCON port and password come from `server.properties` unless overridden. `pinkgol
 (names players can use to address the AI) and `crew` (`names` of up to 4 helpers, optional `lines` they say).
 
 **Screenshots and the resource pack.** `resource_pack` configures `minecraft_pack` (parts, output, and where deploy
-uploads: `upload.hosts`, default `["mcpacks", "catbox"]`, or `upload.command`, or `publish_dir` + `public_url`;
+uploads: `upload.hosts` (opt-in, e.g. `["mcpacks", "catbox"]`; nothing goes to a third party unless listed), or `upload.command`, or `publish_dir` + `public_url`;
 [testing-apps.md](../skill/pinkgolem/reference/testing-apps.md)). Screenshots draw display entities with the built
 pack (or its parts) and, if it finds one, the vanilla client jar of a local Minecraft launcher (the `mc_version`
 first, else the newest). `client_jar` sets the jar's path, or `false` to never read it; the environment variable

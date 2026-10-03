@@ -11,7 +11,7 @@ export const tools = [
   {
     name: "minecraft_inspect",
     description: "Read blocks: one block at pos (full state), or a box from/to (max 8000 blocks) listing every non-air block (mode list) or block counts (mode counts). Coordinates absolute or relative_to_player. Use it to check door cells, stair facings and exact states — pictures can't show those.",
-    inputSchema: { type: "object", properties: { pos: vec, from: vec, to: vec, relative_to_player: { type: "string" }, mode: { type: "string", enum: ["list", "counts"], description: "For boxes (default list)" } } },
+    inputSchema: { type: "object", properties: { pos: vec, from: vec, to: vec, relative_to_player: { type: "string", description: "a player's NAME; then pos/from/to are offsets from the block they stand on" }, mode: { type: "string", enum: ["list", "counts"], description: "For boxes (default list)" } } },
   },
   {
     name: "minecraft_vision",
@@ -103,6 +103,8 @@ export function handlers(K) {
     },
 
     async minecraft_vision(args) {
+      // a box with no mode/target is a site check ("is this free?") — that is what small models mean by it
+      if (!args.mode && !args.target && args.from && args.to) args = { ...args, mode: "check" };
       if (args.mode === "check") {
         if (!args.from || !args.to) throw new Error("check needs from + to");
         const [lo, hi] = K.sortBox(K.V(args.from), K.V(args.to));
@@ -118,7 +120,9 @@ export function handlers(K) {
         }
         return K.text({ box: [lo, hi], free: occ.length === 0 && inside.filter((n) => n !== K.BOT).length === 0, occupiedBlocks: occ.length, counts,
           sample: occ.slice(0, 20).map((o) => `${o[0]} ${o[1]} ${o[2]} ${o[3]}`), playersInside: inside,
-          note: occ.length ? "Something is already here — build elsewhere, or ask its owner before changing it." : "Area is free (only air / natural ground)." });
+          note: occ.length ? "Something is already here — build elsewhere, or ask its owner before changing it."
+            : inside.some((n) => n !== K.BOT) ? `No blocks here, but ${inside.filter((n) => n !== K.BOT).join(", ")} is standing inside this box: a build here would bury them. Move the box next to them.`
+            : "Area is free (only air / natural ground)." });
       }
       let playerName = args.player;
       if (!playerName && args.target !== "box" && args.target !== "pos") {

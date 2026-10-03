@@ -50,9 +50,20 @@ export function handlers(K, ctx) {
       };
       switch (act) {
         case "spawn": {
-          let where = "";
-          if (target) {
-            const p = await K.playerInfo(target);
+          let where = "", note = "";
+          let near = target;
+          if (near) {
+            // "spawn next to <me>" or a name that isn't online: spawn next to the one real player instead of failing
+            const on = (await K.onlinePlayers()).names;
+            const real = on.filter((n) => n !== B && !(K.isCrew && K.isCrew(n)));
+            const hit = on.find((n) => n.toLowerCase() === String(near).toLowerCase());
+            if ((!hit || hit === B) && real.length) {
+              note = ` — "${near}" is ${hit === B ? "you" : "not online"}, so you spawned next to ${real[0]}${real.length > 1 ? ` (online: ${real.join(", ")})` : ""}`;
+              near = real[0];
+            } else if (hit) near = hit;
+          }
+          if (near) {
+            const p = await K.playerInfo(near);
             where = ` at ${(p.position.x + 1.5).toFixed(2)} ${p.position.y} ${(p.position.z + 1.5).toFixed(2)} facing ${p.facing ? ((p.facing.yaw + 180) % 360).toFixed(1) : 0} 0 in ${p.dimension}`;
           } else if (args.pos) where = ` at ${K.V(args.pos).join(" ")}`;
           const out = await run(`${P} spawn${where}`);
@@ -63,8 +74,8 @@ export function handlers(K, ctx) {
           await K.cmd(`effect give ${B} resistance infinite 4 true`).catch(() => {});
           await K.cmd(`effect give ${B} saturation infinite 0 true`).catch(() => {});
           await K.dressBot();
-          if (target) await K.cmd(`execute as ${B} at @s facing entity ${target} eyes run tp @s ~ ~ ~ ~ ~`).catch(() => {});
-          return K.text(`${out || "spawned"}${where ? " (" + where.trim() + ")" : ""}`);
+          if (near) await K.cmd(`execute as ${B} at @s facing entity ${near} eyes run tp @s ~ ~ ~ ~ ~`).catch(() => {});
+          return K.text(`${out || "spawned"}${where ? " (" + where.trim() + ")" : ""}${note}`);
         }
         case "despawn":
           K.stopFollow();
@@ -104,11 +115,13 @@ export function handlers(K, ctx) {
           return K.text(`${d <= stopDistance ? "Arrived" : "Stopped (stuck or timed out) at"} — bot position: ${fp.x.toFixed(1)} ${fp.y.toFixed(1)} ${fp.z.toFixed(1)} (${d.toFixed(1)} blocks from target)`);
         }
         case "look_at":
+          if (target) await K.playerInfo(target);     // "facing entity <nobody>" fails silently — name who is online instead
           if (target) return K.text((await run(`execute as ${B} at @s facing entity ${target} eyes run tp @s ~ ~ ~ ~ ~`)) || `looking at ${target}`);
           if (args.pos) return K.text((await run(`${P} look at ${K.V(args.pos).join(" ")}`)) || "looking");
           throw new Error("look_at needs player or pos");
         case "follow": {
           if (!target) throw new Error("follow needs player");
+          await K.playerInfo(target);
           const far = K.startFollow(target);
           return K.text(`Following ${target} — walks normally, only teleports to catch up if left more than ${far} blocks behind. Use stop_follow to stop.`);
         }

@@ -52,7 +52,7 @@ Follow these steps in order. Each step names the exact tool.
 | 2 | **Understand** what, for whom, how big, which style | If the request is vague, offer 3-10 numbered options (what + where + size) and let them pick. See `reference/behaving-naturally.md` |
 | 3 | **Find the site** | Near the player: `minecraft_get_players` (use `standingOn`). "Over there": `minecraft_map action:pov player:<name>`. Free land: `minecraft_map action:find_space size:[w,d] near:<build>` |
 | 4 | **Check the site** | `minecraft_survey pos:[…] radius:N` = everything in one call (builds, zones, ground, rails, containers, nearest road/rail); `minecraft_vision mode:check from to` (+2 margin). Normal terrain: `script in cu run surface(x1,z1,x2,z2)` → level it with `level(...)` if min ≠ max |
-| 5 | **Choose the method** | ≤ 30 blocks: `minecraft_build`. A standard build: a blueprint (Part 4). Anything custom: write a generator (Part 4, `reference/large-builds.md`) |
+| 5 | **Choose the method** | ≤ 30 blocks: `minecraft_build`. A standard build: `minecraft_blueprint` (one call: site, door toward the player, crew, wait, map) or a blueprint through `minecraft_generate` when you need the exact spot or phases (Part 4). Anything custom: write a generator (Part 4, `reference/large-builds.md`) |
 | 6 | **Preview big builds** | `minecraft_generate script:<file> args:[…] dry_run:true` (the server checks every command's syntax, zones, overwrites, players) → `minecraft_preview commands_files:[…] mode:all` → look, fix, repeat |
 | 7 | **Show the site + plan** | `script in cu run show(...)`, one chat line: "Building a cottage here: walls, roof, furniture, garden — 3 phases" |
 | 8 | **Walk there** | `minecraft_bot action:walk_to pos:[…]` (tp first if > 60 blocks away) |
@@ -78,6 +78,7 @@ write the generator and preview it (`minecraft_preview` works offline on flat gr
 | Any command | `minecraft_run_command command / commands / commands_file(s)` | `background:true` for > 300 commands; `dry_run:true` = preflight (server-side syntax check, zones, overwrites) — background jobs are syntax-checked automatically |
 | Quick shapes | `minecraft_build operations:[…]` | fill / setblock / clone, refuses to overwrite |
 | ASCII blueprint | `minecraft_build_layers` | rows = +z, columns = +x, layer 0 = floor |
+| A whole blueprint in one call | `minecraft_blueprint name near/at facing style` | finds free ground next to a player or a build, door toward the player, builds with the crew, waits, adds it to the map, returns a `say` line |
 | Generators | `minecraft_generate script args build helpers entrance` (+ `code` to save new Python first) | Python in the repo, writes `jobs/*.json` |
 | Background jobs | `minecraft_jobs action:wait / status / list / cancel` | boss bar in game |
 | Undo | `minecraft_undo steps / match / list` | every build is snapshotted first |
@@ -125,7 +126,9 @@ The `cu` helper app (always loaded): `occupied`, `count`, `surface`, `level`, `s
 | `coaster/build.py [--layout …] [--title …]` | steel roller coaster on display entities: lift, drop, loop, helix; first-person ride; installs + loads `coaster.sc` (turns right, platform on the left; `--facing` = the way the train leaves) | ground block under the station track start | 46×213, 74 high |
 | `catalog.py` | one of every component on labelled tiles — a visual reference | first tile corner | 19 tiles |
 
-Run: `minecraft_generate script:"skill/pinkgolem/blueprints/cottage.py" args:["--at","100,-61,40","--facing","south"] build:true helpers:3 entrance:[<printed entrance>]`.
+Quickest: `minecraft_blueprint name:"cottage"` (or `near:"Library"`, `at:[x,y,z]`, `facing`, `style`) does the site,
+the build, the wait and the map entry in one call. For full control:
+`minecraft_generate script:"skill/pinkgolem/blueprints/cottage.py" args:["--at","100,-61,40","--facing","south"] build:true helpers:3 entrance:[<printed entrance>]`.
 Each blueprint prints its box and entrance — use them for the map entry.
 
 **Writing your own** — the pattern every blueprint uses:

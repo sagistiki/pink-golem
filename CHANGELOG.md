@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-03: Pink Golem Bench, Ollama, and a stack a small model can drive (1.2.0)
+
+Measured, not guessed: **[Pink Golem Bench](bench/README.md)** runs six building tasks on a model and scores what was
+really built by scanning the world afterwards. On Gemma 4 E4B (8B, 4-bit, through Ollama) the published 1.1.2 scored
+**22/100**; this release scores **84/100** with the same model. Claude Opus 5.5 scored 100 on 1.1.2.
+Charts and every change's effect: [bench/results.md](bench/results.md).
+
+- **Ollama support:** `bench/agent.py` is an MCP client and agent loop for any Ollama model with tool calling
+  (32k context by default, warns before Ollama silently drops the start of a conversation; nudges a model that
+  stops early or repeats a failing call). See [local models](docs/clients/local-models.md).
+- **`minecraft_blueprint`** (tool 39): a whole blueprint in one call. It finds free ground next to a player or a
+  build on the map, turns the door toward the player, builds with the crew, waits, checks and adds it to the map.
+- **`PINKGOLEM_TOOLS=core`**: offer only the 17 tools a build needs (~5k tokens of descriptions instead of ~12.5k).
+- **Tools forgive small-model mistakes:** generator arguments written as one string (`"--at 1,2,3"`, `--at=…`,
+  decimals, a lone `x,y,z` or direction), `relative_to_player` filled with junk or with a name next to world
+  coordinates, `spawn` next to yourself, `find_space` near a player or a position, `minecraft_vision` with a box
+  and no mode, `map add` without a name, vanilla commands sent to WorldEdit.
+- **Failures say so on the first line:** a failed generator, a refused phase, a fill that didn't place and an empty
+  job list now come back as errors ("FAILED — NOTHING was built", "PARTLY BUILT", "NOT BUILT") instead of a
+  success-shaped reply with `"ok": false` inside. A repeated failing call is pointed out.
+- **Safety:** builds refuse to put blocks where a player stands (no override) and say where "in front of them" is;
+  a coordinate list that isn't exactly three numbers is refused; `minecraft_build` refuses a box too big to check
+  for existing builds instead of skipping the check.
+- **Helpers for geometry:** `minecraft_get_players` gives `facing.step_xz` and `facing.ground_3_ahead`;
+  `fill` takes `size:[w,h,d]` instead of a far corner; `minecraft_build` replies with what it built
+  ("stone: 5×1×5 = 25 blocks").
+- `SYSTEM_PROMPT.md` rewritten from the failures the bench recorded; `SKILL.md` knows `minecraft_blueprint`;
+  ten new lessons (66-75) in `reference/lessons.md`.
+
 ## 2026-10-03: Script and sound checks (1.1.2)
 
 - **`scripts/sc_check.py`** checks scarpet apps before `script load` (a failed load unloads the running app): bracket

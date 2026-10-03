@@ -24,3 +24,11 @@ __pycache__/
 mods-src/*/build/
 # generated texture folders (the zips are kept)
 resourcepacks/textures/natural_*/
+
+# Pink Golem Bench: raw runs (transcripts with local paths), state and logs stay local; charts + results.md are published
+bench/.venv/
+bench/state/
+bench/logs/
+bench/results/*
+!bench/results/charts/
+!bench/results/leaderboard.json

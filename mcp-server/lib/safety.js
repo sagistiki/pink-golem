@@ -66,11 +66,37 @@ export function install(K) {
     return `PROTECTED — nothing was changed. This touches protected zone(s): ${hit.map((z) => `"${z.name}" (owner ${z.owner}${z.builder ? `, builder ${z.builder}` : ""}, ${z.lo.join(",")} → ${z.hi.join(",")})`).join("; ")}. Only edit it if its owner asked you to, then pass allow_protected:true — or, for a job you are doing for the owner over several phases, minecraft_zones action:"claim" name:<zone> once (then every phase goes through for ${WORK_GRACE_H} h).`;
   };
 
+  /** Refuse to put solid blocks where a player stands (their feet or head cell). targets: {lo, hi, block?}. */
+  K.playerGuard = async (targets) => {
+    // no override: small models pass allow_overwrite out of habit, and nobody should get built into a wall
+    if (!targets.length) return null;
+    const solid = targets.filter((t) => !/^(minecraft:)?(air|cave_air|void_air|light)\b/.test(String(t.block || "stone")));
+    if (!solid.length) return null;
+    const hits = [];
+    let ahead = "";
+    for (const n of (await K.onlinePlayers()).names) {
+      if (n === K.BOT || (K.isCrew && K.isCrew(n))) continue;
+      let info;
+      try { info = await K.playerInfo(n); } catch { continue; }
+      const p = info.position;
+      const f = [Math.floor(p.x), Math.floor(p.y), Math.floor(p.z)];
+      const cells = [f, [f[0], f[1] + 1, f[2]]];
+      if (solid.some((t) => cells.some(([x, y, z]) => x >= t.lo[0] && x <= t.hi[0] && y >= t.lo[1] && y <= t.hi[1] && z >= t.lo[2] && z <= t.hi[2]))) {
+        hits.push(`${n} at ${f.join(" ")}`);
+        // say where "in front of them" is: the usual intent when a build lands on the player
+        if (!ahead && info.facing?.ground_3_ahead) ahead = ` ${n} faces ${info.facing.direction}: the ground 3 blocks in front of them is ${info.facing.ground_3_ahead.join(" ")} (one step forward = ${JSON.stringify(info.facing.step_xz)} in x,z) — start a build "in front of" them there.`;
+      }
+    }
+    if (!hits.length) return null;
+    return `STOPPED — nothing was built: it would put blocks where a player stands (${hits.join("; ")}). Move the build next to them, at least 3 blocks away, or ask them to step aside first.${ahead}`;
+  };
+
   /** Refuse to overwrite existing builds. targets: list of {lo,hi}. null if OK, else a message. */
   K.overwriteGuard = async (targets, allow) => {
     if (allow || !targets.length) return null;
     const [lo, hi] = K.unionBox(targets);
-    if (K.volOf([lo, hi]) > 120000) return null; // too big to check cheaply — use minecraft_vision mode:check first
+    // too big to check cheaply: refuse instead of waving it through (a typo in one coordinate makes a fill kilometres long)
+    if (K.volOf([lo, hi]) > 120000) return `STOPPED — nothing was built: this covers ${K.volOf([lo, hi])} blocks (${lo.join(",")} → ${hi.join(",")}), too big to check for existing builds. Check the coordinates; for a big edit on purpose use a generator, or pass allow_overwrite:true.`;
     const occ = await K.occupiedIn(lo, hi);
     const hits = occ.filter(([x, y, z]) => targets.some((t) => x >= t.lo[0] && x <= t.hi[0] && y >= t.lo[1] && y <= t.hi[1] && z >= t.lo[2] && z <= t.hi[2]));
     if (!hits.length) return null;

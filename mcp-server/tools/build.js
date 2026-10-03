@@ -43,12 +43,12 @@ export const tools = [
   {
     name: "minecraft_build",
     description:
-      "Build a few shapes quickly (fill/setblock/clone; big fills are split automatically). Coordinates are absolute, or offsets from the GROUND block a player stands on with relative_to_player (y=0 = the ground layer, y=1 = first block above). Floors replace the ground block; walls start one above. Refuses to overwrite existing builds unless allow_overwrite. Ops: {op:'fill', from, to, block, mode?: replace|hollow|outline|keep|destroy}, {op:'setblock', pos, block}, {op:'clone', from, to, dest}, {op:'command', command}. Block states in brackets: 'oak_stairs[facing=east]'. For anything bigger than a few dozen shapes, write a generator (skill: scripts/mclib.py) and use minecraft_generate.",
+      "Build a few shapes quickly (fill/setblock/clone; big fills are split automatically). Coordinates are absolute. Or set relative_to_player to a player's NAME: then coordinates are offsets from the ground block that player stands on ([0,0,0] = that ground block, y=1 = the first block above it). Floors replace the ground block; walls start one above. Refuses to overwrite existing builds unless allow_overwrite. Ops: {op:'fill', from, to (or size:[w,h,d] instead of to), block, mode?: replace|hollow|outline|keep|destroy}, {op:'setblock', pos, block}, {op:'clone', from, to, dest}, {op:'command', command}. Block states in brackets: 'oak_stairs[facing=east]'. For anything bigger than a few dozen shapes, write a generator (skill: scripts/mclib.py) and use minecraft_generate.",
     inputSchema: {
       type: "object",
       properties: {
         operations: { type: "array", items: { type: "object" } },
-        relative_to_player: { type: "string" },
+        relative_to_player: { type: "string", description: "a player's NAME (e.g. \"Steve\"); then the coordinates are offsets from the block they stand on. Leave out for absolute coordinates." },
         dimension: { type: "string", description: "e.g. minecraft:the_nether (default: overworld or the player's dimension)" },
         label: { type: "string" },
         allow_overwrite: { type: "boolean", description: "Only when you deliberately edit an existing structure" },
@@ -67,7 +67,7 @@ export const tools = [
       type: "object",
       properties: {
         origin: { ...vec, description: "[x,y,z] of the bottom-north-west corner (absolute, or offset if relative_to_player)" },
-        relative_to_player: { type: "string" },
+        relative_to_player: { type: "string", description: "a player's NAME (e.g. \"Steve\"); then the coordinates are offsets from the block they stand on. Leave out for absolute coordinates." },
         dimension: { type: "string" },
         layers: { type: "array", items: { type: "array", items: { type: "string" } } },
         legend: { type: "object", additionalProperties: { type: "string" } },
@@ -89,6 +89,24 @@ export const tools = [
       files: { type: "array", items: { type: "string" }, description: "only build these of the generated files (names or globs like cottage-*)" },
       helpers: { type: "number" }, allow_protected: { type: "boolean" }, label: { type: "string" }, entrance: vec, check_access: { type: "boolean" },
       dry_run: { type: "boolean", description: "generate, then PREFLIGHT all written files (syntax parsed by the server, zones, overwrites, players) — nothing is built" } }, required: ["script"] },
+  },
+  {
+    name: "minecraft_blueprint",
+    description:
+      "Build a ready-made blueprint in ONE call — the easy way to 'build me a house / cottage / villa / tower / park (next to me / near X)'. It finds free flat ground next to a player or a build on the map, turns the door toward the player, builds with the helper crew, waits until it's done, checks it and adds it to the map. Then tell the player what it says in `say`. name: cottage | modern_villa | tower | park | drop_tower.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", enum: ["cottage", "modern_villa", "tower", "park", "drop_tower"] },
+        near: { type: "string", description: "a player's name or a build on the map (default: the player online)" },
+        at: { ...vec, description: "optional exact spot: the blueprint's --at (ground level). Leave out to let the tool pick free ground" },
+        facing: { type: "string", enum: ["north", "south", "east", "west"], description: "default: the door faces the player" },
+        style: { type: "string", description: "optional: cottage oak|birch|dark, villa white|dark|wood, tower stone|sandstone|brick" },
+        label: { type: "string", description: "name on the map (default: the blueprint's name)" },
+        helpers: { type: "number", description: "helper builders 0-4 (default 3)" },
+      },
+      required: ["name"],
+    },
   },
   {
     name: "minecraft_worldedit",
@@ -140,6 +158,8 @@ export function handlers(K) {
       const targets = K.targetsFromCommands(list);
       const zblock = K.zoneGuard(targets, args.allow_protected);
       if (zblock) return K.fail(zblock);
+      const pblock = await K.playerGuard(targets);
+      if (pblock) return K.fail(pblock);
       const firstFile = args.commands_file || args.commands_files?.[0];
       const label = String(args.label || (firstFile ? firstFile.replace(/^.*\//, "").replace(/\.json$/, "") : list[0].slice(0, 40)));
       const undoInfo = targets.length && args.undo !== false ? await K.snapshotFor(targets, label).catch((e) => ({ skipped: e.message })) : null;
@@ -190,15 +210,31 @@ export function handlers(K) {
       const cmds = [];
       const targets = [];
       const pts = [];
-      for (const op of args.operations || []) {
+      const summary = [];
+      for (let op of args.operations || []) {
         const kind = op.op || op.type;
+        // "a 5x5 floor" is easier as a size than as a far corner: size [w, h, d] → to = from + size - 1
+        if (kind === "fill" && op.size !== undefined && op.to === undefined) {
+          const sz = op.size;
+          if (!(Array.isArray(sz) && sz.length === 3 && sz.every((v) => Number.isInteger(Number(v)) && Number(v) >= 1)))
+            throw new Error(`fill size must be three whole numbers ≥ 1 [width_x, height_y, depth_z]; got ${JSON.stringify(sz)}. Nothing was built.`);
+          op = { ...op, to: K.V(op.from).map((v, i) => v + Number(sz[i]) - 1) };
+        }
+        // [x, y, z] means exactly three numbers: a fourth one ("to":[5512,4,-60,5001]) once became a 5 km stone wall
+        for (const k of ["from", "to", "pos", "dest"])
+          if (op[k] !== undefined && !(Array.isArray(op[k]) && op[k].length === 3 && op[k].every((v) => Number.isFinite(Number(v)))))
+            throw new Error(`${kind} ${k} must be exactly three numbers [x, y, z]; got ${JSON.stringify(op[k])}. Nothing was built.`);
         const P = (v) => K.add(origin, K.V(v));
         if (kind === "fill") {
+          const [slo, shi] = K.sortBox(P(op.from), P(op.to));
+          const d = [0, 1, 2].map((i) => shi[i] - slo[i] + 1);
+          summary.push(`${op.block}: ${d[0]}×${d[1]}×${d[2]} = ${d[0] * d[1] * d[2]} blocks, ${slo.join(",")} → ${shi.join(",")}${op.mode ? ` (${op.mode})` : ""}`);
           cmds.push(...K.fillCommands(P(op.from), P(op.to), op.block, op.mode, dimension));
-          if (op.mode !== "keep") { const [lo, hi] = K.sortBox(P(op.from), P(op.to)); targets.push({ lo, hi }); }
+          if (op.mode !== "keep") { const [lo, hi] = K.sortBox(P(op.from), P(op.to)); targets.push({ lo, hi, block: op.block }); }
         } else if (kind === "setblock") {
+          summary.push(`${op.block} at ${P(op.pos).join(",")}`);
           cmds.push(K.inDim(dimension, `setblock ${P(op.pos).join(" ")} ${op.block}${op.mode ? " " + op.mode : ""}`));
-          if (op.mode !== "keep") targets.push({ lo: P(op.pos), hi: P(op.pos) });
+          if (op.mode !== "keep") targets.push({ lo: P(op.pos), hi: P(op.pos), block: op.block });
         } else if (kind === "clone") {
           cmds.push(K.inDim(dimension, `clone ${P(op.from).join(" ")} ${P(op.to).join(" ")} ${P(op.dest).join(" ")}${op.mode ? " " + op.mode : ""}`));
           const f = K.V(op.from), t = K.V(op.to), d = P(op.dest);
@@ -210,6 +246,8 @@ export function handlers(K) {
       if (cmds.length > 20000) throw new Error(`Too many commands (${cmds.length}). Use bigger fills or a generator.`);
       const zb = K.zoneGuard(targets, args.allow_protected);
       if (zb) return K.fail(zb);
+      const pb = await K.playerGuard(targets);
+      if (pb) return K.fail(pb);
       const blocked = await K.overwriteGuard(targets, args.allow_overwrite);
       if (blocked) return K.fail(blocked);
       if (args.undo !== false) await K.snapshotFor(targets, args.label || "build").catch(() => {});
@@ -217,7 +255,15 @@ export function handlers(K) {
       const r = await K.runMany(cmds);
       const post = {};
       await K.afterBuild(cmds, targets, args.label || "build", post, args.verify, args.entrance ?? args.check_access).catch(() => {});
-      return K.text({ ...post, coordinates: note, origin, ...(botNote ? { bot: botNote } : {}), commandsRun: cmds.length, failed: r.errors,
+      const listed = summary.length > 12 ? [...summary.slice(0, 12), `… ${summary.length - 12} more`] : summary;
+      const placed = !r.errors && !(post.verify && post.verify.checked && post.verify.mismatches === post.verify.checked);
+      if (!placed) {   // say it first: a reply that starts with "built" reads as success to a small model
+        const why = (r.results || []).find((x) => x.error)?.output || (post.verify ? `${post.verify.mismatches} of ${post.verify.checked} blocks are not as planned` : "");
+        const some = r.errors < cmds.length && !(post.verify && post.verify.mismatches === post.verify.checked);
+        return K.fail(`${some ? "PARTLY BUILT" : "NOT BUILT"} — ${r.errors} of ${cmds.length} commands failed${why ? `: ${String(why).slice(0, 200)}` : ""}. `
+          + `Requested: ${listed.join("; ")}. Fix the cause and build again${some ? " (minecraft_undo steps:1 first if the half-built part is in the way)" : ""}.`);
+      }
+      return K.text({ built: listed, ...post, coordinates: note, origin, ...(botNote ? { bot: botNote } : {}), commandsRun: cmds.length, failed: r.errors,
         failures: r.results.filter((x) => x.error).slice(0, 15).map((f) => `${f.command} → ${f.output}`), sample: r.results.slice(0, 5).map((x) => `${x.command} → ${x.output}`) });
     },
 
@@ -238,7 +284,7 @@ export function handlers(K) {
             while (j + 1 < chars.length && chars[j + 1] === ch) j++;
             const a = [o[0] + i, o[1] + dy, o[2] + dz];
             const b = [o[0] + j, o[1] + dy, o[2] + dz];
-            runs.push({ lo: a, hi: b });
+            runs.push({ lo: a, hi: b, block });
             cmds.push(K.inDim(dimension, i === j ? `setblock ${a.join(" ")} ${block}` : `fill ${a.join(" ")} ${b.join(" ")} ${block}`));
             i = j + 1;
           }
@@ -248,6 +294,8 @@ export function handlers(K) {
       const sz = Math.max(...args.layers.map((l) => l.length));
       const zb = K.zoneGuard(runs, args.allow_protected);
       if (zb) return K.fail(zb);
+      const pb = await K.playerGuard(runs);
+      if (pb) return K.fail(pb);
       const blocked = await K.overwriteGuard(runs, args.allow_overwrite);
       if (blocked) return K.fail(blocked);
       if (args.undo !== false) await K.snapshotFor(runs, args.label || "build_layers").catch(() => {});
@@ -265,7 +313,18 @@ export function handlers(K) {
         if (!f.startsWith(K.P.JOBS + path.sep) || !f.endsWith(".py")) throw new Error("with code, script must be a .py file under jobs/ (e.g. jobs/gen_bakery.py)");
         fs.writeFileSync(f, String(args.code));
       }
-      const g = await K.runGenerator(args.script, args.args || []);
+      const blueprint = /(^|\/)blueprints\//.test(String(args.script));
+      const argv = K.fixGeneratorArgs(args.args || [], blueprint);
+      const fixed = JSON.stringify(argv) !== JSON.stringify((args.args || []).map(String)) ? `(args read as ${JSON.stringify(argv)})` : "";
+      const g = await K.runGenerator(args.script, argv);
+      if (fixed) g.args_fixed = fixed;
+      if (!g.ok) {
+        const err = (g.stderr || g.stdout || "").trim().split(/\r?\n/).slice(-8).join("\n");
+        return K.fail(`FAILED — ${args.script} stopped with an error, so NOTHING was generated or built.\n${err}`
+          + (blueprint ? `\nBlueprint arguments are separate strings: "args": ["--at", "X,Y,Z", "--facing", "south"]` : "")
+          + (fixed ? `\n${fixed}` : "") + "\nFix the arguments and call minecraft_generate again. Don't tell the player it's built.");
+      }
+      if (args.build && !g.files.length) return K.fail(`FAILED — ${args.script} ran but wrote no job files, so nothing was built.\n${(g.stdout || "").slice(-600)}`);
       if (args.dry_run && g.ok) {
         let all = [];
         for (const f of g.files) { const raw = fs.readFileSync(K.safePath(f), "utf8"); all = all.concat(raw.trim().startsWith("[") ? JSON.parse(raw) : raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))); }
@@ -288,7 +347,99 @@ export function handlers(K) {
         const t = r.content?.[0]?.text || "";
         try { jobs.push(JSON.parse(t)); } catch { jobs.push({ file: f, error: t.slice(0, 300) }); if (r.isError) break; }
       }
+      // a phase refused by a guard (protected zone, a player in the way, existing blocks) must not hide under "ok": true
+      const refused = jobs.filter((j) => j.job == null);
+      if (refused.length) {
+        const started = jobs.filter((j) => j.job != null);
+        return K.fail(`${started.length ? `PARTLY BUILT — ${started.length} phase(s) started, ${refused.length} refused` : "FAILED — NOTHING was built"}: `
+          + `${String(refused[0].error || "").slice(0, 500)}\nMove the build (another spot or facing) and run minecraft_generate again. Don't tell the player it's built.`
+          + (started.length ? `\nStarted jobs: ${started.map((j) => j.job).join(", ")} — undo them with minecraft_undo if the build moves.` : ""));
+      }
       return K.text({ ...g, jobs, next: jobs.length ? `minecraft_jobs action:wait id:${jobs[jobs.length - 1].job} (repeat until done)` : undefined });
+    },
+
+    async minecraft_blueprint(args) {
+      const BP = { cottage: "cottage.py", house: "cottage.py", modern_villa: "modern_villa.py", villa: "modern_villa.py", tower: "tower.py",
+        lookout_tower: "tower.py", park: "park.py", drop_tower: "drop_tower.py" };
+      const key = String(args.name || "").toLowerCase().trim().replace(/\.py$/, "").replace(/[\s-]+/g, "_");
+      const file = BP[key];
+      if (!file) throw new Error(`no blueprint "${args.name}". Choose one of: cottage, modern_villa, tower, park, drop_tower`);
+      const kind = file.replace(/\.py$/, "");
+      const script = `skill/pinkgolem/blueprints/${file}`;
+      const extra = args.style ? ["--style", String(args.style)] : [];
+      const probe = async (facing, at) => {
+        const g = await K.runGenerator(script, ["--at", at.join(","), "--facing", facing, ...extra]);
+        const m = /box \[(-?\d+), (-?\d+), (-?\d+)\] -> \[(-?\d+), (-?\d+), (-?\d+)\]/.exec(g.stdout || "");
+        if (!g.ok || !m) throw new Error(`blueprint ${file} failed: ${(g.stderr || g.stdout || "").slice(-400)}`);
+        const e = /entrance[^[]*\[(-?[\d.]+), (-?[\d.]+), (-?[\d.]+)\]/.exec(g.stdout);
+        return { lo: [+m[1], +m[2], +m[3]], hi: [+m[4], +m[5], +m[6]], entrance: e ? [+e[1], +e[2], +e[3]] : null };
+      };
+      // who it is for and where: a player (default: the one online) or a build on the map
+      const players = (await K.onlinePlayers()).names.filter((n) => n !== K.BOT && !(K.isCrew && K.isCrew(n)));
+      const q = args.near ? String(args.near).trim() : "";
+      let forWhom = (q && players.find((n) => n.toLowerCase() === q.toLowerCase())) || null;
+      let nearBuild = null;
+      if (q && !forWhom) {
+        nearBuild = K.WM.lookup(K.mapEntries(), q)[0] || null;
+        if (!nearBuild) throw new Error(`"${q}" is neither a player online (${players.join(", ") || "nobody"}) nor a build on the map (minecraft_map action:list)`);
+      }
+      if (!forWhom) forWhom = players[0] || null;
+      const who = forWhom ? (await K.playerInfo(forWhom)).position : null;
+      const toward = (from) => {                     // the door looks at the player
+        if (!who) return "south";
+        const dx = who.x - from[0], dz = who.z - from[1];
+        return Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? "east" : "west") : (dz > 0 ? "south" : "north");
+      };
+      let facing = args.facing ? String(args.facing).toLowerCase() : null;
+      let at;
+      if (args.at) {
+        at = K.V(args.at).map(Math.round);
+        facing = facing || toward([at[0], at[2]]);
+      } else {
+        const c = nearBuild ? K.WM.center(nearBuild) : who ? [who.x, who.y, who.z] : null;
+        if (!c) throw new Error("nobody is online: pass near (a build on the map) or at [x,y,z]");
+        const b0 = await probe("south", [0, K.isFlat ? K.flatGroundY : 0, 0]);
+        const side = Math.max(b0.hi[0] - b0.lo[0], b0.hi[2] - b0.lo[2]) + 3;       // any facing fits, +1 block around
+        const found = await K.findSpace({ size: [side, side], ...(nearBuild ? { near: nearBuild.name } : { pos: c }), radius: 60, margin: 2, count: 1 });
+        const spot = found.spots?.[0];
+        if (!spot) throw new Error(`no free ${side}x${side} ground near ${nearBuild ? nearBuild.name : forWhom}: ${found.note}`);
+        const m = [(spot.from[0] + spot.to[0]) / 2, (spot.from[2] + spot.to[2]) / 2];
+        let gy = K.isFlat ? K.flatGroundY : null;
+        if (gy === null) gy = parseInt(String(await K.inApp("cu", `ytop(${Math.round(m[0])},${Math.round(m[1])})`)).match(/-?\d+/)?.[0] ?? "0", 10);
+        facing = facing || toward(m);
+        const b = await probe(facing, [0, gy, 0]);
+        at = [Math.round(m[0] - (b.lo[0] + b.hi[0]) / 2), gy, Math.round(m[1] - (b.lo[2] + b.hi[2]) / 2)];
+      }
+      const box = await probe(facing, at);
+      const r = await H.minecraft_generate({ script, args: ["--at", at.join(","), "--facing", facing, ...extra], build: true,
+        helpers: args.helpers ?? 3, label: kind, ...(box.entrance ? { entrance: box.entrance } : {}) });
+      if (r.isError) return r;
+      let res;
+      try { res = JSON.parse(r.content[0].text); } catch { return r; }
+      const ids = (res.jobs || []).map((j) => j.job).filter((x) => x != null);
+      if (!ids.length) return K.fail(`the build did not start: ${JSON.stringify(res.jobs || res).slice(0, 600)}`);
+      const views = () => ids.map((id) => K.findJob(id)).filter(Boolean);
+      const until = Date.now() + 50000;
+      while (Date.now() < until && views().some((j) => ["queued", "running", "checking"].includes(j.status))) await K.sleep(500);
+      const js = views().map(K.jobView);
+      const done = js.every((j) => j.status === "done");
+      const errors = js.reduce((a, j) => a + (j.errors || 0), 0);
+      const base = args.label || kind.replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase());
+      const taken = new Set(K.mapEntries().map((e) => String(e.name).toLowerCase()));
+      let name = base;
+      for (let i = 2; taken.has(name.toLowerCase()); i++) name = `${base} ${i}`;
+      await K.handle("minecraft_map", { action: "add", name, from: box.lo, to: box.hi, builder: K.BOT, owner: forWhom || "?", kind,
+        ...(box.entrance ? { entrances: [[...box.entrance, "front door"]] } : {}), notes: `${kind} blueprint, facing ${facing}` }).catch(() => {});
+      let where = "";
+      if (who && box.entrance) {
+        const dx = box.entrance[0] - who.x, dz = box.entrance[2] - who.z;
+        where = `${Math.round(Math.hypot(dx, dz))} blocks ${K.WM.compass(dx, dz)} of you`;
+      }
+      return K.text({ built: name, status: done ? (errors ? "done with errors" : "done") : "still building", at, facing, box: [box.lo, box.hi],
+        entrance: box.entrance, errors,
+        jobs: js.map((j) => ({ id: j.id, status: j.status, done: `${j.done}/${j.total}`, errors: j.errors, verify_ok: j.verify?.ok, access_ok: j.access?.ok })),
+        ...(done ? {} : { next: `still building — call minecraft_jobs {"action":"wait","id":${ids[ids.length - 1]}} until it says done` }),
+        ...(done && !errors ? { say: `Your ${name.toLowerCase()} is ready${where ? ", " + where : ""}${forWhom && box.entrance ? " — the door faces you" : ""}.` } : {}) });
     },
 
     async minecraft_worldedit(args) {
@@ -299,6 +450,11 @@ export function handlers(K) {
         const zb = K.zoneGuard([{ lo, hi }], args.allow_protected);
         if (zb) return K.fail(zb);
       }
+      // vanilla commands sent here go out as "//fill …", which WorldEdit ignores — and the reply would still say "sent"
+      const vanilla = (args.commands || []).map((c) => String(c).trim().replace(/^\/+/, "").split(/\s+/)[0].toLowerCase())
+        .filter((w) => ["fill", "setblock", "clone", "summon", "give", "tp", "teleport", "execute", "kill", "data", "place"].includes(w));
+      if (vanilla.length) throw new Error(`"${vanilla[0]}" is a vanilla command, not a WorldEdit one — nothing was sent. Use minecraft_build `
+        + `(fill / setblock / clone with absolute coordinates) or minecraft_run_command. WorldEdit commands look like set, replace, walls, copy, paste, stack.`);
       const out = [];
       for (let c of args.commands || []) {
         c = String(c).trim().replace(/^\/+/, "");
@@ -313,7 +469,8 @@ export function handlers(K) {
     async minecraft_jobs(args) {
       if (args.action === "list" || !args.action) return K.text(K.allJobs().map(K.jobView));
       const job = K.findJob(args.id);
-      if (!job) return K.text("No jobs.");
+      if (!job) return K.text(args.id ? `No job ${args.id}. Jobs: ${JSON.stringify(K.allJobs().map((j) => ({ id: j.id, label: j.label, status: j.status })))}`
+        : "No build jobs: nothing is being built and nothing was built by a job in this session. If minecraft_generate failed, fix it and run it again with build:true.");
       if (args.action === "cancel") { job.cancel = true; if (job.status === "queued") job.status = "cancelled"; return K.text(K.jobView(job)); }
       if (args.action === "wait") {
         const until = Date.now() + Math.max(1, Math.min(args.timeout_seconds ?? 45, 50)) * 1000;

@@ -159,7 +159,11 @@ export function install(K, ctx) {
   K.playerInfo = async (name) => {
     const get = async (p) => parseDataValue(await K.cmd(`data get entity ${name} ${p}`));
     const pos = K.parseNums(await get("Pos"));
-    if (pos.length < 3) throw new Error(`Player "${name}" not found / not online.`);
+    if (pos.length < 3) {
+      const on = (await K.onlinePlayers().catch(() => ({ names: [] }))).names.filter((n) => n !== K.BOT && !(K.isCrew && K.isCrew(n)));
+      throw new Error(`Player "${name}" is not online.` + (on.length ? ` Players online now: ${on.join(", ")}.` : " No players are online.")
+        + (name === K.BOT ? ` (${K.BOT} is you, the AI's body.)` : ""));
+    }
     const rot = K.parseNums(await get("Rotation"));
     const dim = (await get("Dimension"))?.replace(/"/g, "");
     const health = K.parseNums(await get("Health"))[0];
@@ -172,7 +176,14 @@ export function install(K, ctx) {
       block: { x: Math.floor(pos[0]), y: Math.floor(pos[1]), z: Math.floor(pos[2]) },
       // the block the player stands ON (ground). A house floor belongs at this Y, not at feet Y.
       standingOn: { x: Math.floor(pos[0]), y: Math.ceil(pos[1] - 1e-6) - 1, z: Math.floor(pos[2]) },
-      facing: rot.length >= 2 ? { yaw: +rot[0].toFixed(1), pitch: +rot[1].toFixed(1), direction: K.yawToDir(rot[0]) } : null,
+      facing: rot.length >= 2 ? (() => {
+        // which way is "in front of me": the step along the ground, and the ground block 3 steps ahead
+        const direction = K.yawToDir(rot[0]);
+        const step = { "south (+Z)": [0, 1], "west (-X)": [-1, 0], "north (-Z)": [0, -1], "east (+X)": [1, 0] }[direction];
+        const gx = Math.floor(pos[0]), gy = Math.ceil(pos[1] - 1e-6) - 1, gz = Math.floor(pos[2]);
+        return { yaw: +rot[0].toFixed(1), pitch: +rot[1].toFixed(1), direction, step_xz: step,
+          ground_3_ahead: [gx + 3 * step[0], gy, gz + 3 * step[1]] };
+      })() : null,
       dimension: dim,
       health,
       food,
@@ -226,7 +237,19 @@ export function install(K, ctx) {
   };
   K.resolveOrigin = async (args) => {
     if (args.relative_to_player) {
-      const p = await K.playerInfo(args.relative_to_player);
+      // small models put other things here ("y=0", "true", their own name); when the coordinates are plainly absolute,
+      // build at them and say what was ignored instead of failing the whole call
+      const who = String(args.relative_to_player).trim();
+      const online = (await K.onlinePlayers()).names;
+      // offsets from a player are small; x/z beyond ±300 or a y far below the ground are world coordinates, whatever
+      // the name says (a model that sends both would otherwise build hundreds of blocks away)
+      const pts = [];
+      for (const op of args.operations || []) for (const k of ["from", "to", "pos", "dest"]) if (Array.isArray(op[k])) pts.push(op[k].map(Number));
+      for (const k of ["origin", "pos", "from", "to"]) if (Array.isArray(args[k])) pts.push(args[k].map(Number));
+      const absolute = pts.some((p) => Math.abs(p[0]) > 300 || Math.abs(p[2]) > 300 || p[1] < -30);
+      if (absolute)
+        return { origin: [0, 0, 0], dimension: args.dimension, note: `absolute coordinates (relative_to_player "${who}" ignored: these coordinates are world positions, not offsets)` };
+      const p = await K.playerInfo(online.find((n) => n.toLowerCase() === who.toLowerCase()) || who);
       const g = p.standingOn;
       return {
         origin: [g.x, g.y, g.z],
@@ -235,6 +258,39 @@ export function install(K, ctx) {
       };
     }
     return { origin: [0, 0, 0], dimension: args.dimension, note: "absolute coordinates" };
+  };
+
+  /** Generator arguments as small models write them → what argparse expects. "--at 1,2,3" → "--at","1,2,3";
+   *  "--at=1,2,3" → split; "1, -61, 40" → "1,-61,40"; "--at","1","-61","40" → joined; on a blueprint, a lone x,y,z
+   *  gets "--at" and a lone direction gets "--facing". */
+  K.fixGeneratorArgs = (args, blueprint) => {
+    const XYZ = /^\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/;
+    const DIR = /^(north|south|east|west)$/i;
+    const out = [];
+    // one string holding several quoted items: '--at","1,2,3","--facing","south' or '["--at", "1,2,3"]'
+    const items = (Array.isArray(args) ? args : [args]).flatMap((a) => String(a).trim().replace(/^\[|\]$/g, "").split(/"\s*,\s*"/))
+      .map((a) => a.trim().replace(/^"+|"+$/g, "").trim()).filter(Boolean);
+    for (const raw of items) {
+      for (const piece of raw.split(/\s+(?=--)/)) {
+        const m = /^(--[\w-]+)(?:=|\s+)(.+)$/s.exec(piece);
+        if (m) out.push(m[1], m[2].trim()); else out.push(piece);
+      }
+    }
+    const fixed = [];
+    for (let i = 0; i < out.length; i++) {
+      let a = out[i];
+      if (XYZ.test(a)) a = a.split(",").map((v) => Math.floor(+v)).join(",");     // "6024.5, -61, 5000.5" → "6024,-61,5000"
+      else if (/^--(at|pos|origin|center|centre)$/.test(fixed[fixed.length - 1] || "") && /^-?\d+(\.\d+)?$/.test(a) && /^-?\d+(\.\d+)?$/.test(out[i + 1] || "") && /^-?\d+(\.\d+)?$/.test(out[i + 2] || "")) {
+        a = `${a},${out[i + 1]},${out[i + 2]}`; i += 2;
+      }
+      const prev = fixed[fixed.length - 1] || "";
+      if (blueprint && !prev.startsWith("--")) {
+        if (XYZ.test(a) && !fixed.includes("--at")) fixed.push("--at");
+        else if (DIR.test(a) && !fixed.includes("--facing")) fixed.push("--facing");
+      }
+      fixed.push(DIR.test(a) && prev === "--facing" ? a.toLowerCase() : a);
+    }
+    return fixed;
   };
 
   // ── scarpet

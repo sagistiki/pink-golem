@@ -1,0 +1,174 @@
+{
+ "bench": "Pink Golem Bench",
+ "version": "1",
+ "entries": [
+  {
+   "model": "claude-opus-5-5",
+   "tag": "v0-baseline",
+   "name": "Claude Opus 5.5",
+   "tiers": {
+    "Basics": 100,
+    "Finding the site": 100,
+    "Free-form": 100
+   },
+   "complete": true,
+   "total": 100,
+   "runs": 6,
+   "reps": 1,
+   "fail_calls": 0,
+   "seconds": 42.4,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 100,
+    "house_near": 100,
+    "tower_by_library": 100,
+    "bakery": 100
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v3-blueprint",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 86.1,
+    "Finding the site": 100,
+    "Free-form": 80
+   },
+   "complete": true,
+   "total": 89.7,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 0.8,
+   "seconds": 45.7,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 58.3,
+    "house_near": 100,
+    "tower_by_library": 100,
+    "bakery": 80
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v5-final",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 90,
+    "Finding the site": 100,
+    "Free-form": 35
+   },
+   "complete": true,
+   "total": 84.2,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 3.9,
+   "seconds": 49.0,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 70,
+    "house_near": 100,
+    "tower_by_library": 100,
+    "bakery": 35
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v4-core",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 78.9,
+    "Finding the site": 100,
+    "Free-form": 20
+   },
+   "complete": true,
+   "total": 76.1,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 0.8,
+   "seconds": 45.5,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 36.7,
+    "house_near": 100,
+    "tower_by_library": 100,
+    "bakery": 20
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v2-prompt",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 88.3,
+    "Finding the site": 50,
+    "Free-form": 25
+   },
+   "complete": true,
+   "total": 65,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 5.8,
+   "seconds": 73.5,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 65,
+    "house_near": 0,
+    "tower_by_library": 100,
+    "bakery": 25
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v1-forgiving",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 66.7,
+    "Finding the site": 45,
+    "Free-form": 53.3
+   },
+   "complete": true,
+   "total": 57.2,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 0.7,
+   "seconds": 50.9,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 100,
+    "platform": 0,
+    "house_near": 90,
+    "tower_by_library": 0,
+    "bakery": 53.3
+   }
+  },
+  {
+   "model": "huihui_ai/gemma-4-abliterated:e4b",
+   "tag": "v0-baseline",
+   "name": "Gemma 4 E4B (abliterated, Q4)",
+   "tiers": {
+    "Basics": 33.3,
+    "Finding the site": 11.7,
+    "Free-form": 11.7
+   },
+   "complete": true,
+   "total": 22.5,
+   "runs": 18,
+   "reps": 3,
+   "fail_calls": 1.9,
+   "seconds": 45.7,
+   "tasks": {
+    "hello": 100,
+    "cottage_at": 0,
+    "platform": 0,
+    "house_near": 23.3,
+    "tower_by_library": 0,
+    "bakery": 11.7
+   }
+  }
+ ]
+}

@@ -4,14 +4,14 @@
 
 <p align="center">
   <b>Give your AI a body, hands and eyes in a Minecraft world — and the know-how to build like a pro.</b><br>
-  One installer · an MCP server with 38 tools · a deep building skill · works with Claude, Gemini, Codex and local models
+  One installer · an MCP server with 39 tools · a deep building skill · works with Claude, Gemini, Codex and local models
 </p>
 
 <p align="center">
   <a href="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml"><img alt="check" src="https://github.com/sagistiki/pink-golem/actions/workflows/check.yml/badge.svg"></a>
   <img alt="Minecraft 26.2" src="https://img.shields.io/badge/Minecraft-26.2-62B47A">
   <img alt="Fabric + Carpet" src="https://img.shields.io/badge/Fabric-Carpet-DBB064">
-  <img alt="MCP" src="https://img.shields.io/badge/MCP-38_tools-7C5CFF">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-39_tools-7C5CFF">
   <img alt="macOS · Windows · Linux" src="https://img.shields.io/badge/macOS_·_Windows_·_Linux-supported-3C8DBC">
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
@@ -114,7 +114,8 @@ import. Pink Golem works on the server side, like a building crew with a manual:
 - **Beyond buildings.** Minigames with records, rideable rides, drivable cars, a live minimap and HUD, a cinema: all
   without client mods.
 - **Safe with friends.** Players are owners or guests, and risky actions need an owner's approval, enforced in code.
-- **Any AI.** Claude, Gemini, Codex and local models, through the same tools.
+- **Any AI.** Claude, Gemini, Codex and local models, through the same tools. Measured on
+  [Pink Golem Bench](bench/results.md): an 8B model in Ollama went from 22 to 84 out of 100 on this release.
 
 ## How it works
 
@@ -137,7 +138,8 @@ Carpet's fake players, and reads the world with scarpet. **[Architecture →](do
   or asking you to look.
 - A big project is a conversation (survey, plan, preview, build in phases, check): minutes, not one click.
 - It's tested on Minecraft **26.2**; newer versions usually work once Carpet supports them ([upgrading](docs/upgrading.md)).
-- Small local models do best with the blueprints; free-form architecture needs a strong model.
+- Small local models do best with the blueprints (`minecraft_blueprint`); free-form architecture needs a strong
+  model ([the numbers](bench/results.md)).
 
 ## Case study: a roller coaster that really runs
 
@@ -155,7 +157,7 @@ If Pink Golem made you smile, a ⭐ on the repo helps other people find it.
 
 ## More
 
-[All docs](docs/README.md) · [Features, layout and mods](docs/features.md) · [Contributing](docs/contributing.md) ·
+[All docs](docs/README.md) · [Features, layout and mods](docs/features.md) · [Pink Golem Bench](bench/README.md) · [Contributing](docs/contributing.md) ·
 [Writing blueprints](docs/writing-blueprints.md) · [Lessons learned the hard way](skill/pinkgolem/reference/lessons.md) ·
 [Privacy and network connections](PRIVACY.md) · [Security](SECURITY.md)
 

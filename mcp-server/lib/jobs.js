@@ -120,7 +120,12 @@ export function install(K, ctx) {
   /** Run a Python generator (inside the repo). It writes job JSON files into jobs/. */
   K.runGenerator = async (script, argv = []) => {
     const abs = K.safePath(script);
-    if (!fs.existsSync(abs)) throw new Error(`no such script: ${script}`);
+    if (!fs.existsSync(abs)) {
+      const bp = path.join(K.P.ROOT, "skill", "pinkgolem", "blueprints");
+      const have = fs.existsSync(bp) ? fs.readdirSync(bp).filter((f) => f.endsWith(".py")) : [];
+      throw new Error(`no such script: ${script}.` + (have.length ? ` Ready blueprints (skill/pinkgolem/blueprints/): ${have.join(", ")}.` : "")
+        + " For anything else write your own generator: pass its Python source in `code` with a script name under jobs/.");
+    }
     fs.mkdirSync(K.P.JOBS, { recursive: true });
     const t0 = Date.now() - 1500;
     let r = null;

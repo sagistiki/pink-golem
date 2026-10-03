@@ -1,0 +1,9 @@
+{
+  "claude-opus-5-5": "Claude Opus 5.5",
+  "claude-sonnet-5-5": "Claude Sonnet 5.5",
+  "huihui_ai/gemma-4-abliterated:e4b": "Gemma 4 E4B (abliterated, Q4)",
+  "gemma4:e4b": "Gemma 4 E4B",
+  "gemma4:12b": "Gemma 4 12B",
+  "cajina/gemma4_e2b-q4_k_s": "Gemma 4 E2B (Q4_K_S)",
+  "kimi-k2.5:cloud": "Kimi K2.5 (Ollama cloud)"
+}

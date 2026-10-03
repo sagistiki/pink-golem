@@ -202,3 +202,37 @@ Read this once; come back when something feels familiar. New lessons you learn g
     zones blocked, and pick patrol targets near it.
 
 See also: `verification.md`, `game-logic.md`, `behaving-naturally.md`, `cinema-and-gallery.md`, `tower-floors.md`.
+
+## From tuning Pink Golem for a small local model (Pink Golem Bench)
+
+Measured with `bench/` on Gemma 4 E4B (8B, 4-bit) through Ollama: 22/100 on the published 1.1.2, 93+ after these.
+
+66. **A small model packed `"--at 5252,-61,4988"` into one string, every time.** The blueprint refused it, and the
+    model told the player the cottage was ready: the failure came back as `"ok": false` deep inside a JSON reply.
+    Tools now read the argument formats small models write, and every failure is an error result whose first line
+    says NOTHING was built. A flag buried in a success-shaped reply is invisible to a small model.
+67. **A small model fills in every optional parameter it sees.** `relative_to_player` got `"y=0"`, `"[5512,-61,5000]"`
+    and finally the player's name next to world coordinates, so a floor landed 60 blocks underground. Give every
+    parameter its own description, and let a tool ignore an option that contradicts the rest of the call.
+68. **"Build me a house" became a solid block of planks with the player inside.** A "tower" was a solid stone block
+    on the player's head, built with `allow_overwrite:true`. Builds now refuse solid blocks where a player stands,
+    with no override: small models pass override flags out of habit.
+69. **Every example in a prompt becomes a template.** One line showed `find_space` with `near:"library"`; the model
+    then called it with `near:"Tester"` and `near:"[x,y,z]"` 28 times in a row. Coordinates from an example were
+    copied into a real site check. Write examples with placeholders and the worked-out real numbers, and make tools
+    accept the neighbouring cases (a player or a position where a build name was expected).
+70. **A rule in the prompt was ignored; the same fact in an error worked on the next call.** "In front of the player"
+    was explained in the system prompt, and the floor still landed on the player's feet. When the guard that stopped
+    it said where the ground in front of them is, the retry was perfect. Teach at the moment of failure.
+71. **A refused phase hid under `"ok": true`.** A tower ran into a protected zone; the generator's reply still began
+    with ok, and the model announced the tower. Partial failures are errors too.
+72. **The same failing call, seven times, at temperature 0.3,** each time saying it would move the build. The Ollama
+    client now refuses a third identical failing call and runs one hotter turn to break the loop.
+73. **One call beats a recipe.** `minecraft_blueprint` (free ground, door toward the player, crew, wait, map entry)
+    took "a house next to me" from 0-90 to 100 in three or four calls. Put the hard reasoning in the tool.
+74. **Ollama silently drops the start of a conversation that doesn't fit the context** — the instructions and the
+    tools go first. Ask for 32k tokens, log the prompt size of every turn, and offer small models the core tool set
+    (17 tools, ~5k tokens instead of ~12.5k).
+75. **Measure what was built, not what was said.** A judge that scans the world caught builds that were announced
+    and never made. Its first version gave 45 points to a solid block and 70 to a three-block stub: placement only
+    counts once the thing is real (a room inside, a way up).

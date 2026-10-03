@@ -4,7 +4,7 @@ The long version of the README's list, with a link to the page that explains eac
 
 ## Build
 
-- **An MCP server with 38 tools.**
+- **An MCP server with 39 tools.**
   - The AI's body: walks with pathfinding, opens doors, swings. Everyone can spot it: **Pink Golem** over its head, pink
     armor with a gold trim, a pink block in hand (`bot_prefix`, `bot_outfit` to change it).
   - Safe with strangers: chat is tagged owner / guest, and a guest can't unlock generators, admin commands or app

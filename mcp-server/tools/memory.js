@@ -74,8 +74,11 @@ export function handlers(K) {
       if (a === "find_space") return K.text(await K.findSpace(args));
       if (a === "pov") return await K.povShot(args);
       if (a === "add" || a === "update") {
+        // no name: take an alias, or the first words of the notes ("5x5 stone floor with lanterns…" → "5x5 stone floor with")
+        const fromNotes = a === "add" && args.notes ? String(args.notes).replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().split(/\s+/).slice(0, 4).join(" ") : "";
+        if (a === "add" && !args.name && !args.id && (args.aliases?.[0] || fromNotes)) args = { ...args, name: args.aliases?.[0] || fromNotes };
         const id = String(args.id || args.name || "").trim();
-        if (!id) throw new Error("give id or name");
+        if (!id) throw new Error(`${a} needs a name, e.g. {"action":"${a}","name":"Cottage","from":[x1,y1,z1],"to":[x2,y2,z2]}`);
         let saved = null;
         await K.updateJSON(K.P.INDEX, [], (all) => {
           let e = all.find((q) => q.id === id) || (a === "update" ? WM.lookup(all, id)[0] : null);

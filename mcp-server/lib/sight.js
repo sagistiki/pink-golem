@@ -292,7 +292,17 @@ export function install(K) {
     const w = Math.max(1, Math.round(size[0])), d = Math.max(1, Math.round(size[1]));
     const E = K.mapEntries();
     let c;
-    if (args.near) { const e = WM.lookup(E, args.near)[0]; if (!e) throw new Error(`no build called "${args.near}"`); c = WM.center(e); }
+    if (args.near) {
+      // "near" a build; small models also pass a player's name or coordinates here — take those too
+      const q = String(args.near).trim();
+      const e = WM.lookup(E, q)[0];
+      const nums = q.match(/-?\d+(\.\d+)?/g);
+      const who = !e && (await K.onlinePlayers()).names.find((n) => n.toLowerCase() === q.toLowerCase());
+      if (e) c = WM.center(e);
+      else if (who) { const p = await K.playerInfo(who); c = [p.position.x, p.position.y, p.position.z]; }
+      else if (nums && nums.length >= 3) c = nums.slice(0, 3).map(Number);
+      else throw new Error(`no build called "${q}" on the map (builds: ${E.filter((x) => x.lo).map((x) => x.name).slice(0, 12).join(", ") || "none yet"}). Near a player: player:"<name>"; near a spot: pos:[x,y,z].`);
+    }
     else if (args.pos) c = K.V(args.pos);
     else { const p = await K.playerInfo(args.player || (await K.firstRealPlayer()) || K.BOT); c = [p.position.x, p.position.y, p.position.z]; }
     const r = Math.max(Math.ceil(Math.max(w, d) / 2) + 8, Math.min(args.radius ?? 90, 120));
@@ -313,6 +323,15 @@ export function install(K) {
     const hts = new Int16Array(W * D);
     for (let i = 0; i < v.length; i++) { grid[i] = v[i] === "#" ? 1 : 0; hts[i] = grid[i] ? 0 : parseInt(v[i], 36); }
     const margin = args.margin ?? 3;
+    // nobody wants a house built on their head: the ground around every player (not the bot or crew) is taken
+    for (const n of (await K.onlinePlayers()).names) {
+      if (n === K.BOT || (K.isCrew && K.isCrew(n))) continue;
+      try {
+        const p = (await K.playerInfo(n)).position;
+        for (let z = Math.floor(p.z) - 2; z <= Math.floor(p.z) + 2; z++) for (let x = Math.floor(p.x) - 2; x <= Math.floor(p.x) + 2; x++)
+          if (x >= x0 && x < x0 + W && z >= z0 && z < z0 + D) grid[(z - z0) * W + (x - x0)] = 1;
+      } catch {}
+    }
     for (const e of E) if (e.lo) for (let z = Math.max(z0, e.lo[2] - margin); z <= Math.min(z0 + D - 1, e.hi[2] + margin); z++) for (let x = Math.max(x0, e.lo[0] - margin); x <= Math.min(x0 + W - 1, e.hi[0] + margin); x++) grid[(z - z0) * W + (x - x0)] = 1;
     const free = AN.findFreeRects(grid, W, D, x0, z0, w, d, 0, [c[0], c[2]], { count: args.count ?? 3 });
     const taken = grid.reduce((a, b) => a + b, 0);

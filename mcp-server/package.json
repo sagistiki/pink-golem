@@ -1,6 +1,6 @@
 {
   "name": "pinkgolem-mcp",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Pink Golem MCP server: lets an AI build, see, walk and talk in a Minecraft server over RCON + Carpet",
   "type": "module",
   "main": "index.js",

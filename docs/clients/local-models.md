@@ -1,11 +1,12 @@
-# Local models (LM Studio and other MCP clients)
+# Local models (Ollama, LM Studio and other MCP clients)
 
 This page is for running Pink Golem with a model on your own computer, or with any MCP client that isn't covered
-by its own page. It explains how to connect LM Studio, how to connect anything else, and what to expect from
-models of different sizes.
+by its own page. It explains how to connect Ollama and LM Studio, how to connect anything else, and what to expect
+from models of different sizes.
 
 | | |
 |---|---|
+| Ollama | `python3 bench/agent.py --model gemma4:e4b -i` (Pink Golem's own client for Ollama) |
 | Connect LM Studio | `python3 pinkgolem.py connect lmstudio` |
 | MCP config | `~/.lmstudio/mcp.json` (Windows: `%USERPROFILE%\.lmstudio\mcp.json`) |
 | Skill | paste `skill/pinkgolem/SYSTEM_PROMPT.md` into the system prompt |
@@ -13,6 +14,30 @@ models of different sizes.
 | Any other client | `python3 pinkgolem.py connect print` |
 
 ---
+
+## Ollama
+
+Ollama runs the model but is not an MCP client, so Pink Golem ships one: `bench/agent.py` starts the MCP server,
+gives the model the `minecraft_*` tools, runs every call it makes and feeds the results back.
+
+```bash
+ollama pull gemma4:e4b                                   # any model with tool calling
+python3 bench/agent.py --model gemma4:e4b -i             # a conversation; empty line quits
+python3 bench/agent.py --model gemma4:e4b "build me a cottage next to me"
+```
+
+- **Context:** the agent asks Ollama for a 32k-token window (`--ctx`). Ollama's default is much smaller, and it
+  silently drops the start of a conversation that doesn't fit: the instructions and tools go first. The agent warns
+  when a turn gets close to the limit.
+- **Fewer tools:** `PINKGOLEM_TOOLS=core` offers only the core tools a build needs, 17 of the 39 (~5k tokens of descriptions
+  instead of ~14k). Faster, and small models pick the right tool more often.
+- **Instructions:** `SYSTEM_PROMPT.md` by default; `--prompt full` loads `SKILL.md` for bigger models.
+- **Nudges:** when the model stops with an empty answer, or reports while its build is still running, the client
+  tells it to continue (`--no-nudge` turns this off).
+- The body is called **Buddy** (`--bot` to rename it).
+
+How well this works was measured with the bench in `bench/` (scenarios scored by scanning the world afterwards):
+see [bench/results.md](../../bench/results.md).
 
 ## LM Studio
 
@@ -103,43 +128,40 @@ Other settings the MCP server reads (all optional, in `env` or in `pinkgolem.jso
 
 ## Which model? An honest guide
 
-Pink Golem gives the model **38 tools**. Their descriptions and argument schemas take about **12,000 tokens**
-before you say a word, and tool results (a structure read as text, a job report) can be a few thousand tokens more.
+Pink Golem gives the model **39 tools**. Their descriptions and argument schemas take about **12,500 tokens**
+before you say a word (about 5,000 with `PINKGOLEM_TOOLS=core`), and tool results can be a few thousand more.
 
 **Requirements**
 
-1. The model must support **tool calling** (function calling). LM Studio shows which downloaded models do. A model
-   without it will only talk about building.
+1. The model must support **tool calling** (function calling). A model without it will only talk about building.
 2. **Context of at least 16k tokens, better 32k.** With less, the tool list alone crowds out the conversation.
-3. **Bigger is better.** Choosing the right tool among 29 and filling nested arguments (lists of `[x, y, z]`) is
-   exactly what small models find hard. Heavy quantization (below about 4-bit) makes it worse.
+3. **Bigger is better**, but less than you'd think: the tools now do most of the hard parts (see below).
 
-**What to expect** (rough guidance; models vary a lot)
+**Measured** with [Pink Golem Bench](../../bench/README.md) (six building tasks, scored by scanning the world):
 
-| Model size | Realistic result |
-|---|---|
-| under ~7B | often calls the wrong tool or invents arguments. Fine for chatting in game, unreliable for building |
-| ~7-14B with good tool calling | follows `SYSTEM_PROMPT.md` step by step: checks the site, runs blueprints, waits for the job, reports |
-| ~20-35B | reliable with blueprints and small custom builds with `minecraft_build`, reads vision output sensibly |
-| 70B and up / frontier models | can handle `SKILL.md` and plan multi-phase builds |
+| Model | Pink Golem 1.1.2 | Pink Golem 1.2 |
+|---|---|---|
+| Gemma 4 E4B (8B, 4-bit, Ollama) | 22 / 100 | 84 / 100 |
+| Claude Opus 5.5 | 100 / 100 | not measured yet |
 
-**There is no "small tool list" mode.** All tools are always offered; only the tools for mods you don't have are
-hidden. Small models succeed through two things instead:
+What an ~8B model does reliably on 1.2: spawning and talking, any blueprint at given coordinates, a house next to
+the player, a tower next to a named build (all through `minecraft_blueprint` in three to five calls). What it still
+gets wrong: arithmetic for custom shapes ("5x5 in front of me" can come out 5x1 or behind them), and buildings with no
+blueprint, where it gives up or reuses a cottage. Free-form architecture needs a strong model.
 
-- **`SYSTEM_PROMPT.md`** turns building into a fixed script: status → spawn → check the site → run a blueprint
-  → wait → report. The model doesn't have to discover the workflow; it only fills in coordinates.
-- **Blueprints** do the hard part. `cottage.py`, `modern_villa.py`, `tower.py`, `park.py`, `drop_tower.py` and `tnt_run.py`
-  already solve the geometry, block states, doors, stairs, light and furniture. The model only picks a blueprint,
-  a position (`--at X,Y,Z`) and a direction (`--facing`). A furnished house is **one tool call**:
+**How small models succeed** (each point fixed a failure the bench recorded; the stories are lessons 66-75 in
+[lessons.md](../../skill/pinkgolem/reference/lessons.md)):
 
-```json
-minecraft_generate {"script": "skill/pinkgolem/blueprints/cottage.py",
-                    "args": ["--at", "14,-61,5", "--facing", "south"], "build": true, "helpers": 3}
-```
-
-The server also forgives common small-model mistakes: numbers, booleans and lists sent as strings (`"3"`,
-`"true"`, `"[1,2,3]"`) are converted, and every tool that changes blocks has undo, protected zones and verification
-behind it.
+- **One call per build:** `minecraft_blueprint {"name":"cottage"}` finds free ground next to the player, turns the
+  door toward them, builds, waits and adds it to the map. Next to a build: `{"name":"tower","near":"library"}`.
+- **`SYSTEM_PROMPT.md`** is a short script of rules, each from a real mistake, with worked examples.
+- **The tools forgive the usual mistakes** (arguments in one string, junk in optional parameters, a player's name
+  where a build was expected) and **say failures on the first line** ("FAILED — NOTHING was built"), so the model
+  doesn't announce a build that never happened.
+- **Errors teach:** when a build would land on a player, the refusal says where the ground in front of them is.
+- **Fewer tools:** `PINKGOLEM_TOOLS=core` offers 17 of the 39.
+- **The Ollama client** (`bench/agent.py`) nudges a model that stops early and won't run the same failing call a
+  third time.
 
 ## Tips
 
